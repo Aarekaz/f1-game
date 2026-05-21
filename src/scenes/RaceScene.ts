@@ -14,6 +14,8 @@ type HudRefs = {
   message: HTMLElement;
 };
 
+type TrackMarker = Phaser.GameObjects.Rectangle;
+
 export class RaceScene extends Phaser.Scene {
   private model = new RaceModel();
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -21,6 +23,7 @@ export class RaceScene extends Phaser.Scene {
   private kerbs!: Phaser.GameObjects.Graphics;
   private car!: Phaser.GameObjects.Container;
   private carShadow!: Phaser.GameObjects.Ellipse;
+  private trackMarkers: TrackMarker[] = [];
   private rivalViews = new Map<number, Phaser.GameObjects.Container>();
   private hud!: HudRefs;
   private touchState = { left: false, right: false, brake: false, boost: false };
@@ -50,6 +53,7 @@ export class RaceScene extends Phaser.Scene {
     const input = this.readInput();
     this.telemetry = this.model.update(dt, input);
     this.drawTrack();
+    this.updateTrackDetails();
     this.updatePlayerCar();
     this.updateRivals();
     this.updateHud();
@@ -178,9 +182,34 @@ export class RaceScene extends Phaser.Scene {
 
   private createTrackDetails() {
     for (let i = 0; i < 28; i += 1) {
-      const star = this.add.rectangle(0, 0, 2, 2, 0xfff3bd, 0.28);
-      star.setData("distance", Math.random());
-      star.setData("side", Math.random() > 0.5 ? -1 : 1);
+      const marker = this.add.rectangle(0, 0, 6, 18, i % 4 === 0 ? 0xf7f7f2 : 0xe20e3b, 0.7);
+      marker.setData("distance", 180 + i * 132);
+      marker.setData("side", i % 2 === 0 ? -1 : 1);
+      marker.setDepth(2);
+      this.trackMarkers.push(marker);
+    }
+  }
+
+  private updateTrackDetails() {
+    const { width, height } = this.scale;
+    const trackBase = Math.min(width * 0.82, 620);
+    const trackTop = Math.max(170, width * 0.22);
+
+    for (const marker of this.trackMarkers) {
+      const wrapped = ((marker.getData("distance") - (this.telemetry.trackOffset % 3696)) + 3696) % 3696;
+      const t = Phaser.Math.Clamp(1 - wrapped / 1900, 0, 1);
+      const y = Phaser.Math.Linear(-40, height + 60, t);
+      const roadWidth = Phaser.Math.Linear(trackTop, trackBase, t);
+      const center = width * 0.5 + this.model.trackCenterAt(wrapped) * roadWidth * 0.42;
+      const side = marker.getData("side") as number;
+      const x = center + side * roadWidth * 0.62;
+      const scale = Phaser.Math.Linear(0.28, 1.25, t);
+
+      marker.setPosition(x, y);
+      marker.setScale(scale, scale);
+      marker.setRotation(Phaser.Math.DegToRad(side * -8));
+      marker.setAlpha(Phaser.Math.Clamp(t * 1.2, 0, 0.78));
+      marker.setVisible(wrapped < 1900);
     }
   }
 
