@@ -168,12 +168,12 @@ export class RaceModel {
     const gripTarget = onTrack ? (braking ? 0.88 : 1) : 0.38;
     this.grip += (gripTarget - this.grip) * Math.min(1, dt * 5.2);
 
-    const steeringGrip = PhaserMathClamp(1.08 - speedRatio * 0.48, 0.5, 1.04) * this.grip;
-    const steeringForce = input.steer * steeringGrip * dt * 3.35;
-    const curveDrift = curve * speedRatio * speedRatio * dt * 0.36;
-    this.lateralVelocity += steeringForce - curveDrift;
-    this.lateralVelocity *= Math.pow(braking ? 0.035 : 0.065, dt);
-    this.carX += this.lateralVelocity;
+    const steeringGrip = PhaserMathClamp(0.92 - speedRatio * 0.34, 0.42, 0.9) * this.grip;
+    const targetLateralVelocity = input.steer * steeringGrip;
+    const steeringEase = Math.min(1, dt * (Math.abs(input.steer) > 0.1 ? 6.2 : 8.4));
+    const curveDrift = curve * speedRatio * speedRatio * 0.28;
+    this.lateralVelocity += (targetLateralVelocity - this.lateralVelocity) * steeringEase;
+    this.carX += (this.lateralVelocity - curveDrift) * dt;
     if (Math.abs(input.steer) < 0.1 && onTrack && this.speed < 145) {
       this.carX += (center - this.carX) * dt * 0.42;
     }
