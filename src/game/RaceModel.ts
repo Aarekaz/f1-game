@@ -1,4 +1,4 @@
-export type RacePhase = "ready" | "racing" | "finished";
+export type RacePhase = "ready" | "countdown" | "racing" | "finished";
 
 export type RaceInput = {
   steer: number;
@@ -21,6 +21,7 @@ export type Telemetry = {
   phase: RacePhase;
   lap: number;
   laps: number;
+  countdown: number;
   lapProgress: number;
   raceProgress: number;
   position: number;
@@ -66,6 +67,7 @@ export class RaceModel {
   rivals: RivalCar[] = [];
   private spawnTimer = 0.2;
   private nextRivalId = 1;
+  private countdownTimer = 0;
   private eventMessage = "";
   private eventTimer = 0;
 
@@ -93,16 +95,26 @@ export class RaceModel {
     this.rivals = [];
     this.spawnTimer = 0.2;
     this.nextRivalId = 1;
+    this.countdownTimer = 0;
     this.eventMessage = "";
     this.eventTimer = 0;
   }
 
   update(dt: number, input: RaceInput): Telemetry {
     if (this.phase === "ready" && (input.launch || input.throttle)) {
-      this.phase = "racing";
-      this.speed = 72;
+      this.startCountdown();
     } else if (this.phase === "finished" && input.launch) {
       this.reset();
+      this.startCountdown();
+    }
+
+    if (this.phase === "countdown") {
+      this.countdownTimer = Math.max(0, this.countdownTimer - dt);
+      if (this.countdownTimer === 0) {
+        this.phase = "racing";
+        this.speed = 72;
+        this.setEvent("Lights out", 1);
+      }
     }
 
     if (this.phase === "racing") {
@@ -120,6 +132,7 @@ export class RaceModel {
       phase: this.phase,
       lap: this.lap,
       laps: this.laps,
+      countdown: this.countdownTimer,
       lapProgress,
       raceProgress,
       position: this.position,
@@ -271,7 +284,8 @@ export class RaceModel {
   }
 
   private getMessage() {
-    if (this.phase === "ready") return "Hold throttle to launch";
+    if (this.phase === "ready") return "Start race";
+    if (this.phase === "countdown") return this.countdownTimer > 0.8 ? String(Math.ceil(this.countdownTimer)) : "Go";
     if (this.phase === "finished") return `Finished P${this.position} - Space to restart`;
     if (this.eventTimer > 0) return this.eventMessage;
     if (this.penaltyTimer > 1.4) return "Track limits - slow down";
@@ -283,6 +297,13 @@ export class RaceModel {
   private setEvent(message: string, duration: number) {
     this.eventMessage = message;
     this.eventTimer = duration;
+  }
+
+  private startCountdown() {
+    this.phase = "countdown";
+    this.countdownTimer = 3.2;
+    this.eventMessage = "";
+    this.eventTimer = 0;
   }
 }
 

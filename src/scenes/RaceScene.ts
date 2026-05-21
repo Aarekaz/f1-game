@@ -2,6 +2,14 @@ import Phaser from "phaser";
 import { RaceInput, RaceModel, RivalCar, Telemetry } from "../game/RaceModel";
 
 type HudRefs = {
+  startPanel: HTMLElement;
+  resultsPanel: HTMLElement;
+  startButton: HTMLButtonElement;
+  restartButton: HTMLButtonElement;
+  resultTitle: HTMLElement;
+  resultTotal: HTMLElement;
+  resultBest: HTMLElement;
+  resultOvertakes: HTMLElement;
   position: HTMLElement;
   lap: HTMLElement;
   best: HTMLElement;
@@ -111,6 +119,14 @@ export class RaceScene extends Phaser.Scene {
     }) as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.input.keyboard!.on("keydown-SPACE", () => {
+      this.launchQueued = true;
+    });
+
+    this.hud.startButton.addEventListener("click", () => {
+      this.launchQueued = true;
+    });
+
+    this.hud.restartButton.addEventListener("click", () => {
       this.launchQueued = true;
     });
 
@@ -373,20 +389,41 @@ export class RaceScene extends Phaser.Scene {
     this.hud.ers.style.setProperty("--value", `${Math.round(t.ers * 100)}%`);
     this.hud.grip.style.setProperty("--value", `${Math.round(t.grip * 100)}%`);
     this.hud.streak.textContent = t.overtakeStreak > 0 ? `${t.overtakeStreak} overtakes banked` : "Clean air";
+    this.updatePanels(t);
 
     if (t.message) {
       this.hud.message.classList.remove("hidden");
       const strong = this.hud.message.querySelector("strong")!;
       const span = this.hud.message.querySelector("span")!;
-      strong.textContent = t.phase === "finished" ? `Finished P${t.position}` : "Apex Formula";
-      span.textContent = t.message;
+      strong.textContent = getMessageTitle(t);
+      span.textContent = getMessageBody(t);
     } else {
       this.hud.message.classList.add("hidden");
     }
   }
 
+  private updatePanels(t: Telemetry) {
+    this.hud.startPanel.classList.toggle("hidden", t.phase !== "ready");
+    this.hud.resultsPanel.classList.toggle("hidden", t.phase !== "finished");
+
+    if (t.phase === "finished") {
+      this.hud.resultTitle.textContent = `Finished P${t.position}`;
+      this.hud.resultTotal.textContent = formatTime(t.totalTime);
+      this.hud.resultBest.textContent = formatTime(t.bestLap);
+      this.hud.resultOvertakes.textContent = String(t.overtakeStreak);
+    }
+  }
+
   private getHudRefs(): HudRefs {
     return {
+      startPanel: requireElement("start-panel"),
+      resultsPanel: requireElement("results-panel"),
+      startButton: requireElement("start-race") as HTMLButtonElement,
+      restartButton: requireElement("restart-race") as HTMLButtonElement,
+      resultTitle: requireElement("result-title"),
+      resultTotal: requireElement("result-total"),
+      resultBest: requireElement("result-best"),
+      resultOvertakes: requireElement("result-overtakes"),
       position: requireElement("position"),
       lap: requireElement("lap"),
       best: requireElement("best"),
@@ -416,6 +453,17 @@ function formatTime(seconds: number | null) {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds - minutes * 60;
   return minutes > 0 ? `${minutes}:${rest.toFixed(2).padStart(5, "0")}` : rest.toFixed(2);
+}
+
+function getMessageTitle(t: Telemetry) {
+  if (t.phase === "countdown") return t.message;
+  if (t.phase === "finished") return `Finished P${t.position}`;
+  return "Apex Formula";
+}
+
+function getMessageBody(t: Telemetry) {
+  if (t.phase === "countdown") return t.countdown > 0.8 ? "Get ready" : "Launch";
+  return t.message;
 }
 
 function drawDashedPolyline(

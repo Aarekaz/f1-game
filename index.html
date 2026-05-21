@@ -9,6 +9,33 @@
     <div id="app">
       <div id="game"></div>
       <main class="hud" aria-label="Race telemetry">
+        <section class="game-panel start-panel" id="start-panel">
+          <span class="panel-kicker">Apex Formula</span>
+          <strong>Grand Prix Sprint</strong>
+          <p>Three laps. Seven rivals. Hold the racing line, manage ERS, and finish as high as you can.</p>
+          <button id="start-race" type="button">Start Race</button>
+        </section>
+
+        <section class="game-panel results-panel hidden" id="results-panel">
+          <span class="panel-kicker">Race Complete</span>
+          <strong id="result-title">Finished</strong>
+          <dl>
+            <div>
+              <dt>Total</dt>
+              <dd id="result-total">--.--</dd>
+            </div>
+            <div>
+              <dt>Best Lap</dt>
+              <dd id="result-best">--.--</dd>
+            </div>
+            <div>
+              <dt>Overtakes</dt>
+              <dd id="result-overtakes">0</dd>
+            </div>
+          </dl>
+          <button id="restart-race" type="button">Race Again</button>
+        </section>
+
         <section class="topbar">
           <div>
             <span class="label">P</span>

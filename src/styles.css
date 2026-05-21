@@ -52,11 +52,93 @@ body {
 
 .topbar div,
 .status-panel,
-.race-message {
+.race-message,
+.game-panel {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(6, 7, 6, 0.72);
   backdrop-filter: blur(12px);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.game-panel {
+  pointer-events: auto;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  display: grid;
+  width: min(430px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 22px;
+  border-radius: 8px;
+  transform: translate(-50%, -50%);
+}
+
+.game-panel.hidden {
+  display: none;
+}
+
+.panel-kicker {
+  color: #e20e3b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.game-panel strong {
+  color: #ffffff;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 0.95;
+}
+
+.game-panel p {
+  margin: 0;
+  color: #cfd6cc;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.game-panel button {
+  justify-self: start;
+  min-width: 140px;
+  height: 44px;
+  border: 0;
+  border-radius: 7px;
+  color: #ffffff;
+  background: #e20e3b;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.game-panel dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.game-panel dl div {
+  padding: 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.game-panel dt {
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.game-panel dd {
+  margin: 3px 0 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 950;
 }
 
 .topbar div {
@@ -293,6 +375,15 @@ body {
 
   .control-hint {
     display: none;
+  }
+
+  .game-panel {
+    top: 47%;
+    padding: 18px;
+  }
+
+  .game-panel dl {
+    grid-template-columns: 1fr;
   }
 
   .topbar {
