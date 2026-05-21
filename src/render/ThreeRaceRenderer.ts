@@ -34,18 +34,19 @@ export class ThreeRaceRenderer {
   private readonly camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1800);
   private readonly car = buildFormulaCarProxy();
   private readonly circuit = buildGpCircuit();
+  private readonly horizon = this.buildHorizon();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly handleResize = () => this.resize();
 
   constructor(private readonly parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor("#091015");
+    this.renderer.setClearColor("#c7d8df");
     this.renderer.shadowMap.enabled = true;
     this.renderer.domElement.className = "race-canvas";
     this.parent.appendChild(this.renderer.domElement);
 
-    this.scene.fog = new THREE.Fog("#091015", 150, 820);
+    this.scene.fog = new THREE.Fog("#c7d8df", 180, 920);
 
     const hemi = new THREE.HemisphereLight("#dcefff", "#14210f", 1.7);
     this.scene.add(hemi);
@@ -56,6 +57,7 @@ export class ThreeRaceRenderer {
     this.scene.add(sun);
 
     this.scene.add(this.circuit);
+    this.scene.add(this.horizon);
     this.scene.add(this.car);
     this.resize();
     window.addEventListener("resize", this.handleResize);
@@ -119,5 +121,31 @@ export class ThreeRaceRenderer {
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
     return mesh;
+  }
+
+  private buildHorizon() {
+    const horizon = new THREE.Group();
+    horizon.name = "soft-gp-horizon";
+
+    const skyMaterial = new THREE.MeshBasicMaterial({
+      color: "#bfd4dc",
+      fog: false,
+      side: THREE.DoubleSide
+    });
+    const treelineMaterial = new THREE.MeshBasicMaterial({
+      color: "#5d7b63",
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    const sky = new THREE.Mesh(new THREE.PlaneGeometry(2200, 540), skyMaterial);
+    sky.position.set(0, 250, -760);
+    horizon.add(sky);
+
+    const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, 54), treelineMaterial);
+    treeline.position.set(0, 22, -755);
+    horizon.add(treeline);
+
+    return horizon;
   }
 }

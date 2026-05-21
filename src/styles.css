@@ -1,6 +1,6 @@
 :root {
   color: #f7f7f2;
-  background: #070907;
+  background: #c7d8df;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -23,10 +23,7 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(circle at 14% 18%, rgba(204, 0, 45, 0.22), transparent 30%),
-    radial-gradient(circle at 84% 10%, rgba(255, 210, 64, 0.12), transparent 28%),
-    #070907;
+  background: #c7d8df;
 }
 
 #game {
@@ -67,10 +64,10 @@ body {
 .status-panel,
 .race-message,
 .game-panel {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(6, 7, 6, 0.72);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(18, 27, 26, 0.52);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: 0 18px 48px rgba(20, 30, 28, 0.18);
 }
 
 .game-panel {
@@ -364,11 +361,11 @@ body {
 }
 
 .control-hint span {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 7px;
   padding: 6px 8px;
   color: #cfd6cc;
-  background: rgba(6, 7, 6, 0.54);
+  background: rgba(18, 27, 26, 0.42);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0;
