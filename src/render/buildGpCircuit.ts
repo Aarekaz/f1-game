@@ -87,6 +87,86 @@ function makeTrackStrip(
   return mesh;
 }
 
+function makeRacingLine() {
+  const geometry = new THREE.BufferGeometry();
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  const uvs: number[] = [];
+  let row = 0;
+
+  for (let ahead = -150; ahead <= 1900; ahead += 14) {
+    const sample = sampleTrack(ahead);
+    const nextCurve = trackCurveAt(ahead + 42);
+    const racingOffset = -nextCurve * 70;
+    const width = sample.brakingZone ? 0.34 : 0.22;
+    const center = sample.center + Math.max(-2.8, Math.min(2.8, racingOffset));
+    vertices.push(center - width, 0.041, -ahead, center + width, 0.041, -ahead);
+    uvs.push(0, row, 1, row);
+
+    if (row > 0) {
+      const base = row * 2;
+      indices.push(base - 2, base - 1, base, base - 1, base + 1, base);
+    }
+
+    row += 1;
+  }
+
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshBasicMaterial({
+    color: "#d7eb8f",
+    transparent: true,
+    opacity: 0.32,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = "ghosted-racing-line";
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
+function makeBoardMaterial(label: string, background = "#f4f7ef", foreground = "#17211b") {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 160;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = foreground;
+    ctx.lineWidth = 12;
+    ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+    ctx.fillStyle = foreground;
+    ctx.font = label.length > 3 ? "900 54px Arial" : "900 82px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, canvas.width / 2, canvas.height / 2 + 4);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+}
+
+function makeTracksideBoard(name: string, material: THREE.Material) {
+  const board = new THREE.Group();
+  board.name = name;
+
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.34), material);
+  panel.name = `${name}-face`;
+  panel.position.y = 1.65;
+  board.add(panel);
+
+  const postMaterial = new THREE.MeshStandardMaterial({ color: "#202832", roughness: 0.55, metalness: 0.18 });
+  const post = makeBox(`${name}-post`, [0.12, 1.45, 0.12], [0, 0.72, 0], postMaterial);
+  board.add(post);
+  board.userData.disposableMaterials = [material, postMaterial];
+  return board;
+}
+
 export function buildGpCircuit() {
   const circuit = new THREE.Group();
   circuit.name = "fictional-european-technical-gp-circuit";
@@ -100,12 +180,18 @@ export function buildGpCircuit() {
   const kerbWhite = new THREE.MeshStandardMaterial({ color: "#f5f7f4", roughness: 0.5 });
   const barrierMaterial = new THREE.MeshStandardMaterial({ color: "#dce3e8", roughness: 0.62, metalness: 0.08 });
   const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#202832", roughness: 0.48, metalness: 0.25 });
+  const chevronMaterial = makeBoardMaterial(">>", "#e20e3b", "#ffffff");
+  const brakeMaterial = makeBoardMaterial("BRAKE", "#e20e3b", "#ffffff");
+  const board150 = makeBoardMaterial("150");
+  const board100 = makeBoardMaterial("100");
+  const board50 = makeBoardMaterial("50");
 
   circuit.add(makePlane("grass-infield-and-surround", [140, 2360], [0, -0.03, -560], grass));
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
   const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
   const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
-  circuit.add(roadMesh, leftRunoff, rightRunoff);
+  const racingLine = makeRacingLine();
+  circuit.add(roadMesh, leftRunoff, rightRunoff, racingLine);
 
   const technicalSections = [
     { name: "north-hairpin-runoff", x: -22, z: 280, w: 18, d: 120 },
@@ -148,6 +234,29 @@ export function buildGpCircuit() {
     circuit.add(apexMarker);
   }
 
+  for (const brakingStart of [230, 770, 1280]) {
+    const refs = [
+      { label: "150", material: board150, offset: -150 },
+      { label: "100", material: board100, offset: -100 },
+      { label: "50", material: board50, offset: -50 },
+      { label: "BRAKE", material: brakeMaterial, offset: -12 }
+    ];
+    for (const ref of refs) {
+      const board = makeTracksideBoard(`braking-reference-${ref.label}`, ref.material);
+      dynamicPieces.push({ object: board, ahead: brakingStart + ref.offset, lateral: 11.6, curveScale: 1.25 });
+      circuit.add(board);
+    }
+  }
+
+  for (const apex of [322, 870, 910, 1390]) {
+    for (const side of [-1, 1]) {
+      const chevron = makeTracksideBoard("corner-chevron", chevronMaterial);
+      chevron.scale.set(0.82, 0.82, 0.82);
+      dynamicPieces.push({ object: chevron, ahead: apex, lateral: side * 10.4, curveScale: 1.8 });
+      circuit.add(chevron);
+    }
+  }
+
   const timingBridge = makeBox("timing-bridge-crossbar", [18.4, 0.72, 0.5], [0, 5.2, -38], bridgeMaterial);
   timingBridge.castShadow = true;
   circuit.add(timingBridge);
@@ -163,9 +272,14 @@ export function buildGpCircuit() {
     kerbRed,
     kerbWhite,
     barrierMaterial,
-    bridgeMaterial
+    bridgeMaterial,
+    chevronMaterial,
+    brakeMaterial,
+    board150,
+    board100,
+    board50
   ];
-  circuit.userData.staticTrackMeshes = [roadMesh, leftRunoff, rightRunoff];
+  circuit.userData.staticTrackMeshes = [roadMesh, leftRunoff, rightRunoff, racingLine];
   circuit.userData.dynamicPieces = dynamicPieces;
   updateGpCircuit(circuit, 0);
   return circuit;

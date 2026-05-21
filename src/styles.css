@@ -210,6 +210,55 @@ body {
   text-transform: uppercase;
 }
 
+.track-readout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.track-readout span,
+.track-readout b {
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.track-readout strong {
+  display: block;
+  max-width: 176px;
+  margin-top: 2px;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-readout b {
+  justify-self: end;
+  min-width: 86px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  color: #17211b;
+  background: #d7eb8f;
+  text-align: center;
+}
+
+.track-readout b.brake {
+  color: #ffffff;
+  background: #e20e3b;
+}
+
 .bars {
   display: grid;
   gap: 9px;
@@ -495,6 +544,25 @@ body {
     margin-top: 7px;
     padding: 6px 8px;
     font-size: 10px;
+  }
+
+  .track-readout {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    margin-top: 7px;
+    padding: 7px 8px;
+  }
+
+  .track-readout strong {
+    max-width: 136px;
+    font-size: 11px;
+  }
+
+  .track-readout b {
+    justify-self: stretch;
+    min-width: 0;
+    padding: 5px 6px;
+    font-size: 9px;
   }
 
   .streak {

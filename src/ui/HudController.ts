@@ -36,6 +36,9 @@ export class HudController {
   private delta = requireElement("delta");
   private speed = requireElement("speed");
   private objective = requireElement("objective");
+  private sectionName = optionalElement("section-name");
+  private sectionMeta = optionalElement("section-meta");
+  private trackCue = optionalElement("track-cue");
   private raceProgress = requireElement("race-progress");
   private ers = requireElement("ers");
   private grip = requireElement("grip");
@@ -60,6 +63,7 @@ export class HudController {
     this.delta.textContent = telemetry.bestLap === null ? "+0.00" : formatDelta(telemetry.delta);
     this.speed.textContent = String(telemetry.speedKph);
     this.objective.textContent = telemetry.objective;
+    this.updateTrackReadout(telemetry);
     setMeter(this.raceProgress, telemetry.raceProgress);
     setMeter(this.ers, telemetry.ers);
     setMeter(this.grip, telemetry.grip);
@@ -78,6 +82,21 @@ export class HudController {
 
     this.updateMessage(telemetry);
     this.updateResults(telemetry);
+  }
+
+  private updateTrackReadout(telemetry: RaceTelemetry) {
+    if (this.sectionName) {
+      this.sectionName.textContent = telemetry.trackSection;
+    }
+
+    if (this.sectionMeta) {
+      this.sectionMeta.textContent = `S${telemetry.trackSector} / ${Math.round(telemetry.lapProgress * 100)}%`;
+    }
+
+    if (this.trackCue) {
+      this.trackCue.textContent = telemetry.trackCue;
+      this.trackCue.classList.toggle("brake", telemetry.brakingZone);
+    }
   }
 
   private updateMessage(telemetry: RaceTelemetry) {

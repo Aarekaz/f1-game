@@ -35,6 +35,7 @@ export class ThreeRaceRenderer {
   private readonly car = buildFormulaCarProxy();
   private readonly circuit = buildGpCircuit();
   private readonly horizon = this.buildHorizon();
+  private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly handleResize = () => this.resize();
 
@@ -58,6 +59,7 @@ export class ThreeRaceRenderer {
 
     this.scene.add(this.circuit);
     this.scene.add(this.horizon);
+    this.scene.add(this.speedStreaks);
     this.scene.add(this.car);
     this.resize();
     window.addEventListener("resize", this.handleResize);
@@ -82,6 +84,7 @@ export class ThreeRaceRenderer {
     this.car.rotation.z = -telemetry.car.yawRate * 0.22;
 
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
+    this.updateSpeedStreaks(speedRatio, telemetry.car.slip, telemetry.car.braking);
     this.camera.fov = 57 + speedRatio * 12;
     this.camera.position.set(
       localCarX * 0.55,
@@ -147,5 +150,42 @@ export class ThreeRaceRenderer {
     horizon.add(treeline);
 
     return horizon;
+  }
+
+  private buildSpeedStreaks() {
+    const group = new THREE.Group();
+    group.name = "peripheral-speed-streaks";
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#f6fff1",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false
+    });
+
+    for (let index = 0; index < 18; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 8 + (index % 4) * 2.2), material);
+      mesh.name = "speed-streak";
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.rotation.z = (index % 3 - 1) * 0.1;
+      mesh.position.set(index % 2 === 0 ? -7.6 - (index % 5) * 0.9 : 7.6 + (index % 5) * 0.9, 0.09, -6 - index * 7.5);
+      group.add(mesh);
+    }
+
+    group.userData.material = material;
+    return group;
+  }
+
+  private updateSpeedStreaks(speedRatio: number, slip: number, braking: number) {
+    const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
+    if (material) {
+      material.opacity = Math.max(0, speedRatio - 0.46) * 0.34 + slip * 0.08 + braking * 0.04;
+      material.color.set(braking > 0.25 ? "#ffd7c8" : "#f6fff1");
+    }
+
+    this.speedStreaks.position.z = (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
+    this.speedStreaks.position.x = this.car.position.x * 0.2;
+    this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
   }
 }

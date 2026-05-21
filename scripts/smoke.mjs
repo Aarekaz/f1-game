@@ -45,6 +45,8 @@ async function checkDesktop(browser) {
     canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     objective: document.querySelector("#objective")?.textContent ?? "",
+    section: document.querySelector("#section-name")?.textContent ?? "",
+    cue: document.querySelector("#track-cue")?.textContent ?? "",
     lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
@@ -57,6 +59,8 @@ async function checkDesktop(browser) {
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
+  assert(state.section.length > 0, "desktop circuit section was missing");
+  assert(state.cue.length > 0, "desktop driving cue was missing");
   assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
   assert(state.hintVisible, "desktop keyboard hint was not visible");
   assert(!state.startVisible, "desktop start panel stayed visible after countdown");

@@ -32,6 +32,8 @@ export type RaceTelemetry = {
   carX: number;
   overtakeStreak: number;
   trackSection: string;
+  trackSector: 1 | 2 | 3;
+  trackCue: string;
   brakingZone: boolean;
   lapProgress: number;
   raceProgress: number;
@@ -168,6 +170,8 @@ export class SimcadeRaceModel {
       carX: this.x - track.center,
       overtakeStreak: this.overtakeStreak,
       trackSection: track.section.name,
+      trackSector: track.section.sector,
+      trackCue: this.trackCue(track),
       brakingZone: track.brakingZone,
       lapProgress: clamp(lapDistance / LAP_LENGTH, 0, 1),
       raceProgress: this.phase === "finished" ? 1 : clamp((this.lap - 1 + lapDistance / LAP_LENGTH) / LAPS, 0, 1),
@@ -266,6 +270,22 @@ export class SimcadeRaceModel {
         this.messageTimer = 1.2;
       }
     }
+  }
+
+  private trackCue(track: ReturnType<typeof sampleTrack>) {
+    if (track.brakingZone) {
+      return this.speed > 178 ? "Brake now" : "Set up the apex";
+    }
+
+    if (track.section.kind === "straight") {
+      return this.ers > 0.18 && this.speed > 145 ? "ERS window" : "Open throttle";
+    }
+
+    if (track.sectionProgress > 0.6) {
+      return "Power on exit";
+    }
+
+    return track.section.kind === "esses" ? "Balance the car" : "Hold the line";
   }
 
   private updateLapFlow() {

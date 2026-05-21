@@ -65,7 +65,18 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.overtakeStreak).toBe(0);
     expect(typeof telemetry.curve).toBe("number");
     expect(telemetry.trackSection).toBe(sampleTrack(telemetry.car.z).section.name);
+    expect(telemetry.trackSector).toBe(sampleTrack(telemetry.car.z).section.sector);
+    expect(telemetry.trackCue.length).toBeGreaterThan(0);
     expect(typeof telemetry.brakingZone).toBe("boolean");
+  });
+
+  it("surfaces braking-zone cues before heavy corners", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    const telemetry = run(model, 6, { throttle: 1, ers: true });
+
+    expect(telemetry.brakingZone).toBe(true);
+    expect(telemetry.trackCue).toMatch(/Brake|apex/);
   });
 
   it("reports non-zero circuit curve while driving the GP layout", () => {
