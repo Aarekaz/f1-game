@@ -40,6 +40,8 @@ async function checkDesktop(browser) {
   const state = await page.evaluate(() => ({
     canvas: Boolean(document.querySelector("canvas")),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+    objective: document.querySelector("#objective")?.textContent ?? "",
+    lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden")
   }));
@@ -47,6 +49,8 @@ async function checkDesktop(browser) {
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
+  assert(state.objective.includes("Gain"), `desktop objective missing: ${state.objective}`);
+  assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
   assert(state.hintVisible, "desktop keyboard hint was not visible");
   assert(!state.startVisible, "desktop start panel stayed visible after countdown");
 }
@@ -75,6 +79,7 @@ async function checkMobile(browser) {
     return {
       controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display,
       speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+      objective: document.querySelector("#objective")?.textContent ?? "",
       statusBottom: status?.bottom ?? 0,
       controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
       throttleWidth: throttle?.width ?? 0
@@ -84,6 +89,7 @@ async function checkMobile(browser) {
   await page.close();
   assert(state.controlsDisplay === "grid", "mobile controls were not visible");
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);
+  assert(state.objective.includes("Gain"), `mobile objective missing: ${state.objective}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
   assert(state.throttleWidth >= 56, "mobile throttle button is too small");
 }
