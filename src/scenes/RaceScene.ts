@@ -20,6 +20,8 @@ type HudRefs = {
   ers: HTMLElement;
   grip: HTMLElement;
   streak: HTMLElement;
+  currentLapTime: HTMLElement;
+  splitDelta: HTMLElement;
   message: HTMLElement;
 };
 
@@ -391,6 +393,10 @@ export class RaceScene extends Phaser.Scene {
     this.hud.ers.style.setProperty("--value", `${Math.round(t.ers * 100)}%`);
     this.hud.grip.style.setProperty("--value", `${Math.round(t.grip * 100)}%`);
     this.hud.streak.textContent = t.overtakeStreak > 0 ? `${t.overtakeStreak} overtakes banked` : "Clean air";
+    this.hud.currentLapTime.textContent = formatTime(t.lapTime);
+    this.hud.splitDelta.textContent = formatDelta(t.splitDelta);
+    this.hud.splitDelta.classList.toggle("positive", (t.splitDelta ?? 0) > 0);
+    this.hud.splitDelta.classList.toggle("negative", (t.splitDelta ?? 0) < 0);
     this.updatePanels(t);
 
     if (t.message && t.phase !== "ready" && t.phase !== "finished") {
@@ -436,6 +442,8 @@ export class RaceScene extends Phaser.Scene {
       ers: requireElement("ers"),
       grip: requireElement("grip"),
       streak: requireElement("streak"),
+      currentLapTime: requireElement("current-lap-time"),
+      splitDelta: requireElement("split-delta"),
       message: requireElement("message")
     };
   }
@@ -456,6 +464,11 @@ function formatTime(seconds: number | null) {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds - minutes * 60;
   return minutes > 0 ? `${minutes}:${rest.toFixed(2).padStart(5, "0")}` : rest.toFixed(2);
+}
+
+function formatDelta(seconds: number | null) {
+  if (seconds === null) return "--.--";
+  return `${seconds >= 0 ? "+" : ""}${seconds.toFixed(2)}`;
 }
 
 function getMessageTitle(t: Telemetry) {

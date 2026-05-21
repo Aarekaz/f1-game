@@ -272,6 +272,37 @@ body {
   text-transform: uppercase;
 }
 
+.lap-clock {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lap-clock span {
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.lap-clock strong {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.lap-clock .positive {
+  color: #ff6a6a;
+}
+
+.lap-clock .negative {
+  color: #42f56f;
+}
+
 .race-message {
   justify-self: center;
   align-self: center;
@@ -459,6 +490,20 @@ body {
   .streak {
     margin-top: 8px;
     font-size: 10px;
+  }
+
+  .lap-clock {
+    gap: 4px 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .lap-clock span {
+    font-size: 9px;
+  }
+
+  .lap-clock strong {
+    font-size: 11px;
   }
 
   .race-message {

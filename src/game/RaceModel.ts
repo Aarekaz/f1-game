@@ -33,6 +33,7 @@ export type Telemetry = {
   lapTime: number;
   bestLap: number | null;
   delta: number;
+  splitDelta: number | null;
   totalTime: number;
   trackOffset: number;
   curve: number;
@@ -72,6 +73,8 @@ export class RaceModel {
   private spawnTimer = 0.2;
   private nextRivalId = 1;
   private countdownTimer = 0;
+  private lastLapTime: number | null = null;
+  private splitDelta: number | null = null;
   private eventMessage = "";
   private eventTimer = 0;
 
@@ -100,6 +103,8 @@ export class RaceModel {
     this.spawnTimer = 0.2;
     this.nextRivalId = 1;
     this.countdownTimer = 0;
+    this.lastLapTime = null;
+    this.splitDelta = null;
     this.eventMessage = "";
     this.eventTimer = 0;
   }
@@ -147,6 +152,7 @@ export class RaceModel {
       lapTime: this.lapTime,
       bestLap: this.bestLap,
       delta,
+      splitDelta: this.splitDelta,
       totalTime: this.totalTime,
       trackOffset: this.trackOffset,
       curve,
@@ -272,6 +278,8 @@ export class RaceModel {
     if (this.bestLap === null || this.lapTime < this.bestLap) {
       this.bestLap = this.lapTime;
     }
+    this.splitDelta = this.lastLapTime === null ? null : this.lapTime - this.lastLapTime;
+    this.lastLapTime = this.lapTime;
 
     if (this.lap >= this.laps) {
       this.phase = "finished";
