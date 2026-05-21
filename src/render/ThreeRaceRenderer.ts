@@ -69,6 +69,9 @@ export class ThreeRaceRenderer {
   }
 
   update(telemetry: RaceTelemetry) {
+    const visualProgress = telemetry.car.z % 520;
+    this.circuit.position.z = visualProgress;
+    this.renderer.domElement.dataset.trackOffset = visualProgress.toFixed(2);
     this.car.position.set(telemetry.car.x, 0, 0);
     this.car.rotation.y = -telemetry.car.heading;
     this.car.rotation.z = -telemetry.car.yawRate * 0.22;

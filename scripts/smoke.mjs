@@ -28,7 +28,8 @@ async function checkDesktop(browser) {
   await page.goto(url, { waitUntil: "networkidle" });
   const ready = await page.evaluate(() => ({
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
-    speed: Number(document.querySelector("#speed")?.textContent ?? 0)
+    speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+    trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0)
   }));
   assert(ready.startVisible, "desktop start panel was not visible");
   assert(ready.speed === 0, "desktop race moved before start");
@@ -46,12 +47,14 @@ async function checkDesktop(browser) {
     objective: document.querySelector("#objective")?.textContent ?? "",
     lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
-    startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden")
+    startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
+    trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0)
   }));
 
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assertCanvasBox(state.canvasBox, "desktop");
+  assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
