@@ -391,7 +391,7 @@ export class RaceScene extends Phaser.Scene {
     this.hud.streak.textContent = t.overtakeStreak > 0 ? `${t.overtakeStreak} overtakes banked` : "Clean air";
     this.updatePanels(t);
 
-    if (t.message) {
+    if (t.message && t.phase !== "ready" && t.phase !== "finished") {
       this.hud.message.classList.remove("hidden");
       const strong = this.hud.message.querySelector("strong")!;
       const span = this.hud.message.querySelector("span")!;
