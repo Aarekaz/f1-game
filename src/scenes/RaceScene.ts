@@ -7,8 +7,10 @@ type HudRefs = {
   best: HTMLElement;
   delta: HTMLElement;
   speed: HTMLElement;
+  raceProgress: HTMLElement;
   ers: HTMLElement;
   grip: HTMLElement;
+  streak: HTMLElement;
   message: HTMLElement;
 };
 
@@ -265,8 +267,10 @@ export class RaceScene extends Phaser.Scene {
     this.hud.best.textContent = formatTime(t.bestLap);
     this.hud.delta.textContent = t.bestLap === null ? "+0.00" : `${t.delta >= 0 ? "+" : ""}${t.delta.toFixed(2)}`;
     this.hud.speed.textContent = String(t.speedKph);
+    this.hud.raceProgress.style.setProperty("--value", `${Math.round(t.raceProgress * 100)}%`);
     this.hud.ers.style.setProperty("--value", `${Math.round(t.ers * 100)}%`);
     this.hud.grip.style.setProperty("--value", `${Math.round(t.grip * 100)}%`);
+    this.hud.streak.textContent = t.overtakeStreak > 0 ? `${t.overtakeStreak} overtakes banked` : "Clean air";
 
     if (t.message) {
       this.hud.message.classList.remove("hidden");
@@ -286,8 +290,10 @@ export class RaceScene extends Phaser.Scene {
       best: requireElement("best"),
       delta: requireElement("delta"),
       speed: requireElement("speed"),
+      raceProgress: requireElement("race-progress"),
       ers: requireElement("ers"),
       grip: requireElement("grip"),
+      streak: requireElement("streak"),
       message: requireElement("message")
     };
   }

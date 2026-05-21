@@ -112,6 +112,14 @@ body {
   margin-top: 12px;
 }
 
+.race-strip {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 .meter {
   display: grid;
   grid-template-columns: 42px 1fr;
@@ -124,20 +132,50 @@ body {
   display: none;
 }
 
+.race-strip span,
 .meter i {
   display: block;
+}
+
+.race-strip span {
+  color: #aeb8aa;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.race-strip i,
+.meter i {
   width: 100%;
   height: 12px;
   overflow: hidden;
   border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.race-strip i {
+  background:
+    linear-gradient(90deg, #ffffff var(--value, 0%), rgba(255, 255, 255, 0.13) 0);
+}
+
+.meter i {
   background:
     linear-gradient(90deg, #e20e3b var(--value, 50%), rgba(255, 255, 255, 0.14) 0);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 #grip {
   background:
     linear-gradient(90deg, #f3d348 var(--value, 80%), rgba(255, 255, 255, 0.14) 0);
+}
+
+.streak {
+  margin-top: 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .race-message {
