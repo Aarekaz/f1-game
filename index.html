@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apex Formula</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="game"></div>
+      <main class="hud" aria-label="Race telemetry">
+        <section class="topbar">
+          <div>
+            <span class="label">P</span>
+            <strong id="position">08</strong>
+          </div>
+          <div>
+            <span class="label">Lap</span>
+            <strong id="lap">1/3</strong>
+          </div>
+          <div>
+            <span class="label">Best</span>
+            <strong id="best">--.--</strong>
+          </div>
+          <div>
+            <span class="label">Delta</span>
+            <strong id="delta">+0.00</strong>
+          </div>
+        </section>
+
+        <section class="status-panel">
+          <div class="speed-readout"><span id="speed">0</span><small>km/h</small></div>
+          <div class="bars">
+            <div class="meter">
+              <span>ERS</span>
+              <i id="ers"></i>
+            </div>
+            <div class="meter">
+              <span>Grip</span>
+              <i id="grip"></i>
+            </div>
+          </div>
+        </section>
+
+        <section class="race-message" id="message">
+          <strong>Apex Formula</strong>
+          <span>Press Space to launch</span>
+        </section>
+
+        <section class="touch-controls" aria-label="Touch controls">
+          <button data-control="left" aria-label="Steer left">‹</button>
+          <button data-control="brake" aria-label="Brake">B</button>
+          <button data-control="boost" aria-label="ERS boost">⚡</button>
+          <button data-control="right" aria-label="Steer right">›</button>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
