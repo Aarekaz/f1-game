@@ -23,6 +23,7 @@ export class RaceScene extends Phaser.Scene {
   private hud!: HudRefs;
   private touchState = { left: false, right: false, brake: false, boost: false };
   private touchLaunch = false;
+  private launchQueued = false;
   private telemetry!: Telemetry;
 
   constructor() {
@@ -66,6 +67,10 @@ export class RaceScene extends Phaser.Scene {
       shift: Phaser.Input.Keyboard.KeyCodes.SHIFT
     }) as Record<string, Phaser.Input.Keyboard.Key>;
 
+    this.input.keyboard!.on("keydown-SPACE", () => {
+      this.launchQueued = true;
+    });
+
     document.querySelectorAll<HTMLButtonElement>("[data-control]").forEach((button) => {
       const control = button.dataset.control as keyof typeof this.touchState;
       const set = (value: boolean) => {
@@ -86,7 +91,8 @@ export class RaceScene extends Phaser.Scene {
     const left = this.keys.left.isDown || this.keys.a.isDown || this.touchState.left;
     const right = this.keys.right.isDown || this.keys.d.isDown || this.touchState.right;
 
-    const launch = this.keys.space.isDown || this.touchLaunch;
+    const launch = this.launchQueued || this.touchLaunch;
+    this.launchQueued = false;
     this.touchLaunch = false;
 
     return {
