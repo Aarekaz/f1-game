@@ -15,6 +15,7 @@ type HudRefs = {
   best: HTMLElement;
   delta: HTMLElement;
   speed: HTMLElement;
+  objective: HTMLElement;
   raceProgress: HTMLElement;
   ers: HTMLElement;
   grip: HTMLElement;
@@ -385,6 +386,7 @@ export class RaceScene extends Phaser.Scene {
     this.hud.best.textContent = formatTime(t.bestLap);
     this.hud.delta.textContent = t.bestLap === null ? "+0.00" : `${t.delta >= 0 ? "+" : ""}${t.delta.toFixed(2)}`;
     this.hud.speed.textContent = String(t.speedKph);
+    this.hud.objective.textContent = t.objective;
     this.hud.raceProgress.style.setProperty("--value", `${Math.round(t.raceProgress * 100)}%`);
     this.hud.ers.style.setProperty("--value", `${Math.round(t.ers * 100)}%`);
     this.hud.grip.style.setProperty("--value", `${Math.round(t.grip * 100)}%`);
@@ -429,6 +431,7 @@ export class RaceScene extends Phaser.Scene {
       best: requireElement("best"),
       delta: requireElement("delta"),
       speed: requireElement("speed"),
+      objective: requireElement("objective"),
       raceProgress: requireElement("race-progress"),
       ers: requireElement("ers"),
       grip: requireElement("grip"),

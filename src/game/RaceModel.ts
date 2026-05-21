@@ -11,6 +11,7 @@ export type RaceInput = {
 export type RivalCar = {
   id: number;
   lane: number;
+  targetLane: number;
   distance: number;
   speed: number;
   color: number;
@@ -25,6 +26,7 @@ export type Telemetry = {
   lapProgress: number;
   raceProgress: number;
   position: number;
+  targetPosition: number;
   speedKph: number;
   ers: number;
   grip: number;
@@ -37,6 +39,7 @@ export type Telemetry = {
   carX: number;
   onTrack: boolean;
   overtakeStreak: number;
+  objective: string;
   message: string;
 };
 
@@ -49,6 +52,7 @@ const RIVAL_COLORS = [0x28d9ff, 0xfff05a, 0xf2f2f2, 0xff7d2d, 0x42f56f, 0xb669ff
 export class RaceModel {
   phase: RacePhase = "ready";
   readonly laps = 3;
+  readonly targetPosition = 3;
   lap = 1;
   position = 8;
   speed = 0;
@@ -136,6 +140,7 @@ export class RaceModel {
       lapProgress,
       raceProgress,
       position: this.position,
+      targetPosition: this.targetPosition,
       speedKph: Math.max(0, Math.round(this.speed)),
       ers: this.ers,
       grip: this.grip,
@@ -148,6 +153,7 @@ export class RaceModel {
       carX: this.carX,
       onTrack,
       overtakeStreak: this.overtakeStreak,
+      objective: this.getObjective(),
       message: this.getMessage()
     };
   }
@@ -216,8 +222,9 @@ export class RaceModel {
       this.rivals.push({
         id: this.nextRivalId++,
         lane,
+        targetLane: lane,
         distance: 820 + Math.random() * 1800,
-        speed: 215 + Math.random() * 64,
+        speed: 190 + Math.random() * 58,
         color: RIVAL_COLORS[Math.floor(Math.random() * RIVAL_COLORS.length)],
         passed: false
       });
@@ -225,6 +232,12 @@ export class RaceModel {
     }
 
     for (const rival of this.rivals) {
+      const playerClosing = rival.distance > 0 && rival.distance < 760 && this.speed > rival.speed;
+      if (playerClosing && Math.random() < dt * 0.7) {
+        rival.targetLane = this.pickOpenLane(rival.lane);
+      }
+      rival.lane += (rival.targetLane - rival.lane) * Math.min(1, dt * 1.4);
+
       const relative = (rival.speed - this.speed) * (1000 / 3600) * dt * 2.18;
       rival.distance += relative;
 
@@ -246,6 +259,11 @@ export class RaceModel {
     }
 
     this.rivals = this.rivals.filter((rival) => rival.distance > -520 && rival.distance < 3100);
+  }
+
+  private pickOpenLane(currentLane: number) {
+    const lanes = [-0.28, 0, 0.28].filter((lane) => lane !== currentLane);
+    return lanes[Math.floor(Math.random() * lanes.length)];
   }
 
   private checkLap() {
@@ -292,6 +310,15 @@ export class RaceModel {
     if (this.ers < 0.06) return "ERS harvesting";
     if (this.speed > 290) return "Flat out";
     return "";
+  }
+
+  private getObjective() {
+    if (this.phase === "finished") {
+      return this.position <= this.targetPosition ? "Target beaten" : `Needed P${this.targetPosition}`;
+    }
+    const places = Math.max(0, this.position - this.targetPosition);
+    if (places === 0) return "Defend podium";
+    return `Gain ${places} place${places === 1 ? "" : "s"}`;
   }
 
   private setEvent(message: string, duration: number) {
