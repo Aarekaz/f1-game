@@ -21,6 +21,7 @@ export class RaceScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private track!: Phaser.GameObjects.Graphics;
   private kerbs!: Phaser.GameObjects.Graphics;
+  private speedFx!: Phaser.GameObjects.Graphics;
   private car!: Phaser.GameObjects.Container;
   private carShadow!: Phaser.GameObjects.Ellipse;
   private trackMarkers: TrackMarker[] = [];
@@ -38,6 +39,7 @@ export class RaceScene extends Phaser.Scene {
   create() {
     this.track = this.add.graphics();
     this.kerbs = this.add.graphics();
+    this.speedFx = this.add.graphics();
     this.createTextures();
     this.createTrackDetails();
     this.carShadow = this.add.ellipse(0, 0, 58, 92, 0x000000, 0.34);
@@ -54,6 +56,7 @@ export class RaceScene extends Phaser.Scene {
     this.telemetry = this.model.update(dt, input);
     this.drawTrack();
     this.updateTrackDetails();
+    this.drawSpeedFx();
     this.updatePlayerCar();
     this.updateRivals();
     this.updateHud();
@@ -210,6 +213,30 @@ export class RaceScene extends Phaser.Scene {
       marker.setRotation(Phaser.Math.DegToRad(side * -8));
       marker.setAlpha(Phaser.Math.Clamp(t * 1.2, 0, 0.78));
       marker.setVisible(wrapped < 1900);
+    }
+  }
+
+  private drawSpeedFx() {
+    const { width, height } = this.scale;
+    const intensity = Phaser.Math.Clamp((this.telemetry.speedKph - 120) / 210, 0, 1);
+    this.speedFx.clear();
+    if (intensity <= 0) return;
+
+    this.speedFx.lineStyle(2, 0xffffff, 0.1 + intensity * 0.22);
+    const lineCount = Math.round(8 + intensity * 16);
+    const spread = Math.min(width * 0.82, 620) * 0.52;
+    const centerX = width * 0.5 + this.telemetry.carX * spread * 0.18;
+
+    for (let i = 0; i < lineCount; i += 1) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const lane = ((i * 37) % 100) / 100;
+      const x = centerX + side * Phaser.Math.Linear(spread * 0.18, spread, lane);
+      const y = height * Phaser.Math.Linear(0.18, 0.92, ((i * 53 + this.telemetry.trackOffset) % 100) / 100);
+      const len = Phaser.Math.Linear(32, 112, intensity);
+      this.speedFx.beginPath();
+      this.speedFx.moveTo(x, y);
+      this.speedFx.lineTo(x + side * 10, y + len);
+      this.speedFx.strokePath();
     }
   }
 
