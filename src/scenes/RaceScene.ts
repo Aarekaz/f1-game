@@ -15,6 +15,21 @@ type HudRefs = {
 };
 
 type TrackMarker = Phaser.GameObjects.Rectangle;
+type TrackProp = Phaser.GameObjects.Image;
+
+const TRACK_PROP_KEYS = [
+  "track-prop-barrier-red",
+  "track-prop-barrier-white",
+  "track-prop-tires-red",
+  "track-prop-tires-white",
+  "track-prop-cone",
+  "track-prop-arrow",
+  "track-prop-lights",
+  "track-prop-tribune",
+  "track-prop-tribune-red"
+] as const;
+
+type TrackPropKey = (typeof TRACK_PROP_KEYS)[number];
 
 export class RaceScene extends Phaser.Scene {
   private model = new RaceModel();
@@ -25,6 +40,7 @@ export class RaceScene extends Phaser.Scene {
   private car!: Phaser.GameObjects.Container;
   private carShadow!: Phaser.GameObjects.Ellipse;
   private trackMarkers: TrackMarker[] = [];
+  private trackProps: TrackProp[] = [];
   private rivalViews = new Map<number, Phaser.GameObjects.Container>();
   private hud!: HudRefs;
   private touchState = { left: false, right: false, brake: false, boost: false };
@@ -34,6 +50,18 @@ export class RaceScene extends Phaser.Scene {
 
   constructor() {
     super("RaceScene");
+  }
+
+  preload() {
+    this.load.image("track-prop-barrier-red", "/assets/kenney-racing/objects/barrier_red_race.png");
+    this.load.image("track-prop-barrier-white", "/assets/kenney-racing/objects/barrier_white_race.png");
+    this.load.image("track-prop-tires-red", "/assets/kenney-racing/objects/tires_red.png");
+    this.load.image("track-prop-tires-white", "/assets/kenney-racing/objects/tires_white.png");
+    this.load.image("track-prop-cone", "/assets/kenney-racing/objects/cone_straight.png");
+    this.load.image("track-prop-arrow", "/assets/kenney-racing/objects/arrow_yellow.png");
+    this.load.image("track-prop-lights", "/assets/kenney-racing/objects/lights.png");
+    this.load.image("track-prop-tribune", "/assets/kenney-racing/objects/tribune_full.png");
+    this.load.image("track-prop-tribune-red", "/assets/kenney-racing/objects/tribune_overhang_red.png");
   }
 
   create() {
@@ -191,6 +219,17 @@ export class RaceScene extends Phaser.Scene {
       marker.setDepth(2);
       this.trackMarkers.push(marker);
     }
+
+    for (let i = 0; i < 22; i += 1) {
+      const key = TRACK_PROP_KEYS[i % TRACK_PROP_KEYS.length];
+      const prop = this.add.image(0, 0, key);
+      prop.setData("distance", 260 + i * 172);
+      prop.setData("side", i % 2 === 0 ? -1 : 1);
+      prop.setData("key", key);
+      prop.setDepth(3);
+      prop.setOrigin(0.5, 0.72);
+      this.trackProps.push(prop);
+    }
   }
 
   private updateTrackDetails() {
@@ -213,6 +252,27 @@ export class RaceScene extends Phaser.Scene {
       marker.setRotation(Phaser.Math.DegToRad(side * -8));
       marker.setAlpha(Phaser.Math.Clamp(t * 1.2, 0, 0.78));
       marker.setVisible(wrapped < 1900);
+    }
+
+    for (const prop of this.trackProps) {
+      const wrapped = ((prop.getData("distance") - (this.telemetry.trackOffset % 3784)) + 3784) % 3784;
+      const t = Phaser.Math.Clamp(1 - wrapped / 2100, 0, 1);
+      const y = Phaser.Math.Linear(-60, height + 90, t);
+      const roadWidth = Phaser.Math.Linear(trackTop, trackBase, t);
+      const center = width * 0.5 + this.model.trackCenterAt(wrapped) * roadWidth * 0.42;
+      const side = prop.getData("side") as number;
+      const key = prop.getData("key") as TrackPropKey;
+      const outsideOffset = key.includes("tribune") ? 0.88 : 0.68;
+      const x = center + side * roadWidth * outsideOffset;
+      const baseScale = key.includes("tribune") ? 0.45 : key === "track-prop-lights" ? 0.38 : 0.34;
+      const scale = Phaser.Math.Linear(baseScale * 0.38, baseScale * 1.25, t);
+
+      prop.setPosition(x, y);
+      prop.setScale(scale);
+      prop.setAngle(side < 0 ? 10 : -10);
+      prop.setAlpha(Phaser.Math.Clamp(t * 1.35, 0, 0.95));
+      prop.setDepth(Math.floor(y) - 1);
+      prop.setVisible(wrapped < 2100);
     }
   }
 
