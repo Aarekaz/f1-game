@@ -24,19 +24,24 @@ try {
 async function checkDesktop(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await page.goto(url, { waitUntil: "networkidle" });
-  await page.keyboard.press("Space");
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.down("ArrowRight");
   await page.waitForTimeout(700);
+  await page.keyboard.up("ArrowRight");
+  await page.keyboard.up("ArrowUp");
 
   const state = await page.evaluate(() => ({
     canvas: Boolean(document.querySelector("canvas")),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
-    messageClass: document.querySelector("#message")?.className ?? ""
+    messageClass: document.querySelector("#message")?.className ?? "",
+    hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none"
   }));
 
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.messageClass.includes("hidden"), "desktop launch prompt stayed visible");
+  assert(state.hintVisible, "desktop keyboard hint was not visible");
 }
 
 async function checkMobile(browser) {
@@ -46,18 +51,23 @@ async function checkMobile(browser) {
     hasTouch: true
   });
   await page.goto(url, { waitUntil: "networkidle" });
+  await page.locator("[data-control=throttle]").dispatchEvent("pointerdown");
   await page.locator("[data-control=right]").dispatchEvent("pointerdown");
   await page.waitForTimeout(700);
   await page.locator("[data-control=right]").dispatchEvent("pointerup");
+  await page.locator("[data-control=throttle]").dispatchEvent("pointerup");
 
   const state = await page.evaluate(() => {
     const status = document.querySelector(".status-panel")?.getBoundingClientRect();
-    const controls = document.querySelector(".touch-controls")?.getBoundingClientRect();
+    const steer = document.querySelector(".steer-pad")?.getBoundingClientRect();
+    const pedals = document.querySelector(".pedal-pad")?.getBoundingClientRect();
+    const throttle = document.querySelector("[data-control=throttle]")?.getBoundingClientRect();
     return {
       controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display,
       speed: Number(document.querySelector("#speed")?.textContent ?? 0),
       statusBottom: status?.bottom ?? 0,
-      controlsTop: controls?.top ?? 0
+      controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
+      throttleWidth: throttle?.width ?? 0
     };
   });
 
@@ -65,6 +75,7 @@ async function checkMobile(browser) {
   assert(state.controlsDisplay === "grid", "mobile controls were not visible");
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
+  assert(state.throttleWidth >= 56, "mobile throttle button is too small");
 }
 
 async function waitForServer(target) {
