@@ -3,3 +3,4 @@ dist/
 .DS_Store
 check-*.png
 playtest-*.png
+.superpowers/
