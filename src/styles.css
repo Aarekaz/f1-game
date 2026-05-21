@@ -307,6 +307,23 @@ body {
     font-size: 10px;
   }
 
+  .race-message {
+    align-self: end;
+    width: calc(100vw - 28px);
+    min-height: 58px;
+    margin-bottom: 72px;
+    padding: 10px 12px;
+  }
+
+  .race-message strong {
+    font-size: 22px;
+  }
+
+  .race-message span {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
   .touch-controls button {
     width: 48px;
     height: 48px;
