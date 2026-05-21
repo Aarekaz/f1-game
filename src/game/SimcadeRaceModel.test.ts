@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
-import { trackCenterAt } from "./trackPath";
+import { sampleTrack, trackCenterAt } from "./trackPath";
 
 const idle: RaceActions = {
   steer: 0,
@@ -64,6 +64,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.splitDelta).toBeNull();
     expect(telemetry.overtakeStreak).toBe(0);
     expect(typeof telemetry.curve).toBe("number");
+    expect(telemetry.trackSection).toBe(sampleTrack(telemetry.car.z).section.name);
+    expect(typeof telemetry.brakingZone).toBe("boolean");
   });
 
   it("reports non-zero circuit curve while driving the GP layout", () => {
@@ -73,6 +75,19 @@ describe("SimcadeRaceModel", () => {
     const telemetry = run(model, 8, { throttle: 1 });
 
     expect(Math.abs(telemetry.curve)).toBeGreaterThan(0.005);
+  });
+
+  it("moves through named circuit sections", () => {
+    const samples = [sampleTrack(20), sampleTrack(280), sampleTrack(840), sampleTrack(1370)];
+
+    expect(samples.map((sample) => sample.section.id)).toEqual([
+      "pit-straight",
+      "turn-one-hairpin",
+      "technical-chicane",
+      "final-hairpin"
+    ]);
+    expect(samples[1].brakingZone).toBe(true);
+    expect(samples[2].section.kind).toBe("chicane");
   });
 
   it("preserves final lap timing when the race finishes", () => {
