@@ -21,6 +21,8 @@ export type Telemetry = {
   phase: RacePhase;
   lap: number;
   laps: number;
+  lapProgress: number;
+  raceProgress: number;
   position: number;
   speedKph: number;
   ers: number;
@@ -33,6 +35,7 @@ export type Telemetry = {
   curve: number;
   carX: number;
   onTrack: boolean;
+  overtakeStreak: number;
   message: string;
 };
 
@@ -58,9 +61,12 @@ export class RaceModel {
   bestLap: number | null = null;
   penaltyTimer = 0;
   trackOffset = 0;
+  overtakeStreak = 0;
   rivals: RivalCar[] = [];
   private spawnTimer = 0.2;
   private nextRivalId = 1;
+  private eventMessage = "";
+  private eventTimer = 0;
 
   constructor() {
     this.reset();
@@ -82,9 +88,12 @@ export class RaceModel {
     this.bestLap = null;
     this.penaltyTimer = 0;
     this.trackOffset = 0;
+    this.overtakeStreak = 0;
     this.rivals = [];
     this.spawnTimer = 0.2;
     this.nextRivalId = 1;
+    this.eventMessage = "";
+    this.eventTimer = 0;
   }
 
   update(dt: number, input: RaceInput): Telemetry {
@@ -103,11 +112,15 @@ export class RaceModel {
     const trackCenter = this.getTrackCenter(this.distance);
     const onTrack = Math.abs(this.carX - trackCenter) < TRACK_WIDTH * 0.54;
     const delta = this.bestLap === null ? 0 : this.lapTime - this.bestLap;
+    const lapProgress = PhaserMathClamp(this.lapDistance / LAP_DISTANCE, 0, 1);
+    const raceProgress = PhaserMathClamp((this.lap - 1 + lapProgress) / this.laps, 0, 1);
 
     return {
       phase: this.phase,
       lap: this.lap,
       laps: this.laps,
+      lapProgress,
+      raceProgress,
       position: this.position,
       speedKph: Math.max(0, Math.round(this.speed)),
       ers: this.ers,
@@ -120,6 +133,7 @@ export class RaceModel {
       curve,
       carX: this.carX,
       onTrack,
+      overtakeStreak: this.overtakeStreak,
       message: this.getMessage()
     };
   }
@@ -144,6 +158,7 @@ export class RaceModel {
     const brakeForce = braking ? -156 : 0;
     const boostForce = boosting ? 92 : 0;
     const offTrackDrag = onTrack ? 0 : -34;
+    this.eventTimer = Math.max(0, this.eventTimer - dt);
 
     this.speed += (accel + brakeForce + boostForce + offTrackDrag - this.speed * drag) * dt;
     this.speed = Math.max(0, Math.min(MAX_SPEED, this.speed));
@@ -198,12 +213,15 @@ export class RaceModel {
       if (near && sideBySide) {
         this.speed = Math.max(46, this.speed - 120 * dt);
         this.grip = Math.max(0.25, this.grip - 1.2 * dt);
+        this.setEvent("Contact - hold the line", 0.8);
       }
 
       if (!rival.passed && rival.distance < -44) {
         rival.passed = true;
         this.position = Math.max(1, this.position - 1);
+        this.overtakeStreak += 1;
         this.ers = Math.min(1, this.ers + 0.18);
+        this.setEvent(`Overtake - P${this.position}`, 1.5);
       }
     }
 
@@ -226,6 +244,7 @@ export class RaceModel {
     this.lap += 1;
     this.lapDistance -= LAP_DISTANCE;
     this.lapTime = 0;
+    this.setEvent(`Lap ${this.lap} - push mode`, 1.8);
   }
 
   private getCurve(distance: number) {
@@ -247,10 +266,16 @@ export class RaceModel {
   private getMessage() {
     if (this.phase === "ready") return "Press Space to launch";
     if (this.phase === "finished") return `Finished P${this.position} - Space to restart`;
+    if (this.eventTimer > 0) return this.eventMessage;
     if (this.penaltyTimer > 1.4) return "Track limits - slow down";
     if (this.ers < 0.06) return "ERS harvesting";
     if (this.speed > 290) return "Flat out";
     return "";
+  }
+
+  private setEvent(message: string, duration: number) {
+    this.eventMessage = message;
+    this.eventTimer = duration;
   }
 }
 
