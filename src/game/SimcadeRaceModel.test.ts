@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
+import { trackCenterAt } from "./trackPath";
 
 const idle: RaceActions = {
   steer: 0,
@@ -57,12 +58,21 @@ describe("SimcadeRaceModel", () => {
     const model = new SimcadeRaceModel();
     const telemetry = model.telemetry();
 
-    expect(telemetry.carX).toBe(telemetry.car.x);
+    expect(telemetry.carX).toBeCloseTo(telemetry.car.x - trackCenterAt(telemetry.car.z), 4);
     expect(telemetry.trackOffset).toBe(telemetry.car.z);
     expect(telemetry.delta).toBe(0);
     expect(telemetry.splitDelta).toBeNull();
     expect(telemetry.overtakeStreak).toBe(0);
     expect(typeof telemetry.curve).toBe("number");
+  });
+
+  it("reports non-zero circuit curve while driving the GP layout", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+
+    const telemetry = run(model, 8, { throttle: 1 });
+
+    expect(Math.abs(telemetry.curve)).toBeGreaterThan(0.005);
   });
 
   it("preserves final lap timing when the race finishes", () => {

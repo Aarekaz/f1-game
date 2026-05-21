@@ -1,4 +1,12 @@
 import * as THREE from "three";
+import { trackCenterAt, trackCurveAt } from "../game/trackPath";
+
+type DynamicPiece = {
+  object: THREE.Object3D;
+  ahead: number;
+  lateral: number;
+  curveScale: number;
+};
 
 function makeBox(
   name: string,
@@ -30,6 +38,7 @@ function makePlane(
 export function buildGpCircuit() {
   const circuit = new THREE.Group();
   circuit.name = "fictional-european-technical-gp-circuit";
+  const dynamicPieces: DynamicPiece[] = [];
 
   const asphalt = new THREE.MeshStandardMaterial({ color: "#30363a", roughness: 0.72, metalness: 0.02 });
   const grass = new THREE.MeshStandardMaterial({ color: "#496f45", roughness: 0.9 });
@@ -40,12 +49,7 @@ export function buildGpCircuit() {
   const barrierMaterial = new THREE.MeshStandardMaterial({ color: "#dce3e8", roughness: 0.62, metalness: 0.08 });
   const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#202832", roughness: 0.48, metalness: 0.25 });
 
-  circuit.add(makePlane("grass-infield-and-surround", [92, 2360], [0, -0.02, 600], grass));
-  circuit.add(makePlane("main-road", [12, 2240, 3, 64], [0, 0.01, 600], asphalt));
-
-  for (const x of [-17, 17]) {
-    circuit.add(makePlane("runoff-lane", [10, 2160], [x, 0, 620], runoff));
-  }
+  circuit.add(makePlane("grass-infield-and-surround", [140, 2360], [0, -0.03, -560], grass));
 
   const technicalSections = [
     { name: "north-hairpin-runoff", x: -22, z: 280, w: 18, d: 120 },
@@ -54,37 +58,47 @@ export function buildGpCircuit() {
   ];
 
   for (const section of technicalSections) {
-    circuit.add(
-      makePlane(
-        section.name,
-        [section.w, section.d],
-        [section.x, 0.005, section.z],
-        section.name.includes("gravel") ? gravel : runoff
-      )
+    const marker = makePlane(
+      section.name,
+      [section.w, section.d],
+      [section.x, 0.005, -section.z],
+      section.name.includes("gravel") ? gravel : runoff
     );
+    dynamicPieces.push({ object: marker, ahead: section.z, lateral: section.x, curveScale: 0.9 });
+    circuit.add(marker);
   }
 
   for (let index = 0; index < 92; index += 1) {
-    const z = -500 + index * 26;
-    const bend = Math.sin((z + 180) / 170) * 1.4 + Math.sin(z / 420) * 0.9;
+    const ahead = -140 + index * 24;
+    const road = makeBox("curved-asphalt-segment", [13.2, 0.035, 27], [0, 0.018, -ahead], asphalt);
+    dynamicPieces.push({ object: road, ahead, lateral: 0, curveScale: 1.15 });
+    circuit.add(road);
+
+    for (const side of [-1, 1]) {
+      const runoffLane = makeBox("painted-runoff-segment", [7.4, 0.025, 27], [side * 10.2, 0.006, -ahead], runoff);
+      dynamicPieces.push({ object: runoffLane, ahead, lateral: side * 10.2, curveScale: 1.15 });
+      circuit.add(runoffLane);
+    }
+
     for (const side of [-1, 1]) {
       const kerb = makeBox(
         "striped-kerb",
         [0.56, 0.06, 8.8],
-        [bend + side * 6.26, 0.045, z],
+        [side * 6.26, 0.045, -ahead],
         index % 2 === 0 ? kerbRed : kerbWhite
       );
-      kerb.rotation.y = Math.sin(z / 230) * 0.05;
+      dynamicPieces.push({ object: kerb, ahead, lateral: side * 6.26, curveScale: 1.15 });
       circuit.add(kerb);
 
-      const barrier = makeBox("low-techpro-barrier", [0.34, 0.82, 14], [bend + side * 10.8, 0.42, z], barrierMaterial);
-      barrier.rotation.y = Math.sin(z / 230) * 0.05;
+      const barrier = makeBox("low-techpro-barrier", [0.34, 0.82, 14], [side * 15.1, 0.42, -ahead], barrierMaterial);
+      dynamicPieces.push({ object: barrier, ahead, lateral: side * 15.1, curveScale: 1.15 });
       circuit.add(barrier);
     }
   }
 
-  for (const z of [160, 520, 900, 1320]) {
-    const apexMarker = makeBox("apex-reference-board", [0.12, 1.3, 2.4], [-12.2, 0.75, z], bridgeMaterial);
+  for (const ahead of [160, 520, 900, 1320]) {
+    const apexMarker = makeBox("apex-reference-board", [0.12, 1.3, 2.4], [-12.2, 0.75, -ahead], bridgeMaterial);
+    dynamicPieces.push({ object: apexMarker, ahead, lateral: -12.2, curveScale: 1.15 });
     circuit.add(apexMarker);
   }
 
@@ -105,5 +119,22 @@ export function buildGpCircuit() {
     barrierMaterial,
     bridgeMaterial
   ];
+  circuit.userData.dynamicPieces = dynamicPieces;
+  updateGpCircuit(circuit, 0);
   return circuit;
+}
+
+export function updateGpCircuit(circuit: THREE.Group, distance: number) {
+  const dynamicPieces = circuit.userData.dynamicPieces as DynamicPiece[] | undefined;
+  if (!dynamicPieces) return;
+
+  const currentCenter = trackCenterAt(distance);
+  for (const piece of dynamicPieces) {
+    const pieceDistance = distance + piece.ahead;
+    const localCenter = trackCenterAt(pieceDistance) - currentCenter;
+    const curve = trackCurveAt(pieceDistance);
+    piece.object.position.x = localCenter + piece.lateral;
+    piece.object.position.z = -piece.ahead;
+    piece.object.rotation.y = -curve * piece.curveScale;
+  }
 }

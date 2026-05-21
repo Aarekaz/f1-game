@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
+import { trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
-import { buildGpCircuit } from "./buildGpCircuit";
+import { buildGpCircuit, updateGpCircuit } from "./buildGpCircuit";
 
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
@@ -69,21 +70,23 @@ export class ThreeRaceRenderer {
   }
 
   update(telemetry: RaceTelemetry) {
-    const visualProgress = telemetry.car.z % 520;
-    this.circuit.position.z = visualProgress;
+    const visualProgress = telemetry.car.z % TRACK_LOOP_LENGTH;
     this.renderer.domElement.dataset.trackOffset = visualProgress.toFixed(2);
-    this.car.position.set(telemetry.car.x, 0, 0);
-    this.car.rotation.y = -telemetry.car.heading;
+    updateGpCircuit(this.circuit, telemetry.car.z);
+    const center = trackCenterAt(telemetry.car.z);
+    const localCarX = telemetry.car.x - center;
+    this.car.position.set(localCarX, 0, 0);
+    this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
     this.car.rotation.z = -telemetry.car.yawRate * 0.22;
 
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
     this.camera.fov = 57 + speedRatio * 12;
     this.camera.position.set(
-      telemetry.car.x * 0.55,
+      localCarX * 0.55,
       5.3 - telemetry.car.braking * 0.52 + telemetry.car.slip * 0.3,
       10.7 + speedRatio * 2.4
     );
-    this.camera.lookAt(telemetry.car.x * 0.35, 0.62, -9.5 - speedRatio * 5.4);
+    this.camera.lookAt(localCarX * 0.35 - telemetry.curve * 5, 0.62, -9.5 - speedRatio * 5.4);
     this.camera.updateProjectionMatrix();
 
     for (const rival of telemetry.rivals) {

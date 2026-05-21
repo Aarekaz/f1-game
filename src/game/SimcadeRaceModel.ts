@@ -59,7 +59,7 @@ type RivalState = {
   color: string;
 };
 
-const LAP_LENGTH = 1800;
+const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
 const TRACK_HALF_WIDTH = 5.6;
 const MAX_SPEED = 310;
@@ -143,6 +143,8 @@ export class SimcadeRaceModel {
   telemetry(): RaceTelemetry {
     const lapDistance = this.phase === "finished" ? LAP_LENGTH : this.z % LAP_LENGTH;
     const delta = this.bestLap === null ? 0 : this.lapTime - this.bestLap;
+    const center = trackCenterAt(this.z);
+    const curve = trackCurveAt(this.z);
     return {
       phase: this.phase,
       lap: this.lap,
@@ -153,15 +155,15 @@ export class SimcadeRaceModel {
       speedKph: Math.round(this.speed),
       ers: this.ers,
       grip: this.grip,
-      onTrack: Math.abs(this.x) <= TRACK_HALF_WIDTH,
+      onTrack: Math.abs(this.x - center) <= TRACK_HALF_WIDTH,
       lapTime: this.lapTime,
       bestLap: this.bestLap,
       totalTime: this.totalTime,
       delta,
       splitDelta: this.splitDelta,
       trackOffset: this.z,
-      curve: 0,
-      carX: this.x,
+      curve,
+      carX: this.x - center,
       overtakeStreak: this.overtakeStreak,
       lapProgress: clamp(lapDistance / LAP_LENGTH, 0, 1),
       raceProgress: this.phase === "finished" ? 1 : clamp((this.lap - 1 + lapDistance / LAP_LENGTH) / LAPS, 0, 1),
@@ -177,9 +179,9 @@ export class SimcadeRaceModel {
       },
       rivals: this.rivals.map((rival) => ({
         id: rival.id,
-        x: rival.lane,
+        x: trackCenterAt(rival.distance) - center + rival.lane,
         z: rival.distance - this.z,
-        heading: 0,
+        heading: -trackCurveAt(rival.distance) * 0.8,
         color: rival.color,
         gap: (rival.distance - this.z) / 42
       }))
@@ -216,7 +218,9 @@ export class SimcadeRaceModel {
     const steer = clamp(actions.steer, -1, 1);
     this.lastBrake = brake;
 
-    const onTrack = Math.abs(this.x) <= TRACK_HALF_WIDTH;
+    const center = trackCenterAt(this.z);
+    const curve = trackCurveAt(this.z);
+    const onTrack = Math.abs(this.x - center) <= TRACK_HALF_WIDTH;
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     const acceleration = throttle * (112 - speedRatio * 52);
@@ -240,8 +244,8 @@ export class SimcadeRaceModel {
 
     const metersPerSecond = this.speed * (1000 / 3600);
     this.z += metersPerSecond * dt * 1.55;
-    this.x += Math.sin(this.heading) * metersPerSecond * dt * 0.28 + steer * speedRatio * dt * 2.3;
-    this.x = clamp(this.x, -9, 9);
+    this.x += Math.sin(this.heading) * metersPerSecond * dt * 0.28 + steer * speedRatio * dt * 2.3 + curve * metersPerSecond * dt * 0.95;
+    this.x = clamp(this.x, center - 9, center + 9);
     this.lapTime += dt;
     this.totalTime += dt;
   }
@@ -280,3 +284,4 @@ export class SimcadeRaceModel {
     }
   }
 }
+import { TRACK_LOOP_LENGTH, trackCenterAt, trackCurveAt } from "./trackPath";
