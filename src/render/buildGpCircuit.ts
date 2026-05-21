@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { trackCenterAt, trackCurveAt } from "../game/trackPath";
+import { sampleTrack, trackCenterAt, trackCurveAt } from "../game/trackPath";
 
 type DynamicPiece = {
   object: THREE.Object3D;
@@ -35,6 +35,58 @@ function makePlane(
   return mesh;
 }
 
+function makeTrackStrip(
+  name: string,
+  material: THREE.Material,
+  lateralStart: number,
+  lateralEnd: number,
+  y: number,
+  startAhead = -170,
+  endAhead = 1900,
+  step = 18
+) {
+  const geometry = new THREE.BufferGeometry();
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  const uvs: number[] = [];
+  let row = 0;
+
+  for (let ahead = startAhead; ahead <= endAhead; ahead += step) {
+    const sample = sampleTrack(ahead);
+    const curve = sample.curve;
+    const leftX = sample.center + lateralStart;
+    const rightX = sample.center + lateralEnd;
+    const z = -ahead;
+    vertices.push(leftX, y, z, rightX, y, z);
+    uvs.push(0, row, 1, row);
+    if (row > 0) {
+      const base = row * 2;
+      indices.push(base - 2, base - 1, base, base - 1, base + 1, base);
+    }
+    row += 1;
+
+    if (Math.abs(curve) > 0.035) {
+      const midAhead = ahead + step * 0.5;
+      const mid = sampleTrack(midAhead);
+      vertices.push(mid.center + lateralStart, y, -midAhead, mid.center + lateralEnd, y, -midAhead);
+      uvs.push(0, row, 1, row);
+      const base = row * 2;
+      indices.push(base - 2, base - 1, base, base - 1, base + 1, base);
+      row += 1;
+    }
+  }
+
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
 export function buildGpCircuit() {
   const circuit = new THREE.Group();
   circuit.name = "fictional-european-technical-gp-circuit";
@@ -50,6 +102,10 @@ export function buildGpCircuit() {
   const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#202832", roughness: 0.48, metalness: 0.25 });
 
   circuit.add(makePlane("grass-infield-and-surround", [140, 2360], [0, -0.03, -560], grass));
+  const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
+  const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
+  const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
+  circuit.add(roadMesh, leftRunoff, rightRunoff);
 
   const technicalSections = [
     { name: "north-hairpin-runoff", x: -22, z: 280, w: 18, d: 120 },
@@ -70,16 +126,6 @@ export function buildGpCircuit() {
 
   for (let index = 0; index < 92; index += 1) {
     const ahead = -140 + index * 24;
-    const road = makeBox("curved-asphalt-segment", [13.2, 0.035, 27], [0, 0.018, -ahead], asphalt);
-    dynamicPieces.push({ object: road, ahead, lateral: 0, curveScale: 1.15 });
-    circuit.add(road);
-
-    for (const side of [-1, 1]) {
-      const runoffLane = makeBox("painted-runoff-segment", [7.4, 0.025, 27], [side * 10.2, 0.006, -ahead], runoff);
-      dynamicPieces.push({ object: runoffLane, ahead, lateral: side * 10.2, curveScale: 1.15 });
-      circuit.add(runoffLane);
-    }
-
     for (const side of [-1, 1]) {
       const kerb = makeBox(
         "striped-kerb",
@@ -119,6 +165,7 @@ export function buildGpCircuit() {
     barrierMaterial,
     bridgeMaterial
   ];
+  circuit.userData.staticTrackMeshes = [roadMesh, leftRunoff, rightRunoff];
   circuit.userData.dynamicPieces = dynamicPieces;
   updateGpCircuit(circuit, 0);
   return circuit;
@@ -126,9 +173,17 @@ export function buildGpCircuit() {
 
 export function updateGpCircuit(circuit: THREE.Group, distance: number) {
   const dynamicPieces = circuit.userData.dynamicPieces as DynamicPiece[] | undefined;
+  const currentCenter = trackCenterAt(distance);
+  const staticTrackMeshes = circuit.userData.staticTrackMeshes as THREE.Object3D[] | undefined;
+  if (staticTrackMeshes) {
+    for (const mesh of staticTrackMeshes) {
+      mesh.position.x = -currentCenter;
+      mesh.position.z = distance;
+    }
+  }
+
   if (!dynamicPieces) return;
 
-  const currentCenter = trackCenterAt(distance);
   for (const piece of dynamicPieces) {
     const pieceDistance = distance + piece.ahead;
     const localCenter = trackCenterAt(pieceDistance) - currentCenter;
