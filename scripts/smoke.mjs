@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
+import { createServer } from "node:net";
 import { chromium } from "playwright";
 
-const url = "http://127.0.0.1:5173/";
-const server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1"], {
+const port = await getFreePort();
+const url = `http://127.0.0.1:${port}/`;
+const server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
   stdio: ["ignore", "pipe", "pipe"]
 });
 
@@ -38,7 +40,8 @@ async function checkDesktop(browser) {
   await page.keyboard.up("ArrowUp");
 
   const state = await page.evaluate(() => ({
-    canvas: Boolean(document.querySelector("canvas")),
+    canvas: Boolean(document.querySelector("#game canvas")),
+    canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     objective: document.querySelector("#objective")?.textContent ?? "",
     lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
@@ -48,8 +51,9 @@ async function checkDesktop(browser) {
 
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
+  assertCanvasBox(state.canvasBox, "desktop");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
-  assert(state.objective.includes("Gain"), `desktop objective missing: ${state.objective}`);
+  assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
   assert(state.hintVisible, "desktop keyboard hint was not visible");
   assert(!state.startVisible, "desktop start panel stayed visible after countdown");
@@ -80,6 +84,7 @@ async function checkMobile(browser) {
       controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display,
       speed: Number(document.querySelector("#speed")?.textContent ?? 0),
       objective: document.querySelector("#objective")?.textContent ?? "",
+      canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
       statusBottom: status?.bottom ?? 0,
       controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
       throttleWidth: throttle?.width ?? 0
@@ -88,8 +93,9 @@ async function checkMobile(browser) {
 
   await page.close();
   assert(state.controlsDisplay === "grid", "mobile controls were not visible");
+  assertCanvasBox(state.canvasBox, "mobile");
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);
-  assert(state.objective.includes("Gain"), `mobile objective missing: ${state.objective}`);
+  assert(/Catch|Hold/.test(state.objective), `mobile objective missing: ${state.objective}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
   assert(state.throttleWidth >= 56, "mobile throttle button is too small");
 }
@@ -105,6 +111,28 @@ async function waitForServer(target) {
   }
 
   throw new Error(`Server did not start. Logs:\n${logs.join("")}`);
+}
+
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const address = probe.address();
+      probe.close(() => {
+        if (address && typeof address === "object") {
+          resolve(address.port);
+        } else {
+          reject(new Error("Could not allocate smoke test port"));
+        }
+      });
+    });
+  });
+}
+
+function assertCanvasBox(box, label) {
+  assert(Boolean(box), `${label} WebGL canvas box was unavailable`);
+  assert(box.width >= 300 && box.height >= 300, `${label} WebGL canvas did not fill viewport`);
 }
 
 function assert(condition, message) {
