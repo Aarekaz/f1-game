@@ -13,3 +13,4 @@
 - Author: EdSquare
 - License: Creative Commons Zero, CC0
 - Local source asset: `opengameart/RacingCars_F1.svg`
+- Local extracted game textures: `opengameart/f1-car-*.png`

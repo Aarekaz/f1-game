@@ -30,6 +30,7 @@ const TRACK_PROP_KEYS = [
 ] as const;
 
 type TrackPropKey = (typeof TRACK_PROP_KEYS)[number];
+type CarTextureKey = "f1-car-blue" | "f1-car-red" | "f1-car-yellow" | "f1-car-green" | "f1-car-purple" | "f1-car-violet";
 
 export class RaceScene extends Phaser.Scene {
   private model = new RaceModel();
@@ -62,13 +63,18 @@ export class RaceScene extends Phaser.Scene {
     this.load.image("track-prop-lights", "/assets/kenney-racing/objects/lights.png");
     this.load.image("track-prop-tribune", "/assets/kenney-racing/objects/tribune_full.png");
     this.load.image("track-prop-tribune-red", "/assets/kenney-racing/objects/tribune_overhang_red.png");
+    this.load.image("f1-car-blue", "/assets/opengameart/f1-car-blue.png");
+    this.load.image("f1-car-red", "/assets/opengameart/f1-car-red.png");
+    this.load.image("f1-car-yellow", "/assets/opengameart/f1-car-yellow.png");
+    this.load.image("f1-car-green", "/assets/opengameart/f1-car-green.png");
+    this.load.image("f1-car-purple", "/assets/opengameart/f1-car-purple.png");
+    this.load.image("f1-car-violet", "/assets/opengameart/f1-car-violet.png");
   }
 
   create() {
     this.track = this.add.graphics();
     this.kerbs = this.add.graphics();
     this.speedFx = this.add.graphics();
-    this.createTextures();
     this.createTrackDetails();
     this.carShadow = this.add.ellipse(0, 0, 58, 92, 0x000000, 0.34);
     this.car = this.createCar(0xe20e3b, true);
@@ -349,84 +355,11 @@ export class RaceScene extends Phaser.Scene {
   private createCar(color: number, isPlayer: boolean) {
     const container = this.add.container(0, 0);
     container.setDepth(isPlayer ? 10000 : 10);
-    const shadow = this.add.ellipse(5, 18, 64, 116, 0x000000, isPlayer ? 0 : 0.26);
-    const floor = this.add.image(0, 3, "car-floor").setTint(0x151819);
-    const plank = this.add.rectangle(0, 20, 7, 68, 0xf1d35b, 0.72);
-    const rearWing = this.add.rectangle(0, 54, 74, 14, color);
-    const rearWingTrim = this.add.rectangle(0, 47, 58, 4, 0xffffff, 0.82);
-    const body = this.add.image(0, 0, "car-body").setTint(color);
-    const sidepodLeft = this.add.rectangle(-20, 13, 17, 46, color, 0.95);
-    const sidepodRight = this.add.rectangle(20, 13, 17, 46, color, 0.95);
-    const noseStripe = this.add.rectangle(0, -33, 8, 56, 0xffffff, 0.9);
-    const frontWing = this.add.rectangle(0, -63, 84, 12, color);
-    const frontWingTrim = this.add.rectangle(0, -57, 64, 4, 0xffffff, 0.82);
-    const nose = this.add.triangle(0, -44, -14, 12, 14, 12, 0, -58, color);
-    const cockpit = this.add.ellipse(0, -9, 22, 34, 0x0a0d0f, 1);
-    const visor = this.add.ellipse(0, -14, 13, 17, 0xf4f7ff, 0.9);
-    const halo = this.add.rectangle(0, -25, 36, 5, 0xf2f2f2, 0.88);
-    const cameraPod = this.add.rectangle(0, -45, 10, 7, 0x111416, 1);
-    const tireColor = 0x050505;
-    const tires = [
-      ...this.createTire(-37, -37, 18, 36, tireColor, color),
-      ...this.createTire(37, -37, 18, 36, tireColor, color),
-      ...this.createTire(-39, 34, 21, 41, tireColor, color),
-      ...this.createTire(39, 34, 21, 41, tireColor, color)
-    ];
-    const suspension = [
-      this.createSuspension(-27, -40, -10, -20),
-      this.createSuspension(27, -40, 10, -20),
-      this.createSuspension(-29, 34, -12, 18),
-      this.createSuspension(29, 34, 12, 18)
-    ];
-    container.add([
-      shadow,
-      floor,
-      plank,
-      ...suspension,
-      ...tires,
-      rearWing,
-      rearWingTrim,
-      body,
-      sidepodLeft,
-      sidepodRight,
-      noseStripe,
-      nose,
-      cockpit,
-      visor,
-      halo,
-      cameraPod,
-      frontWing,
-      frontWingTrim
-    ]);
+    const shadow = this.add.ellipse(5, 18, 72, 112, 0x000000, isPlayer ? 0 : 0.24);
+    const car = this.add.image(0, 0, getCarTextureKey(color, isPlayer));
+    car.setDisplaySize(88, 116);
+    container.add([shadow, car]);
     return container;
-  }
-
-  private createTextures() {
-    const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRoundedRect(30, 22, 44, 86, 18);
-    graphics.fillRoundedRect(21, 55, 62, 42, 18);
-    graphics.fillTriangle(30, 48, 52, 2, 74, 48);
-    graphics.generateTexture("car-body", 104, 128);
-    graphics.clear();
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRoundedRect(31, 14, 42, 102, 10);
-    graphics.fillTriangle(31, 35, 52, 0, 73, 35);
-    graphics.fillTriangle(31, 94, 52, 128, 73, 94);
-    graphics.generateTexture("car-floor", 104, 132);
-    graphics.destroy();
-  }
-
-  private createTire(x: number, y: number, width: number, height: number, tireColor: number, accent: number) {
-    const tire = this.add.ellipse(x, y, width, height, tireColor);
-    const sidewall = this.add.ellipse(x, y, width * 0.58, height * 0.72, 0x171717);
-    const stripe = this.add.ellipse(x, y, width * 0.34, height * 0.48, accent, 0.7);
-    const rim = this.add.ellipse(x, y, width * 0.18, height * 0.26, 0xdce2e5, 0.85);
-    return [tire, sidewall, stripe, rim];
-  }
-
-  private createSuspension(x1: number, y1: number, x2: number, y2: number) {
-    return this.add.line(0, 0, x1, y1, x2, y2, 0x32383a, 0.86).setLineWidth(3);
   }
 
   private updateHud() {
@@ -510,5 +443,26 @@ function drawDashedPolyline(
       graphics.strokePath();
       cursor += dashLength + gapLength;
     }
+  }
+}
+
+function getCarTextureKey(color: number, isPlayer: boolean): CarTextureKey {
+  if (isPlayer) return "f1-car-red";
+
+  switch (color) {
+    case 0x28d9ff:
+      return "f1-car-blue";
+    case 0xfff05a:
+      return "f1-car-yellow";
+    case 0x42f56f:
+      return "f1-car-green";
+    case 0xb669ff:
+      return "f1-car-purple";
+    case 0xf2f2f2:
+      return "f1-car-violet";
+    case 0xff7d2d:
+    case 0xff4f88:
+    default:
+      return "f1-car-red";
   }
 }
