@@ -24,24 +24,31 @@ try {
 async function checkDesktop(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await page.goto(url, { waitUntil: "networkidle" });
+  const ready = await page.evaluate(() => ({
+    startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
+    speed: Number(document.querySelector("#speed")?.textContent ?? 0)
+  }));
+  assert(ready.startVisible, "desktop start panel was not visible");
+  assert(ready.speed === 0, "desktop race moved before start");
+
   await page.keyboard.down("ArrowUp");
   await page.keyboard.down("ArrowRight");
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(3900);
   await page.keyboard.up("ArrowRight");
   await page.keyboard.up("ArrowUp");
 
   const state = await page.evaluate(() => ({
     canvas: Boolean(document.querySelector("canvas")),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
-    messageClass: document.querySelector("#message")?.className ?? "",
-    hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none"
+    hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
+    startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden")
   }));
 
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
-  assert(state.messageClass.includes("hidden"), "desktop launch prompt stayed visible");
   assert(state.hintVisible, "desktop keyboard hint was not visible");
+  assert(!state.startVisible, "desktop start panel stayed visible after countdown");
 }
 
 async function checkMobile(browser) {
@@ -51,9 +58,12 @@ async function checkMobile(browser) {
     hasTouch: true
   });
   await page.goto(url, { waitUntil: "networkidle" });
+  const ready = await page.evaluate(() => !document.querySelector("#start-panel")?.classList.contains("hidden"));
+  assert(ready, "mobile start panel was not visible");
+
   await page.locator("[data-control=throttle]").dispatchEvent("pointerdown");
   await page.locator("[data-control=right]").dispatchEvent("pointerdown");
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(3900);
   await page.locator("[data-control=right]").dispatchEvent("pointerup");
   await page.locator("[data-control=throttle]").dispatchEvent("pointerup");
 
