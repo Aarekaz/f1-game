@@ -42,6 +42,7 @@ export type Telemetry = {
 const TRACK_WIDTH = 1.18;
 const LAP_DISTANCE = 6200;
 const MAX_SPEED = 330;
+const MIN_RACE_SPEED = 18;
 const RIVAL_COLORS = [0x28d9ff, 0xfff05a, 0xf2f2f2, 0xff7d2d, 0x42f56f, 0xb669ff, 0xff4f88];
 
 export class RaceModel {
@@ -97,9 +98,9 @@ export class RaceModel {
   }
 
   update(dt: number, input: RaceInput): Telemetry {
-    if (this.phase === "ready" && input.launch) {
+    if (this.phase === "ready" && (input.launch || input.throttle)) {
       this.phase = "racing";
-      this.speed = 64;
+      this.speed = 72;
     } else if (this.phase === "finished" && input.launch) {
       this.reset();
     }
@@ -152,25 +153,31 @@ export class RaceModel {
     const onTrack = Math.abs(this.carX - center) < TRACK_WIDTH * 0.54;
     const braking = input.brake;
     const boosting = input.boost && this.ers > 0.05 && !braking;
-    const throttle = input.throttle || !braking;
-    const drag = 0.06 + Math.abs(curve) * 0.048;
-    const accel = throttle ? 68 : -18;
-    const brakeForce = braking ? -156 : 0;
-    const boostForce = boosting ? 92 : 0;
-    const offTrackDrag = onTrack ? 0 : -34;
+    const throttle = input.throttle && !braking;
+    const speedRatio = this.speed / MAX_SPEED;
+    const drag = 0.035 + speedRatio * 0.075 + Math.abs(curve) * 0.034;
+    const accel = throttle ? 112 * (1 - speedRatio * 0.46) : -30;
+    const brakeForce = braking ? -190 : 0;
+    const boostForce = boosting && throttle ? 94 : 0;
+    const offTrackDrag = onTrack ? 0 : -62;
     this.eventTimer = Math.max(0, this.eventTimer - dt);
 
     this.speed += (accel + brakeForce + boostForce + offTrackDrag - this.speed * drag) * dt;
-    this.speed = Math.max(0, Math.min(MAX_SPEED, this.speed));
-    this.ers = Math.max(0, Math.min(1, this.ers + (braking ? 0.24 : 0.045) * dt - (boosting ? 0.32 : 0) * dt));
-    this.grip += ((onTrack ? 1 : 0.42) - this.grip) * Math.min(1, dt * 4);
+    this.speed = Math.max(this.speed > 0 ? MIN_RACE_SPEED : 0, Math.min(MAX_SPEED, this.speed));
+    this.ers = Math.max(0, Math.min(1, this.ers + (braking ? 0.3 : 0.035) * dt - (boosting ? 0.42 : 0) * dt));
+    const gripTarget = onTrack ? (braking ? 0.88 : 1) : 0.38;
+    this.grip += (gripTarget - this.grip) * Math.min(1, dt * 5.2);
 
-    const steerResponse = PhaserMathClamp(0.88 - this.speed / 720, 0.34, 0.86);
-    this.lateralVelocity += input.steer * steerResponse * dt * 3.2;
-    this.lateralVelocity *= Math.pow(0.08, dt);
+    const steeringGrip = PhaserMathClamp(1.08 - speedRatio * 0.48, 0.5, 1.04) * this.grip;
+    const steeringForce = input.steer * steeringGrip * dt * 4.6;
+    const curveDrift = curve * speedRatio * speedRatio * dt * 0.5;
+    this.lateralVelocity += steeringForce - curveDrift;
+    this.lateralVelocity *= Math.pow(braking ? 0.05 : 0.13, dt);
     this.carX += this.lateralVelocity;
-    this.carX += (center - this.carX) * dt * 1.8;
-    this.carX = PhaserMathClamp(this.carX, -1.08, 1.08);
+    if (Math.abs(input.steer) < 0.1 && onTrack && this.speed < 145) {
+      this.carX += (center - this.carX) * dt * 0.26;
+    }
+    this.carX = PhaserMathClamp(this.carX, -1.24, 1.24);
 
     const meters = this.speed * (1000 / 3600) * dt * 2.18;
     this.distance += meters;
@@ -264,7 +271,7 @@ export class RaceModel {
   }
 
   private getMessage() {
-    if (this.phase === "ready") return "Press Space to launch";
+    if (this.phase === "ready") return "Hold throttle to launch";
     if (this.phase === "finished") return `Finished P${this.position} - Space to restart`;
     if (this.eventTimer > 0) return this.eventMessage;
     if (this.penaltyTimer > 1.4) return "Track limits - slow down";
