@@ -213,41 +213,86 @@ body {
   font-weight: 700;
 }
 
+.control-hint {
+  pointer-events: none;
+  position: fixed;
+  right: clamp(14px, 2.5vw, 24px);
+  top: clamp(96px, 13vw, 124px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 360px;
+  gap: 6px;
+}
+
+.control-hint span {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: #cfd6cc;
+  background: rgba(6, 7, 6, 0.54);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .touch-controls {
   pointer-events: auto;
   position: fixed;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
   display: none;
-  grid-template-columns: repeat(4, 54px);
+}
+
+.steer-pad,
+.pedal-pad {
+  position: fixed;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: grid;
   gap: 8px;
 }
 
+.steer-pad {
+  left: max(14px, env(safe-area-inset-left));
+  grid-template-columns: repeat(2, 58px);
+}
+
+.pedal-pad {
+  right: max(14px, env(safe-area-inset-right));
+  grid-template-columns: 54px 54px 70px;
+}
+
 .touch-controls button {
-  width: 54px;
-  height: 54px;
+  width: 100%;
+  height: 58px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   color: #fff;
   background: rgba(10, 12, 10, 0.74);
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 900;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  touch-action: none;
 }
 
 .touch-controls button:active {
   background: rgba(226, 14, 59, 0.82);
 }
 
+.touch-controls [data-control="throttle"] {
+  background: rgba(226, 14, 59, 0.9);
+}
+
 @media (pointer: coarse), (max-width: 760px) {
   .touch-controls {
     display: grid;
-    grid-template-columns: repeat(4, 48px);
-    gap: 7px;
   }
 
   .hud {
     padding: 10px;
+  }
+
+  .control-hint {
+    display: none;
   }
 
   .topbar {
@@ -311,7 +356,7 @@ body {
     align-self: end;
     width: calc(100vw - 28px);
     min-height: 58px;
-    margin-bottom: 72px;
+    margin-bottom: 82px;
     padding: 10px 12px;
   }
 
@@ -325,8 +370,19 @@ body {
   }
 
   .touch-controls button {
-    width: 48px;
-    height: 48px;
-    font-size: 22px;
+    height: 56px;
+    font-size: 15px;
+  }
+
+  .steer-pad {
+    grid-template-columns: repeat(2, 54px);
+  }
+
+  .pedal-pad {
+    grid-template-columns: 46px 48px 64px;
+  }
+
+  .steer-pad button {
+    font-size: 28px;
   }
 }

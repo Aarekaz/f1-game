@@ -49,14 +49,26 @@
 
         <section class="race-message" id="message">
           <strong>Apex Formula</strong>
-          <span>Press Space to launch</span>
+          <span>Hold W or ↑ to launch</span>
+        </section>
+
+        <section class="control-hint" aria-label="Keyboard controls">
+          <span>W/↑ throttle</span>
+          <span>A/D steer</span>
+          <span>S/↓ brake</span>
+          <span>Shift ERS</span>
         </section>
 
         <section class="touch-controls" aria-label="Touch controls">
-          <button data-control="left" aria-label="Steer left">‹</button>
-          <button data-control="brake" aria-label="Brake">B</button>
-          <button data-control="boost" aria-label="ERS boost">⚡</button>
-          <button data-control="right" aria-label="Steer right">›</button>
+          <div class="steer-pad">
+            <button data-control="left" aria-label="Steer left">‹</button>
+            <button data-control="right" aria-label="Steer right">›</button>
+          </div>
+          <div class="pedal-pad">
+            <button data-control="brake" aria-label="Brake">BRK</button>
+            <button data-control="boost" aria-label="ERS boost">ERS</button>
+            <button data-control="throttle" aria-label="Throttle">GAS</button>
+          </div>
         </section>
       </main>
     </div>

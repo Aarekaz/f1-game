@@ -44,7 +44,7 @@ export class RaceScene extends Phaser.Scene {
   private trackProps: TrackProp[] = [];
   private rivalViews = new Map<number, Phaser.GameObjects.Container>();
   private hud!: HudRefs;
-  private touchState = { left: false, right: false, brake: false, boost: false };
+  private touchState = { left: false, right: false, throttle: false, brake: false, boost: false };
   private touchLaunch = false;
   private launchQueued = false;
   private telemetry!: Telemetry;
@@ -121,7 +121,7 @@ export class RaceScene extends Phaser.Scene {
       };
       button.addEventListener("pointerdown", (event) => {
         event.preventDefault();
-        this.touchLaunch = true;
+        this.touchLaunch = control === "throttle";
         set(true);
       });
       button.addEventListener("pointerup", () => set(false));
@@ -140,7 +140,7 @@ export class RaceScene extends Phaser.Scene {
 
     return {
       steer: (right ? 1 : 0) - (left ? 1 : 0),
-      throttle: this.keys.up.isDown || this.keys.w.isDown,
+      throttle: this.keys.up.isDown || this.keys.w.isDown || this.touchState.throttle,
       brake: this.keys.down.isDown || this.keys.s.isDown || this.touchState.brake,
       boost: this.keys.shift.isDown || this.touchState.boost,
       launch
