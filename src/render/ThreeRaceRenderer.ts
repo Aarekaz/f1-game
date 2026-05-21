@@ -74,13 +74,13 @@ export class ThreeRaceRenderer {
     this.car.rotation.z = -telemetry.car.yawRate * 0.22;
 
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
-    this.camera.fov = 58 + speedRatio * 10;
+    this.camera.fov = 57 + speedRatio * 12;
     this.camera.position.set(
       telemetry.car.x * 0.55,
-      5.2 - telemetry.car.braking * 0.45 + telemetry.car.slip * 0.24,
-      10.5 + speedRatio * 2.2
+      5.3 - telemetry.car.braking * 0.52 + telemetry.car.slip * 0.3,
+      10.7 + speedRatio * 2.4
     );
-    this.camera.lookAt(telemetry.car.x * 0.35, 0.62, -9 - speedRatio * 5);
+    this.camera.lookAt(telemetry.car.x * 0.35, 0.62, -9.5 - speedRatio * 5.4);
     this.camera.updateProjectionMatrix();
 
     for (const rival of telemetry.rivals) {

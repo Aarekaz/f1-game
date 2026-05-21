@@ -219,8 +219,8 @@ export class SimcadeRaceModel {
     const onTrack = Math.abs(this.x) <= TRACK_HALF_WIDTH;
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
-    const acceleration = throttle * (118 - speedRatio * 54);
-    const braking = brake * 230;
+    const acceleration = throttle * (112 - speedRatio * 52);
+    const braking = brake * 248;
     const boostPower = boost * 72;
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
     const offTrackDrag = onTrack ? 0 : 82;
@@ -229,10 +229,10 @@ export class SimcadeRaceModel {
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
-    const gripTarget = onTrack ? clamp(1 - brake * 0.12 - speedRatio * Math.abs(steer) * 0.18, 0.62, 1) : 0.46;
+    const gripTarget = onTrack ? clamp(1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23, 0.58, 1) : 0.42;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
-    const steerAuthority = (0.8 - speedRatio * 0.42) * this.grip;
+    const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip;
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += this.yawRate * dt;

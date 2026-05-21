@@ -92,4 +92,21 @@ describe("SimcadeRaceModel", () => {
     expect(reset.lap).toBe(1);
     expect(reset.bestLap).toBeNull();
   });
+
+  it("rewards braking before hard steering with better grip", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4, { throttle: 1 });
+
+    const lateTurn = run(model, 1, { throttle: 1, steer: 1 });
+
+    const disciplined = new SimcadeRaceModel();
+    disciplined.update(1 / 60, { ...idle, launch: true });
+    run(disciplined, 4, { throttle: 1 });
+    run(disciplined, 0.5, { brake: 1 });
+    const controlledTurn = run(disciplined, 1, { throttle: 0.4, steer: 1 });
+
+    expect(controlledTurn.grip).toBeGreaterThan(lateTurn.grip);
+    expect(controlledTurn.car.slip).toBeLessThan(lateTurn.car.slip);
+  });
 });
