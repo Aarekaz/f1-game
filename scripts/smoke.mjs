@@ -29,7 +29,9 @@ async function checkDesktop(browser) {
   const ready = await page.evaluate(() => ({
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
-    trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0)
+    trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
+    carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
+    circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0)
   }));
   assert(ready.startVisible, "desktop start panel was not visible");
   assert(ready.speed === 0, "desktop race moved before start");
@@ -50,13 +52,17 @@ async function checkDesktop(browser) {
     lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
-    trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0)
+    trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
+    carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
+    circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0)
   }));
 
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assertCanvasBox(state.canvasBox, "desktop");
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
+  assert(state.carWorldZ > ready.carWorldZ + 10, "desktop car did not move through world space");
+  assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.section.length > 0, "desktop circuit section was missing");

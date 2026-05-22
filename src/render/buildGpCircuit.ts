@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { sampleTrack, trackCenterAt, trackCurveAt } from "../game/trackPath";
+import { sampleTrack, trackCenterAt, trackCurveAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
 
 type DynamicPiece = {
   object: THREE.Object3D;
@@ -7,6 +7,8 @@ type DynamicPiece = {
   lateral: number;
   curveScale: number;
 };
+
+const RENDERED_TRACK_LENGTH = TRACK_LOOP_LENGTH * 4;
 
 function makeBox(
   name: string,
@@ -42,7 +44,7 @@ function makeTrackStrip(
   lateralEnd: number,
   y: number,
   startAhead = -170,
-  endAhead = 1900,
+  endAhead = RENDERED_TRACK_LENGTH,
   step = 18
 ) {
   const geometry = new THREE.BufferGeometry();
@@ -94,7 +96,7 @@ function makeRacingLine() {
   const uvs: number[] = [];
   let row = 0;
 
-  for (let ahead = -150; ahead <= 1900; ahead += 14) {
+  for (let ahead = -150; ahead <= RENDERED_TRACK_LENGTH; ahead += 14) {
     const sample = sampleTrack(ahead);
     const nextCurve = trackCurveAt(ahead + 42);
     const racingOffset = -nextCurve * 70;
@@ -186,7 +188,7 @@ export function buildGpCircuit() {
   const board100 = makeBoardMaterial("100");
   const board50 = makeBoardMaterial("50");
 
-  circuit.add(makePlane("grass-infield-and-surround", [140, 2360], [0, -0.03, -560], grass));
+  circuit.add(makePlane("grass-infield-and-surround", [150, RENDERED_TRACK_LENGTH + 520], [0, -0.03, -RENDERED_TRACK_LENGTH / 2 + 90], grass));
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
   const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
   const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
@@ -199,18 +201,22 @@ export function buildGpCircuit() {
     { name: "final-chicane-gravel", x: -20, z: 1220, w: 18, d: 150 }
   ];
 
-  for (const section of technicalSections) {
-    const marker = makePlane(
-      section.name,
-      [section.w, section.d],
-      [section.x, 0.005, -section.z],
-      section.name.includes("gravel") ? gravel : runoff
-    );
-    dynamicPieces.push({ object: marker, ahead: section.z, lateral: section.x, curveScale: 0.9 });
-    circuit.add(marker);
+  for (let lap = 0; lap < 4; lap += 1) {
+    const lapStart = lap * TRACK_LOOP_LENGTH;
+    for (const section of technicalSections) {
+      const marker = makePlane(
+        section.name,
+        [section.w, section.d],
+        [section.x, 0.005, -(lapStart + section.z)],
+        section.name.includes("gravel") ? gravel : runoff
+      );
+      dynamicPieces.push({ object: marker, ahead: lapStart + section.z, lateral: section.x, curveScale: 0.9 });
+      circuit.add(marker);
+    }
   }
 
-  for (let index = 0; index < 92; index += 1) {
+  const tracksideCount = Math.ceil((RENDERED_TRACK_LENGTH + 280) / 24);
+  for (let index = 0; index < tracksideCount; index += 1) {
     const ahead = -140 + index * 24;
     for (const side of [-1, 1]) {
       const kerb = makeBox(
@@ -228,32 +234,41 @@ export function buildGpCircuit() {
     }
   }
 
-  for (const ahead of [160, 520, 900, 1320]) {
-    const apexMarker = makeBox("apex-reference-board", [0.12, 1.3, 2.4], [-12.2, 0.75, -ahead], bridgeMaterial);
-    dynamicPieces.push({ object: apexMarker, ahead, lateral: -12.2, curveScale: 1.15 });
-    circuit.add(apexMarker);
-  }
-
-  for (const brakingStart of [230, 770, 1280]) {
-    const refs = [
-      { label: "150", material: board150, offset: -150 },
-      { label: "100", material: board100, offset: -100 },
-      { label: "50", material: board50, offset: -50 },
-      { label: "BRAKE", material: brakeMaterial, offset: -12 }
-    ];
-    for (const ref of refs) {
-      const board = makeTracksideBoard(`braking-reference-${ref.label}`, ref.material);
-      dynamicPieces.push({ object: board, ahead: brakingStart + ref.offset, lateral: 11.6, curveScale: 1.25 });
-      circuit.add(board);
+  for (let lap = 0; lap < 4; lap += 1) {
+    const lapStart = lap * TRACK_LOOP_LENGTH;
+    for (const ahead of [160, 520, 900, 1320]) {
+      const apexMarker = makeBox("apex-reference-board", [0.12, 1.3, 2.4], [-12.2, 0.75, -(lapStart + ahead)], bridgeMaterial);
+      dynamicPieces.push({ object: apexMarker, ahead: lapStart + ahead, lateral: -12.2, curveScale: 1.15 });
+      circuit.add(apexMarker);
     }
   }
 
-  for (const apex of [322, 870, 910, 1390]) {
-    for (const side of [-1, 1]) {
-      const chevron = makeTracksideBoard("corner-chevron", chevronMaterial);
-      chevron.scale.set(0.82, 0.82, 0.82);
-      dynamicPieces.push({ object: chevron, ahead: apex, lateral: side * 10.4, curveScale: 1.8 });
-      circuit.add(chevron);
+  for (let lap = 0; lap < 4; lap += 1) {
+    const lapStart = lap * TRACK_LOOP_LENGTH;
+    for (const brakingStart of [230, 770, 1280]) {
+      const refs = [
+        { label: "150", material: board150, offset: -150 },
+        { label: "100", material: board100, offset: -100 },
+        { label: "50", material: board50, offset: -50 },
+        { label: "BRAKE", material: brakeMaterial, offset: -12 }
+      ];
+      for (const ref of refs) {
+        const board = makeTracksideBoard(`braking-reference-${ref.label}`, ref.material);
+        dynamicPieces.push({ object: board, ahead: lapStart + brakingStart + ref.offset, lateral: 11.6, curveScale: 1.25 });
+        circuit.add(board);
+      }
+    }
+  }
+
+  for (let lap = 0; lap < 4; lap += 1) {
+    const lapStart = lap * TRACK_LOOP_LENGTH;
+    for (const apex of [322, 870, 910, 1390]) {
+      for (const side of [-1, 1]) {
+        const chevron = makeTracksideBoard("corner-chevron", chevronMaterial);
+        chevron.scale.set(0.82, 0.82, 0.82);
+        dynamicPieces.push({ object: chevron, ahead: lapStart + apex, lateral: side * 10.4, curveScale: 1.8 });
+        circuit.add(chevron);
+      }
     }
   }
 
@@ -279,30 +294,18 @@ export function buildGpCircuit() {
     board100,
     board50
   ];
-  circuit.userData.staticTrackMeshes = [roadMesh, leftRunoff, rightRunoff, racingLine];
   circuit.userData.dynamicPieces = dynamicPieces;
-  updateGpCircuit(circuit, 0);
+  positionTracksidePieces(circuit);
   return circuit;
 }
 
-export function updateGpCircuit(circuit: THREE.Group, distance: number) {
+function positionTracksidePieces(circuit: THREE.Group) {
   const dynamicPieces = circuit.userData.dynamicPieces as DynamicPiece[] | undefined;
-  const currentCenter = trackCenterAt(distance);
-  const staticTrackMeshes = circuit.userData.staticTrackMeshes as THREE.Object3D[] | undefined;
-  if (staticTrackMeshes) {
-    for (const mesh of staticTrackMeshes) {
-      mesh.position.x = -currentCenter;
-      mesh.position.z = distance;
-    }
-  }
-
   if (!dynamicPieces) return;
 
   for (const piece of dynamicPieces) {
-    const pieceDistance = distance + piece.ahead;
-    const localCenter = trackCenterAt(pieceDistance) - currentCenter;
-    const curve = trackCurveAt(pieceDistance);
-    piece.object.position.x = localCenter + piece.lateral;
+    const curve = trackCurveAt(piece.ahead);
+    piece.object.position.x = trackCenterAt(piece.ahead) + piece.lateral;
     piece.object.position.z = -piece.ahead;
     piece.object.rotation.y = -curve * piece.curveScale;
   }

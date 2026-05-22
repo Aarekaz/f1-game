@@ -187,8 +187,8 @@ export class SimcadeRaceModel {
       },
       rivals: this.rivals.map((rival) => ({
         id: rival.id,
-        x: sampleTrack(rival.distance).center - track.center + rival.lane,
-        z: rival.distance - this.z,
+        x: sampleTrack(rival.distance).center + rival.lane,
+        z: rival.distance,
         heading: -trackCurveAt(rival.distance) * 0.8,
         color: rival.color,
         gap: (rival.distance - this.z) / 42

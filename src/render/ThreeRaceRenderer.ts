@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import { TRACK_LOOP_LENGTH } from "../game/trackPath";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
-import { buildGpCircuit, updateGpCircuit } from "./buildGpCircuit";
+import { buildGpCircuit } from "./buildGpCircuit";
 
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
@@ -36,6 +36,10 @@ export class ThreeRaceRenderer {
   private readonly circuit = buildGpCircuit();
   private readonly horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
+  private readonly cameraPosition = new THREE.Vector3(0, 5.3, 10.7);
+  private readonly cameraTarget = new THREE.Vector3(0, 0.62, -9.5);
+  private readonly desiredCameraPosition = new THREE.Vector3();
+  private readonly desiredCameraTarget = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly handleResize = () => this.resize();
 
@@ -76,27 +80,35 @@ export class ThreeRaceRenderer {
   update(telemetry: RaceTelemetry) {
     const visualProgress = telemetry.car.z % TRACK_LOOP_LENGTH;
     this.renderer.domElement.dataset.trackOffset = visualProgress.toFixed(2);
-    updateGpCircuit(this.circuit, telemetry.car.z);
-    const center = trackCenterAt(telemetry.car.z);
-    const localCarX = telemetry.car.x - center;
-    this.car.position.set(localCarX, 0, 0);
+    this.renderer.domElement.dataset.carWorldZ = telemetry.car.z.toFixed(2);
+    this.renderer.domElement.dataset.circuitWorldZ = this.circuit.position.z.toFixed(2);
+    const carX = telemetry.car.x;
+    const carZ = -telemetry.car.z;
+    this.car.position.set(carX, 0, carZ);
     this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
     this.car.rotation.z = -telemetry.car.yawRate * 0.22;
 
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
-    this.updateSpeedStreaks(speedRatio, telemetry.car.slip, telemetry.car.braking);
+    this.updateSpeedStreaks(carX, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
     this.camera.fov = 57 + speedRatio * 12;
-    this.camera.position.set(
-      localCarX * 0.55,
+    this.desiredCameraPosition.set(
+      carX,
       5.3 - telemetry.car.braking * 0.52 + telemetry.car.slip * 0.3,
-      10.7 + speedRatio * 2.4
+      carZ + 10.7 + speedRatio * 2.4
     );
-    this.camera.lookAt(localCarX * 0.35 - telemetry.curve * 5, 0.62, -9.5 - speedRatio * 5.4);
+    this.desiredCameraTarget.set(carX - telemetry.curve * 5, 0.62, carZ - 9.5 - speedRatio * 5.4);
+    const follow = 0.08 + speedRatio * 0.06;
+    this.cameraPosition.lerp(this.desiredCameraPosition, follow);
+    this.cameraTarget.lerp(this.desiredCameraTarget, follow * 1.4);
+    this.camera.position.copy(this.cameraPosition);
+    this.camera.lookAt(this.cameraTarget);
     this.camera.updateProjectionMatrix();
+    this.horizon.position.z = this.camera.position.z - 10.7;
 
     for (const rival of telemetry.rivals) {
       const existing = this.rivals.get(rival.id);
-      if (rival.z < -45 || rival.z > 280) {
+      const gapMeters = rival.z - telemetry.car.z;
+      if (gapMeters < -45 || gapMeters > 280) {
         if (existing) existing.visible = false;
         continue;
       }
@@ -177,15 +189,15 @@ export class ThreeRaceRenderer {
     return group;
   }
 
-  private updateSpeedStreaks(speedRatio: number, slip: number, braking: number) {
+  private updateSpeedStreaks(carX: number, carZ: number, speedRatio: number, slip: number, braking: number) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
     if (material) {
       material.opacity = Math.max(0, speedRatio - 0.46) * 0.34 + slip * 0.08 + braking * 0.04;
       material.color.set(braking > 0.25 ? "#ffd7c8" : "#f6fff1");
     }
 
-    this.speedStreaks.position.z = (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
-    this.speedStreaks.position.x = this.car.position.x * 0.2;
+    this.speedStreaks.position.z = carZ + (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
+    this.speedStreaks.position.x = carX * 0.2;
     this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
   }
 }
