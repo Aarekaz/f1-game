@@ -169,6 +169,31 @@ function makeTracksideBoard(name: string, material: THREE.Material) {
   return board;
 }
 
+function makeTree(name: string, height: number, color: string) {
+  const tree = new THREE.Group();
+  tree.name = name;
+
+  const trunkMaterial = new THREE.MeshStandardMaterial({ color: "#5a3b25", roughness: 0.88 });
+  const leafMaterial = new THREE.MeshStandardMaterial({ color, roughness: 0.92 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.2, height * 0.36, 8), trunkMaterial);
+  trunk.position.y = height * 0.18;
+  trunk.castShadow = true;
+  tree.add(trunk);
+
+  const crown = new THREE.Mesh(new THREE.ConeGeometry(height * 0.34, height * 0.86, 9), leafMaterial);
+  crown.position.y = height * 0.7;
+  crown.castShadow = true;
+  tree.add(crown);
+  tree.userData.disposableMaterials = [trunkMaterial, leafMaterial];
+  return tree;
+}
+
+function makeSkidMark(distance: number, lateral: number, length: number, material: THREE.Material) {
+  const mark = makePlane("rubbered-braking-mark", [0.2, length], [trackCenterAt(distance) + lateral, 0.052, -distance], material);
+  mark.rotation.y = -trackCurveAt(distance) * 1.4;
+  return mark;
+}
+
 function makeAsphaltMaterial() {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -220,6 +245,7 @@ export function buildGpCircuit() {
   const kerbWhite = new THREE.MeshStandardMaterial({ color: "#f5f7f4", roughness: 0.5 });
   const barrierMaterial = new THREE.MeshStandardMaterial({ color: "#dce3e8", roughness: 0.62, metalness: 0.08 });
   const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#202832", roughness: 0.48, metalness: 0.25 });
+  const skidMaterial = new THREE.MeshBasicMaterial({ color: "#121514", transparent: true, opacity: 0.22, depthWrite: false });
   const chevronMaterial = makeBoardMaterial(">>", "#e20e3b", "#ffffff");
   const brakeMaterial = makeBoardMaterial("BRAKE", "#e20e3b", "#ffffff");
   const board150 = makeBoardMaterial("150");
@@ -251,6 +277,26 @@ export function buildGpCircuit() {
       dynamicPieces.push({ object: marker, ahead: lapStart + section.z, lateral: section.x, curveScale: 0.9 });
       circuit.add(marker);
     }
+  }
+
+  for (let lap = 0; lap < 4; lap += 1) {
+    const lapStart = lap * TRACK_LOOP_LENGTH;
+    for (const brakingStart of [230, 770, 1280]) {
+      for (const lateral of [-1.7, 0.2, 1.6]) {
+        circuit.add(makeSkidMark(lapStart + brakingStart - 42, lateral, 36, skidMaterial));
+      }
+    }
+  }
+
+  for (let index = 0; index < 120; index += 1) {
+    const distance = 80 + index * 58;
+    const side = index % 2 === 0 ? -1 : 1;
+    const stagger = ((index * 37) % 19) - 9;
+    const lateral = side * (26 + (index % 5) * 2.8) + stagger * 0.2;
+    const tree = makeTree("trackside-cypress", 3.6 + (index % 4) * 0.55, index % 3 === 0 ? "#385f38" : "#496f45");
+    tree.position.set(trackCenterAt(distance) + lateral, 0, -distance);
+    tree.rotation.y = (index % 7) * 0.4;
+    circuit.add(tree);
   }
 
   const tracksideCount = Math.ceil((RENDERED_TRACK_LENGTH + 280) / 24);
@@ -326,6 +372,7 @@ export function buildGpCircuit() {
     kerbWhite,
     barrierMaterial,
     bridgeMaterial,
+    skidMaterial,
     chevronMaterial,
     brakeMaterial,
     board150,

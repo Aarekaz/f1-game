@@ -1,4 +1,5 @@
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
+import { trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
 
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -6,7 +7,7 @@ function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
   return element as T;
 }
 
-function optionalElement<T extends HTMLElement = HTMLElement>(id: string): T | null {
+function optionalElement<T extends Element = HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
 }
 
@@ -41,6 +42,8 @@ export class HudController {
   private sectionName = optionalElement("section-name");
   private sectionMeta = optionalElement("section-meta");
   private trackCue = optionalElement("track-cue");
+  private mapPath = optionalElement<SVGPathElement>("track-map-path");
+  private mapCar = optionalElement<SVGCircleElement>("map-car");
   private raceProgress = requireElement("race-progress");
   private ers = requireElement("ers");
   private grip = requireElement("grip");
@@ -56,6 +59,10 @@ export class HudController {
   private resultBest = requireElement("result-best");
   private resultOvertakes = optionalElement("result-overtakes");
 
+  constructor() {
+    this.buildMiniMap();
+  }
+
   update(telemetry: RaceTelemetry) {
     this.startPanel.classList.toggle("hidden", telemetry.phase !== "ready");
     this.resultsPanel.classList.toggle("hidden", telemetry.phase !== "finished");
@@ -68,6 +75,7 @@ export class HudController {
     this.updatePowertrain(telemetry);
     this.objective.textContent = telemetry.objective;
     this.updateTrackReadout(telemetry);
+    this.updateMiniMap(telemetry);
     setMeter(this.raceProgress, telemetry.raceProgress);
     setMeter(this.ers, telemetry.ers);
     setMeter(this.grip, telemetry.grip);
@@ -86,6 +94,36 @@ export class HudController {
 
     this.updateMessage(telemetry);
     this.updateResults(telemetry);
+  }
+
+  private buildMiniMap() {
+    if (!this.mapPath) return;
+
+    const points = this.mapPoints();
+    this.mapPath.setAttribute(
+      "d",
+      points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ") +
+        " Z"
+    );
+  }
+
+  private updateMiniMap(telemetry: RaceTelemetry) {
+    if (!this.mapCar) return;
+
+    const point = this.mapPointAt(telemetry.trackOffset);
+    this.mapCar.setAttribute("cx", point.x.toFixed(1));
+    this.mapCar.setAttribute("cy", point.y.toFixed(1));
+  }
+
+  private mapPoints() {
+    return Array.from({ length: 96 }, (_, index) => this.mapPointAt((index / 96) * TRACK_LOOP_LENGTH));
+  }
+
+  private mapPointAt(distance: number) {
+    const progress = ((distance % TRACK_LOOP_LENGTH) + TRACK_LOOP_LENGTH) / TRACK_LOOP_LENGTH;
+    const x = 90 + trackCenterAt(distance) * 2.4;
+    const y = 10 + progress * 96;
+    return { x, y };
   }
 
   private updatePowertrain(telemetry: RaceTelemetry) {

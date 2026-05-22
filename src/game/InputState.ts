@@ -52,17 +52,19 @@ export class InputState {
 
   update(dt: number): RaceActions {
     const steerTarget = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
-    this.steer = approach(this.steer, steerTarget, dt * (steerTarget === 0 ? 9 : 6));
-    this.throttle = approach(this.throttle, this.keys.throttle ? 1 : 0, dt * 7);
-    this.brake = approach(this.brake, this.keys.brake ? 1 : 0, dt * 10);
+    const gamepad = this.readGamepad();
+    const combinedSteerTarget = Math.abs(gamepad.steer) > Math.abs(steerTarget) ? gamepad.steer : steerTarget;
+    this.steer = approach(this.steer, combinedSteerTarget, dt * (combinedSteerTarget === 0 ? 9 : 6));
+    this.throttle = approach(this.throttle, Math.max(this.keys.throttle ? 1 : 0, gamepad.throttle), dt * 7);
+    this.brake = approach(this.brake, Math.max(this.keys.brake ? 1 : 0, gamepad.brake), dt * 10);
 
     const actions = {
       steer: this.steer,
       throttle: this.throttle,
       brake: this.brake,
-      ers: this.keys.ers,
-      launch: this.launchPulse || this.keys.launch || this.keys.throttle,
-      restart: this.restartPulse || this.keys.restart
+      ers: this.keys.ers || gamepad.ers,
+      launch: this.launchPulse || this.keys.launch || this.keys.throttle || gamepad.launch,
+      restart: this.restartPulse || this.keys.restart || gamepad.restart
     };
     this.launchPulse = false;
     this.restartPulse = false;
@@ -138,5 +140,25 @@ export class InputState {
       default:
         return false;
     }
+  }
+
+  private readGamepad() {
+    const gamepad = navigator.getGamepads?.().find(Boolean);
+    if (!gamepad) {
+      return { steer: 0, throttle: 0, brake: 0, ers: false, launch: false, restart: false };
+    }
+
+    const axisSteer = Math.abs(gamepad.axes[0] ?? 0) > 0.08 ? gamepad.axes[0] ?? 0 : 0;
+    const rightTrigger = gamepad.buttons[7]?.value ?? 0;
+    const leftTrigger = gamepad.buttons[6]?.value ?? 0;
+    const faceDown = gamepad.buttons[0]?.pressed ?? false;
+    return {
+      steer: axisSteer,
+      throttle: Math.max(rightTrigger, faceDown ? 1 : 0),
+      brake: leftTrigger,
+      ers: gamepad.buttons[1]?.pressed ?? false,
+      launch: rightTrigger > 0.1 || faceDown,
+      restart: gamepad.buttons[3]?.pressed ?? false
+    };
   }
 }
