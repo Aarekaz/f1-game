@@ -67,6 +67,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.trackSection).toBe(sampleTrack(telemetry.car.z).section.name);
     expect(telemetry.trackSector).toBe(sampleTrack(telemetry.car.z).section.sector);
     expect(telemetry.trackCue.length).toBeGreaterThan(0);
+    expect(telemetry.gear).toBeGreaterThanOrEqual(1);
+    expect(telemetry.rpm).toBeGreaterThan(0);
     expect(typeof telemetry.brakingZone).toBe("boolean");
   });
 

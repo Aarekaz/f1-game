@@ -1,3 +1,4 @@
+import { RaceAudioController } from "../audio/RaceAudioController";
 import { InputState } from "../game/InputState";
 import { SimcadeRaceModel, type RaceActions } from "../game/SimcadeRaceModel";
 import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
@@ -74,10 +75,12 @@ export function createRaceApp() {
   const model = new SimcadeRaceModel();
   const renderer = new ThreeRaceRenderer(container);
   const hud = new HudController();
+  const audio = new RaceAudioController();
   let last = performance.now();
   let frame = 0;
 
   input.attach();
+  audio.attach();
 
   function tick(now: number) {
     const dt = Math.min(MAX_DT, (now - last) / 1000);
@@ -87,6 +90,7 @@ export function createRaceApp() {
     const telemetry = model.update(dt, actions);
     renderer.update(telemetry);
     hud.update(telemetry);
+    audio.update(telemetry);
     frame = requestAnimationFrame(tick);
   }
 
@@ -104,6 +108,7 @@ export function createRaceApp() {
       window.removeEventListener("resize", resize);
       input.detach();
       touch.destroy();
+      audio.dispose();
       renderer.dispose();
     }
   };

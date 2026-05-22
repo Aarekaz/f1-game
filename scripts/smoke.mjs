@@ -46,6 +46,7 @@ async function checkDesktop(browser) {
     canvas: Boolean(document.querySelector("#game canvas")),
     canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+    gear: Number(document.querySelector("#gear")?.textContent ?? 0),
     objective: document.querySelector("#objective")?.textContent ?? "",
     section: document.querySelector("#section-name")?.textContent ?? "",
     cue: document.querySelector("#track-cue")?.textContent ?? "",
@@ -54,7 +55,8 @@ async function checkDesktop(browser) {
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
-    circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0)
+    circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
+    assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? ""
   }));
 
   await page.close();
@@ -64,6 +66,8 @@ async function checkDesktop(browser) {
   assert(state.carWorldZ > ready.carWorldZ + 10, "desktop car did not move through world space");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
+  assert(state.gear >= 1, "desktop gear readout was missing");
+  assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.section.length > 0, "desktop circuit section was missing");
   assert(state.cue.length > 0, "desktop driving cue was missing");

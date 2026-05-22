@@ -9,6 +9,8 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A Three.js race view with a procedural GP-style circuit.
 - A lightweight simcade handling model: throttle, brake, steering, ERS, grip, slip, lap timing, and overtakes.
 - Track sections, braking zones, racing-line hints, boards, chevrons, and HUD cues.
+- A first external asset pass using a small CC0 Kenney Racing Kit subset.
+- Engine, ERS, and tire-scrub audio generated with browser Web Audio.
 - Keyboard and touch controls.
 - Unit tests for the race model and a Playwright smoke test for the playable browser build.
 
@@ -48,6 +50,7 @@ The smoke test launches the game in a browser, starts a race, drives for a few s
 src/app/                 browser app bootstrapping
 src/game/                simulation, input, and track data
 src/render/              Three.js scene and procedural geometry
+src/audio/               Web Audio game-feel layer
 src/ui/                  DOM HUD updates
 scripts/smoke.mjs        Playwright browser smoke test
 ```
@@ -58,4 +61,4 @@ The main rule is simple: game state lives in `src/game`, rendering lives in `src
 
 The next big improvement is authored 3D assets: a better Formula-style car model, richer circuit furniture, grandstands, marshal posts, trees, lighting, and materials that make the track feel less like a prototype. The code is set up so those can come in as GLB or glTF assets later without changing the race model.
 
-For now, the car and circuit are procedural proxy geometry. That is intentional: it keeps the game fast to iterate on while the handling, camera, HUD, and track language settle.
+For now, the game uses a mix of procedural geometry and a small CC0 asset subset. That is intentional: it keeps the game fast to iterate on while the handling, camera, HUD, sound, and track language settle.

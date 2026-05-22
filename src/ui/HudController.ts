@@ -35,6 +35,8 @@ export class HudController {
   private best = requireElement("best");
   private delta = requireElement("delta");
   private speed = requireElement("speed");
+  private gear = optionalElement("gear");
+  private rpm = optionalElement("rpm");
   private objective = requireElement("objective");
   private sectionName = optionalElement("section-name");
   private sectionMeta = optionalElement("section-meta");
@@ -43,6 +45,7 @@ export class HudController {
   private ers = requireElement("ers");
   private grip = requireElement("grip");
   private message = requireElement("message");
+  private startLights = optionalElement("start-lights");
   private messageTitle = this.message.querySelector("strong");
   private messageBody = this.message.querySelector("span");
   private currentLapTime = requireElement("current-lap-time");
@@ -62,6 +65,7 @@ export class HudController {
     this.best.textContent = formatTime(telemetry.bestLap);
     this.delta.textContent = telemetry.bestLap === null ? "+0.00" : formatDelta(telemetry.delta);
     this.speed.textContent = String(telemetry.speedKph);
+    this.updatePowertrain(telemetry);
     this.objective.textContent = telemetry.objective;
     this.updateTrackReadout(telemetry);
     setMeter(this.raceProgress, telemetry.raceProgress);
@@ -82,6 +86,16 @@ export class HudController {
 
     this.updateMessage(telemetry);
     this.updateResults(telemetry);
+  }
+
+  private updatePowertrain(telemetry: RaceTelemetry) {
+    if (this.gear) {
+      this.gear.textContent = String(telemetry.gear);
+    }
+
+    if (this.rpm) {
+      setMeter(this.rpm, telemetry.rpm / 10000);
+    }
   }
 
   private updateTrackReadout(telemetry: RaceTelemetry) {
@@ -111,6 +125,21 @@ export class HudController {
     if (this.messageBody) {
       this.messageBody.textContent = showCountdown ? Math.ceil(telemetry.countdown).toString() : telemetry.message || " ";
     }
+
+    this.updateStartLights(telemetry);
+  }
+
+  private updateStartLights(telemetry: RaceTelemetry) {
+    if (!this.startLights) return;
+
+    const lights = Array.from(this.startLights.querySelectorAll("i"));
+    const litCount =
+      telemetry.phase === "countdown" ? Math.max(1, Math.min(5, 5 - Math.floor(telemetry.countdown / 0.56))) : 0;
+
+    this.startLights.classList.toggle("go", telemetry.phase === "racing" && telemetry.message === "Lights out");
+    lights.forEach((light, index) => {
+      light.classList.toggle("lit", index < litCount);
+    });
   }
 
   private updateResults(telemetry: RaceTelemetry) {

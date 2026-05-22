@@ -169,12 +169,50 @@ function makeTracksideBoard(name: string, material: THREE.Material) {
   return board;
 }
 
+function makeAsphaltMaterial() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    let seed = 42;
+    const random = () => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+    ctx.fillStyle = "#30363a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let index = 0; index < 900; index += 1) {
+      const shade = 42 + Math.floor(random() * 36);
+      ctx.fillStyle = `rgba(${shade}, ${shade + 4}, ${shade + 8}, ${0.12 + random() * 0.16})`;
+      ctx.fillRect(random() * canvas.width, random() * canvas.height, 1 + random() * 2.5, 1);
+    }
+    ctx.fillStyle = "rgba(255, 255, 255, 0.055)";
+    for (let y = 24; y < canvas.height; y += 48) {
+      ctx.fillRect(0, y, canvas.width, 1);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(2, 80);
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  return new THREE.MeshStandardMaterial({
+    color: "#30363a",
+    map: texture,
+    roughness: 0.86,
+    metalness: 0.02
+  });
+}
+
 export function buildGpCircuit() {
   const circuit = new THREE.Group();
   circuit.name = "fictional-european-technical-gp-circuit";
   const dynamicPieces: DynamicPiece[] = [];
 
-  const asphalt = new THREE.MeshStandardMaterial({ color: "#30363a", roughness: 0.72, metalness: 0.02 });
+  const asphalt = makeAsphaltMaterial();
   const grass = new THREE.MeshStandardMaterial({ color: "#496f45", roughness: 0.9 });
   const runoff = new THREE.MeshStandardMaterial({ color: "#7d8e78", roughness: 0.86 });
   const gravel = new THREE.MeshStandardMaterial({ color: "#9a8a70", roughness: 0.96 });

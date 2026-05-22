@@ -19,6 +19,8 @@ export type RaceTelemetry = {
   position: number;
   targetPosition: number;
   speedKph: number;
+  gear: number;
+  rpm: number;
   ers: number;
   grip: number;
   onTrack: boolean;
@@ -157,6 +159,8 @@ export class SimcadeRaceModel {
       position: this.position,
       targetPosition: 3,
       speedKph: Math.round(this.speed),
+      gear: this.gear(),
+      rpm: this.rpm(),
       ers: this.ers,
       grip: this.grip,
       onTrack: Math.abs(this.x - track.center) <= track.halfWidth,
@@ -256,6 +260,24 @@ export class SimcadeRaceModel {
     this.x = clamp(this.x, track.center - 9, track.center + 9);
     this.lapTime += dt;
     this.totalTime += dt;
+  }
+
+  private gear() {
+    if (this.speed < 30) return 1;
+    if (this.speed < 78) return 2;
+    if (this.speed < 124) return 3;
+    if (this.speed < 168) return 4;
+    if (this.speed < 214) return 5;
+    if (this.speed < 262) return 6;
+    return 7;
+  }
+
+  private rpm() {
+    const gear = this.gear();
+    const lower = [0, 0, 30, 78, 124, 168, 214, 262][gear] ?? 0;
+    const upper = [30, 78, 124, 168, 214, 262, MAX_SPEED][gear - 1] ?? MAX_SPEED;
+    const gearProgress = clamp((this.speed - lower) / Math.max(1, upper - lower), 0, 1);
+    return Math.round(4600 + gearProgress * 5200 + this.slip * 900);
   }
 
   private updateRivals(dt: number) {

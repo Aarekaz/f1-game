@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { TRACK_LOOP_LENGTH } from "../game/trackPath";
+import { trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
+import { RacingAssetLibrary } from "./RacingAssetLibrary";
 
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
@@ -32,6 +33,7 @@ export class ThreeRaceRenderer {
   private readonly renderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1800);
+  private readonly assets = new RacingAssetLibrary();
   private readonly car = buildFormulaCarProxy();
   private readonly circuit = buildGpCircuit();
   private readonly horizon = this.buildHorizon();
@@ -65,6 +67,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.horizon);
     this.scene.add(this.speedStreaks);
     this.scene.add(this.car);
+    void this.loadRaceAssets();
     this.resize();
     window.addEventListener("resize", this.handleResize);
   }
@@ -135,7 +138,57 @@ export class ThreeRaceRenderer {
     mesh.name = `rival-${id}`;
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
+    void this.assets.createCar(color).then((asset) => this.replaceModel(mesh, asset)).catch(() => undefined);
     return mesh;
+  }
+
+  private async loadRaceAssets() {
+    try {
+      const [playerCar] = await Promise.all([
+        this.assets.createCar("#e72436"),
+        this.addTracksideAssets()
+      ]);
+      this.replaceModel(this.car, playerCar);
+      this.renderer.domElement.dataset.assetCar = "kenney";
+    } catch {
+      this.renderer.domElement.dataset.assetCar = "proxy";
+    }
+  }
+
+  private async addTracksideAssets() {
+    const stands = await Promise.all([this.assets.createGrandstand(), this.assets.createGrandstand(), this.assets.createGrandstand()]);
+    const lights = await Promise.all([this.assets.createLightPost(), this.assets.createLightPost(), this.assets.createLightPost(), this.assets.createLightPost()]);
+    const standPlacements = [
+      { distance: 120, lateral: -24, rotation: Math.PI * 0.52 },
+      { distance: 620, lateral: 23, rotation: -Math.PI * 0.48 },
+      { distance: 1540, lateral: -22, rotation: Math.PI * 0.52 }
+    ];
+    const lightPlacements = [
+      { distance: 210, lateral: 18 },
+      { distance: 760, lateral: -18 },
+      { distance: 1160, lateral: 18 },
+      { distance: 1470, lateral: -18 }
+    ];
+
+    stands.forEach((stand, index) => {
+      const placement = standPlacements[index];
+      stand.position.set(trackCenterAt(placement.distance) + placement.lateral, 0, -placement.distance);
+      stand.rotation.y = placement.rotation;
+      this.scene.add(stand);
+    });
+
+    lights.forEach((light, index) => {
+      const placement = lightPlacements[index];
+      light.position.set(trackCenterAt(placement.distance) + placement.lateral, 0, -placement.distance);
+      light.rotation.y = placement.lateral > 0 ? -0.4 : 0.4;
+      this.scene.add(light);
+    });
+  }
+
+  private replaceModel(target: THREE.Group, asset: THREE.Object3D) {
+    disposeObject3D(target);
+    target.clear();
+    target.add(asset);
   }
 
   private buildHorizon() {

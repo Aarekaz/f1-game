@@ -1,0 +1,113 @@
+import * as THREE from "three";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+
+const KENNEY_OBJ_ROOT = "/assets/kenney-racing-kit/obj/";
+
+type AssetName = "raceCarRed" | "grandStand" | "lightPostLarge";
+
+const assetScales: Record<AssetName, number> = {
+  raceCarRed: 3.05,
+  grandStand: 3.8,
+  lightPostLarge: 4.2
+};
+
+function cloneObjectWithMaterials(source: THREE.Object3D) {
+  const clone = source.clone(true);
+  clone.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+    if (Array.isArray(object.material)) {
+      object.material = object.material.map((material) => material.clone());
+    } else {
+      object.material = object.material.clone();
+    }
+  });
+  return clone;
+}
+
+function tintBodyMaterials(root: THREE.Object3D, color: string) {
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if ("color" in material && material.name.toLowerCase().includes("red")) {
+        material.color = new THREE.Color(color);
+      }
+      if ("roughness" in material) material.roughness = 0.48;
+      if ("metalness" in material) material.metalness = 0.08;
+    }
+  });
+}
+
+export class RacingAssetLibrary {
+  private readonly manager = new THREE.LoadingManager();
+  private readonly templates = new Map<AssetName, Promise<THREE.Object3D>>();
+
+  createCar(color: string) {
+    return this.createAsset("raceCarRed").then((car) => {
+      car.name = "kenney-racing-car";
+      tintBodyMaterials(car, color);
+      car.rotation.y = Math.PI;
+      car.position.y = 0.1;
+      return car;
+    });
+  }
+
+  createGrandstand() {
+    return this.createAsset("grandStand").then((stand) => {
+      stand.name = "kenney-grandstand";
+      stand.rotation.y = Math.PI;
+      return stand;
+    });
+  }
+
+  createLightPost() {
+    return this.createAsset("lightPostLarge").then((post) => {
+      post.name = "kenney-light-post";
+      return post;
+    });
+  }
+
+  private createAsset(name: AssetName) {
+    return this.loadTemplate(name).then((template) => cloneObjectWithMaterials(template));
+  }
+
+  private loadTemplate(name: AssetName) {
+    const cached = this.templates.get(name);
+    if (cached) return cached;
+
+    const loaded = new Promise<THREE.Object3D>((resolve, reject) => {
+      const mtlLoader = new MTLLoader(this.manager).setPath(KENNEY_OBJ_ROOT);
+      mtlLoader.load(
+        `${name}.mtl`,
+        (materials) => {
+          materials.preload();
+          const objLoader = new OBJLoader(this.manager).setPath(KENNEY_OBJ_ROOT);
+          objLoader.setMaterials(materials);
+          objLoader.load(
+            `${name}.obj`,
+            (object) => {
+              object.scale.setScalar(assetScales[name]);
+              object.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  child.castShadow = true;
+                  child.receiveShadow = true;
+                }
+              });
+              resolve(object);
+            },
+            undefined,
+            reject
+          );
+        },
+        undefined,
+        reject
+      );
+    });
+
+    this.templates.set(name, loaded);
+    return loaded;
+  }
+}

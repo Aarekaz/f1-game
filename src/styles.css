@@ -198,6 +198,46 @@ body {
   line-height: 0.9;
 }
 
+.powertrain-readout {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.powertrain-readout strong {
+  display: grid;
+  width: 52px;
+  height: 42px;
+  place-items: center;
+  border-radius: 7px;
+  color: #17211b;
+  background: #f3d348;
+  font-size: 28px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.powertrain-readout span {
+  display: block;
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.powertrain-readout i {
+  display: block;
+  height: 12px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, #f3d348 var(--value, 0%), rgba(255, 255, 255, 0.14) 0);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
 .objective-chip {
   margin-top: 10px;
   padding: 8px 10px;
@@ -385,6 +425,38 @@ body {
   display: block;
 }
 
+.start-lights {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.start-lights i {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.16),
+    0 0 0 rgba(226, 14, 59, 0);
+}
+
+.start-lights i.lit {
+  background: #e20e3b;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.32),
+    0 0 24px rgba(226, 14, 59, 0.7);
+}
+
+.start-lights.go i {
+  background: #42f56f;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+    0 0 24px rgba(66, 245, 111, 0.65);
+}
+
 .race-message strong {
   font-size: clamp(24px, 5vw, 42px);
   line-height: 1;
@@ -523,6 +595,22 @@ body {
 
   .speed-readout span {
     font-size: clamp(34px, 12vw, 52px);
+  }
+
+  .powertrain-readout {
+    grid-template-columns: 42px 1fr;
+    gap: 8px;
+    margin-top: 7px;
+  }
+
+  .powertrain-readout strong {
+    width: 42px;
+    height: 34px;
+    font-size: 22px;
+  }
+
+  .powertrain-readout span {
+    font-size: 9px;
   }
 
   .race-strip,
