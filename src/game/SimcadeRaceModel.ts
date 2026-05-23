@@ -1,3 +1,4 @@
+import { RaceDirector } from "./RaceDirector";
 import { TRACK_LOOP_LENGTH, TRACK_NAME, sampleTrack, trackCurveAt } from "./trackPath";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
@@ -44,6 +45,11 @@ export type RaceTelemetry = {
   brakingZone: boolean;
   cleanLap: boolean;
   trackLimitWarnings: number;
+  penaltySeconds: number;
+  nextCheckpoint: string;
+  checkpointProgress: string;
+  sectorSplits: [number | null, number | null, number | null];
+  lapValid: boolean;
   lapProgress: number;
   raceProgress: number;
   objective: string;
@@ -135,6 +141,7 @@ export class SimcadeRaceModel {
   private lastBrake = 0;
   private lastThrottle = 0;
   private rivals = createRivals();
+  private director = new RaceDirector(LAPS);
 
   update(dt: number, actions: RaceActions): RaceTelemetry {
     if (this.phase === "ready" && (actions.launch || actions.throttle > 0.1)) {
@@ -162,7 +169,7 @@ export class SimcadeRaceModel {
     if (this.phase === "racing") {
       this.updateDriving(dt, actions);
       this.updateRivals(dt);
-      this.updateLapFlow();
+      this.updateRaceDirector();
     }
 
     this.messageTimer = Math.max(0, this.messageTimer - dt);
@@ -173,10 +180,11 @@ export class SimcadeRaceModel {
     const lapDistance = this.phase === "finished" ? LAP_LENGTH : this.z % LAP_LENGTH;
     const delta = this.bestLap === null ? 0 : this.lapTime - this.bestLap;
     const track = sampleTrack(this.z);
+    const director = this.director.snapshot(this.z);
     return {
       phase: this.phase,
-      lap: this.lap,
-      laps: LAPS,
+      lap: director.lap,
+      laps: director.laps,
       countdown: this.countdown,
       position: this.position,
       targetPosition: 3,
@@ -206,8 +214,13 @@ export class SimcadeRaceModel {
       brakingZone: track.brakingZone,
       cleanLap: this.cleanLap,
       trackLimitWarnings: this.trackLimitWarnings,
-      lapProgress: clamp(lapDistance / LAP_LENGTH, 0, 1),
-      raceProgress: this.phase === "finished" ? 1 : clamp((this.lap - 1 + lapDistance / LAP_LENGTH) / LAPS, 0, 1),
+      penaltySeconds: director.penaltySeconds,
+      nextCheckpoint: director.nextCheckpoint.name,
+      checkpointProgress: `${Math.min(director.checkpointIndex + 1, director.checkpointCount)}/${director.checkpointCount}`,
+      sectorSplits: director.sectorSplits,
+      lapValid: director.lapValid,
+      lapProgress: director.lapProgress,
+      raceProgress: director.raceProgress,
       objective: this.position <= 3 ? "Hold podium pace" : `Catch P${Math.max(3, this.position - 1)}`,
       message: this.messageTimer > 0 ? this.message : "",
       car: {
@@ -263,6 +276,7 @@ export class SimcadeRaceModel {
     this.lastBrake = 0;
     this.lastThrottle = 0;
     this.rivals = createRivals();
+    this.director.reset();
   }
 
   private updateDriving(dt: number, actions: RaceActions) {
@@ -331,9 +345,9 @@ export class SimcadeRaceModel {
     this.z += metersPerSecond * dt * 1.55;
     this.x += Math.sin(this.heading) * metersPerSecond * dt * 0.28 + steer * speedRatio * dt * 2.3 + track.curve * metersPerSecond * dt * 0.95;
     this.x = clamp(this.x, track.center - 9, track.center + 9);
-    this.updateTrackLimits(dt, onTrack);
     this.lapTime += dt;
     this.totalTime += dt;
+    this.updateTrackLimits(dt, onTrack);
   }
 
   private updateTrackLimits(dt: number, onTrack: boolean) {
@@ -346,8 +360,9 @@ export class SimcadeRaceModel {
     if (this.offTrackTime > 0.42) {
       this.cleanLap = false;
       this.trackLimitWarnings += 1;
+      this.director.addPenalty(5);
       this.offTrackTime = -1.8;
-      this.message = this.trackLimitWarnings >= 3 ? "Lap invalidated" : "Track limits";
+      this.message = this.trackLimitWarnings >= 3 ? "+5s penalty: lap invalidated" : "+5s track limits";
       this.messageTimer = 1.3;
     }
   }
@@ -411,24 +426,45 @@ export class SimcadeRaceModel {
     return track.section.kind === "esses" ? "Balance the car" : "Hold the line";
   }
 
-  private updateLapFlow() {
-    const completedLap = Math.floor(this.z / LAP_LENGTH) + 1;
-    if (completedLap > this.lap) {
-      const completedLapTime = this.lapTime;
-      this.splitDelta = this.bestLap === null ? null : completedLapTime - this.bestLap;
-      if (this.bestLap === null || completedLapTime < this.bestLap) {
-        this.bestLap = completedLapTime;
+  private updateRaceDirector() {
+    for (const event of this.director.update(this.z, this.totalTime)) {
+      if (event.type === "checkpoint") {
+        this.message = event.checkpoint.name;
+        this.messageTimer = 0.55;
       }
-      this.lap = completedLap;
-      if (this.lap > LAPS) {
+
+      if (event.type === "sector") {
+        this.message = `Sector ${event.sector} ${event.time.toFixed(2)}`;
+        this.messageTimer = 0.9;
+      }
+
+      if (event.type === "lap") {
+        this.splitDelta = this.bestLap === null ? null : event.time - this.bestLap;
+        if (event.valid && (this.bestLap === null || event.time < this.bestLap)) {
+          this.bestLap = event.time;
+        }
+
+        if (!event.valid) {
+          this.message = "Lap deleted";
+          this.messageTimer = 1.2;
+        }
+
+        this.lap = Math.min(event.lap + 1, LAPS);
+        if (event.lap >= LAPS) {
+          this.lapTime = event.time;
+        } else {
+          this.lapTime = 0;
+          this.cleanLap = true;
+          this.offTrackTime = 0;
+        }
+      }
+
+      if (event.type === "finish") {
         this.phase = "finished";
         this.lap = LAPS;
+        this.totalTime = event.time;
         this.message = this.position <= 3 ? "Podium secured" : "Race complete";
         this.messageTimer = 8;
-      } else {
-        this.lapTime = 0;
-        this.cleanLap = true;
-        this.offTrackTime = 0;
       }
     }
   }

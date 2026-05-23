@@ -44,6 +44,8 @@ export class HudController {
   private trackCue = optionalElement("track-cue");
   private trackInstruction = optionalElement("track-instruction");
   private paceTarget = optionalElement("pace-target");
+  private checkpoint = optionalElement("checkpoint");
+  private penalty = optionalElement("penalty");
   private mapPath = optionalElement<SVGPathElement>("track-map-path");
   private mapCar = optionalElement<SVGCircleElement>("map-car");
   private raceProgress = requireElement("race-progress");
@@ -160,6 +162,15 @@ export class HudController {
       const signedDelta = telemetry.paceDeltaKph > 0 ? `+${telemetry.paceDeltaKph}` : String(telemetry.paceDeltaKph);
       this.paceTarget.textContent = `${telemetry.cornerPhase.toUpperCase()} / ${telemetry.targetSpeedKph} kph / ${signedDelta}`;
       this.paceTarget.classList.toggle("too-hot", telemetry.paceDeltaKph > 22);
+    }
+
+    if (this.checkpoint) {
+      this.checkpoint.textContent = `${telemetry.checkpointProgress} ${telemetry.nextCheckpoint}`;
+    }
+
+    if (this.penalty) {
+      this.penalty.textContent = telemetry.penaltySeconds > 0 ? `+${telemetry.penaltySeconds}s` : telemetry.lapValid ? "Clear" : "Invalid";
+      this.penalty.classList.toggle("positive", telemetry.penaltySeconds > 0 || !telemetry.lapValid);
     }
   }
 

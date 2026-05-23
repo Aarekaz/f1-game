@@ -54,6 +54,8 @@ async function checkDesktop(browser) {
     instruction: document.querySelector("#track-instruction")?.textContent ?? "",
     paceTarget: document.querySelector("#pace-target")?.textContent ?? "",
     cue: document.querySelector("#track-cue")?.textContent ?? "",
+    checkpoint: document.querySelector("#checkpoint")?.textContent ?? "",
+    penalty: document.querySelector("#penalty")?.textContent ?? "",
     lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
@@ -87,6 +89,8 @@ async function checkDesktop(browser) {
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.section.length > 0, "desktop circuit section was missing");
   assert(state.cue.length > 0, "desktop driving cue was missing");
+  assert(/\d\/7/.test(state.checkpoint), `desktop checkpoint readout missing: ${state.checkpoint}`);
+  assert(state.penalty.length > 0, "desktop penalty readout was missing");
   assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
   assert(state.hintVisible, "desktop keyboard hint was not visible");
   assert(!state.startVisible, "desktop start panel stayed visible after countdown");

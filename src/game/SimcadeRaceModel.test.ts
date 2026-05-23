@@ -72,6 +72,11 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.targetSpeedKph).toBeGreaterThan(0);
     expect(typeof telemetry.cornerPhase).toBe("string");
     expect(telemetry.cleanLap).toBe(true);
+    expect(telemetry.lapValid).toBe(true);
+    expect(telemetry.penaltySeconds).toBe(0);
+    expect(telemetry.nextCheckpoint).toBe("Basilica Entry");
+    expect(telemetry.checkpointProgress).toBe("1/7");
+    expect(telemetry.sectorSplits).toEqual([null, null, null]);
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);
     expect(telemetry.rpm).toBeGreaterThan(0);
     expect(typeof telemetry.brakingZone).toBe("boolean");
@@ -137,8 +142,9 @@ describe("SimcadeRaceModel", () => {
     expect(finished.lapProgress).toBe(1);
     expect(finished.raceProgress).toBe(1);
     expect(finished.lapTime).toBeGreaterThan(0);
-    expect(finished.bestLap).not.toBeNull();
+    expect(finished.bestLap).toBeNull();
     expect(finished.totalTime).toBeGreaterThan(finished.lapTime);
+    expect(finished.penaltySeconds).toBeGreaterThan(0);
   });
 
   it("resets after finishing when restart is requested", () => {
@@ -208,6 +214,8 @@ describe("SimcadeRaceModel", () => {
     const telemetry = run(model, 4, { throttle: 1, steer: 1 });
 
     expect(telemetry.cleanLap).toBe(false);
+    expect(telemetry.lapValid).toBe(false);
     expect(telemetry.trackLimitWarnings).toBeGreaterThan(0);
+    expect(telemetry.penaltySeconds).toBeGreaterThan(0);
   });
 });
