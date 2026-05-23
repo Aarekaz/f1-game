@@ -38,6 +38,7 @@ export class ThreeRaceRenderer {
   private readonly circuit = buildGpCircuit();
   private readonly horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
+  private readonly tireSmoke = this.buildTireSmoke();
   private readonly cameraPosition = new THREE.Vector3(0, 5.3, 10.7);
   private readonly cameraTarget = new THREE.Vector3(0, 0.62, -9.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
@@ -66,6 +67,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.circuit);
     this.scene.add(this.horizon);
     this.scene.add(this.speedStreaks);
+    this.scene.add(this.tireSmoke);
     this.scene.add(this.car);
     void this.loadRaceAssets();
     this.resize();
@@ -85,14 +87,19 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.trackOffset = visualProgress.toFixed(2);
     this.renderer.domElement.dataset.carWorldZ = telemetry.car.z.toFixed(2);
     this.renderer.domElement.dataset.circuitWorldZ = this.circuit.position.z.toFixed(2);
+    this.renderer.domElement.dataset.carSlip = telemetry.car.slip.toFixed(3);
+    this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
+    this.renderer.domElement.dataset.carUndersteer = telemetry.car.understeer.toFixed(3);
+    this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
     const carX = telemetry.car.x;
     const carZ = -telemetry.car.z;
     this.car.position.set(carX, 0, carZ);
     this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
-    this.car.rotation.z = -telemetry.car.yawRate * 0.22;
+    this.car.rotation.z = -telemetry.car.yawRate * 0.22 + telemetry.car.understeer * 0.025 - telemetry.car.lockup * 0.018;
 
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
     this.updateSpeedStreaks(carX, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
+    this.updateTireSmoke(carX, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
     this.camera.fov = 57 + speedRatio * 12;
     this.desiredCameraPosition.set(
       carX,
@@ -252,5 +259,53 @@ export class ThreeRaceRenderer {
     this.speedStreaks.position.z = carZ + (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
     this.speedStreaks.position.x = carX * 0.2;
     this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
+  }
+
+  private buildTireSmoke() {
+    const group = new THREE.Group();
+    group.name = "tire-smoke-feedback";
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#f4f0e8",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (let index = 0; index < 8; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.42 + index * 0.05, 0.72 + index * 0.08), material);
+      mesh.name = "tire-smoke-puff";
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(index % 2 === 0 ? -0.9 : 0.9, 0.08, 1.4 + index * 0.52);
+      group.add(mesh);
+    }
+
+    group.userData.material = material;
+    return group;
+  }
+
+  private updateTireSmoke(
+    carX: number,
+    carZ: number,
+    heading: number,
+    speedRatio: number,
+    slip: number,
+    wheelspin: number,
+    lockup: number
+  ) {
+    const material = this.tireSmoke.userData.material as THREE.MeshBasicMaterial | undefined;
+    const smokeStrength = Math.min(1, slip * 1.2 + wheelspin * 0.65 + lockup * 0.75);
+    if (material) {
+      material.opacity = smokeStrength * 0.22;
+      material.color.set(lockup > wheelspin ? "#fff4e2" : "#eaf0e7");
+    }
+
+    this.tireSmoke.visible = smokeStrength > 0.025;
+    this.tireSmoke.position.set(carX, 0, carZ);
+    this.tireSmoke.rotation.y = -heading;
+    const pulse = 1 + Math.sin(performance.now() * 0.018) * 0.08;
+    this.tireSmoke.scale.setScalar((0.65 + speedRatio * 0.75 + smokeStrength * 0.55) * pulse);
   }
 }

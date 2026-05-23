@@ -32,7 +32,13 @@ export class RaceAudioController {
     const racing = telemetry.phase === "racing";
     const speed = Math.min(1, telemetry.speedKph / 310);
     const rpm = telemetry.rpm / 10000;
-    const slip = Math.max(telemetry.car.slip, telemetry.car.braking * 0.28);
+    const slip = Math.max(
+      telemetry.car.slip,
+      telemetry.car.braking * 0.28,
+      telemetry.car.wheelspin * 0.72,
+      telemetry.car.lockup * 0.9,
+      telemetry.car.understeer * 0.5
+    );
     const ersActive = racing && telemetry.speedKph > 130 && telemetry.ers < 0.85;
 
     this.master.gain.setTargetAtTime(racing ? 0.42 : 0.12, now, 0.08);

@@ -75,6 +75,11 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);
     expect(telemetry.rpm).toBeGreaterThan(0);
     expect(typeof telemetry.brakingZone).toBe("boolean");
+    expect(telemetry.car.throttle).toBe(0);
+    expect(telemetry.car.wheelspin).toBe(0);
+    expect(telemetry.car.understeer).toBe(0);
+    expect(telemetry.car.lockup).toBe(0);
+    expect(telemetry.rivals[0].speedKph).toBeGreaterThan(0);
   });
 
   it("surfaces braking-zone cues before heavy corners", () => {
@@ -164,5 +169,45 @@ describe("SimcadeRaceModel", () => {
 
     expect(controlledTurn.grip).toBeGreaterThan(lateTurn.grip);
     expect(controlledTurn.car.slip).toBeLessThan(lateTurn.car.slip);
+    expect(controlledTurn.car.understeer).toBeLessThan(lateTurn.car.understeer);
+  });
+
+  it("turns traction mistakes into readable car states", () => {
+    const hot = new SimcadeRaceModel();
+    hot.update(1 / 60, { ...idle, launch: true });
+    run(hot, 5.8, { throttle: 1, ers: true });
+    const oversped = run(hot, 1, { throttle: 1, steer: 1 });
+
+    const settled = new SimcadeRaceModel();
+    settled.update(1 / 60, { ...idle, launch: true });
+    run(settled, 5.8, { throttle: 1, ers: true });
+    run(settled, 0.6, { brake: 1 });
+    const controlled = run(settled, 1, { throttle: 0.35, steer: 0.65 });
+
+    expect(oversped.car.understeer).toBeGreaterThan(controlled.car.understeer);
+    expect(oversped.car.wheelspin).toBeGreaterThan(controlled.car.wheelspin);
+    expect(oversped.car.slip).toBeGreaterThan(controlled.car.slip);
+  });
+
+  it("paces rivals from circuit target speeds", () => {
+    const model = new SimcadeRaceModel();
+    const startingRivalSpeed = model.telemetry().rivals[0].speedKph;
+    model.update(1 / 60, { ...idle, launch: true });
+
+    const telemetry = run(model, 8, { throttle: 1, ers: true });
+
+    expect(telemetry.rivals[0].speedKph).not.toBe(startingRivalSpeed);
+    expect(telemetry.rivals.every((rival) => rival.speedKph >= 76 && rival.speedKph <= 292)).toBe(true);
+  });
+
+  it("invalidates the clean lap after sustained track limits abuse", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4, { throttle: 1 });
+
+    const telemetry = run(model, 4, { throttle: 1, steer: 1 });
+
+    expect(telemetry.cleanLap).toBe(false);
+    expect(telemetry.trackLimitWarnings).toBeGreaterThan(0);
   });
 });

@@ -60,6 +60,10 @@ async function checkDesktop(browser) {
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
+    carSlip: Number(document.querySelector("#game canvas")?.dataset.carSlip ?? 0),
+    carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
+    carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
+    carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? ""
   }));
 
@@ -69,6 +73,10 @@ async function checkDesktop(browser) {
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
   assert(state.carWorldZ > ready.carWorldZ + 10, "desktop car did not move through world space");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
+  assert(Number.isFinite(state.carSlip), "desktop slip telemetry was missing");
+  assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
+  assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
+  assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);

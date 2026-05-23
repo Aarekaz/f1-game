@@ -55,6 +55,10 @@ export type RaceTelemetry = {
     yawRate: number;
     slip: number;
     braking: number;
+    throttle: number;
+    wheelspin: number;
+    understeer: number;
+    lockup: number;
   };
   rivals: Array<{
     id: number;
@@ -63,6 +67,7 @@ export type RaceTelemetry = {
     heading: number;
     color: string;
     gap: number;
+    speedKph: number;
   }>;
 };
 
@@ -71,6 +76,7 @@ type RivalState = {
   lane: number;
   distance: number;
   speed: number;
+  pace: number;
   color: string;
 };
 
@@ -95,6 +101,7 @@ function createRivals(): RivalState[] {
     lane: ((index % 3) - 1) * 2.4,
     distance: 90 + index * 48,
     speed: 142 + index * 8,
+    pace: 0.9 + index * 0.012,
     color
   }));
 }
@@ -110,6 +117,9 @@ export class SimcadeRaceModel {
   private heading = 0;
   private yawRate = 0;
   private slip = 0;
+  private wheelspin = 0;
+  private understeer = 0;
+  private lockup = 0;
   private grip = 1;
   private ers = 1;
   private lapTime = 0;
@@ -123,6 +133,7 @@ export class SimcadeRaceModel {
   private message = "Hold throttle to launch";
   private messageTimer = 0;
   private lastBrake = 0;
+  private lastThrottle = 0;
   private rivals = createRivals();
 
   update(dt: number, actions: RaceActions): RaceTelemetry {
@@ -205,7 +216,11 @@ export class SimcadeRaceModel {
         heading: this.heading,
         yawRate: this.yawRate,
         slip: this.slip,
-        braking: this.phase === "racing" ? this.lastBrake : 0
+        braking: this.phase === "racing" ? this.lastBrake : 0,
+        throttle: this.phase === "racing" ? this.lastThrottle : 0,
+        wheelspin: this.wheelspin,
+        understeer: this.understeer,
+        lockup: this.lockup
       },
       rivals: this.rivals.map((rival) => ({
         id: rival.id,
@@ -213,7 +228,8 @@ export class SimcadeRaceModel {
         z: rival.distance,
         heading: -trackCurveAt(rival.distance) * 0.8,
         color: rival.color,
-        gap: (rival.distance - this.z) / 42
+        gap: (rival.distance - this.z) / 42,
+        speedKph: Math.round(rival.speed)
       }))
     };
   }
@@ -229,6 +245,9 @@ export class SimcadeRaceModel {
     this.heading = 0;
     this.yawRate = 0;
     this.slip = 0;
+    this.wheelspin = 0;
+    this.understeer = 0;
+    this.lockup = 0;
     this.grip = 1;
     this.ers = 1;
     this.lapTime = 0;
@@ -242,6 +261,7 @@ export class SimcadeRaceModel {
     this.message = "Hold throttle to launch";
     this.messageTimer = 0;
     this.lastBrake = 0;
+    this.lastThrottle = 0;
     this.rivals = createRivals();
   }
 
@@ -250,33 +270,62 @@ export class SimcadeRaceModel {
     const brake = clamp(actions.brake, 0, 1);
     const steer = clamp(actions.steer, -1, 1);
     this.lastBrake = brake;
+    this.lastThrottle = throttle;
 
     const track = sampleTrack(this.z);
     const onTrack = Math.abs(this.x - track.center) <= track.halfWidth;
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
-    const acceleration = throttle * (112 - speedRatio * 52);
-    const braking = brake * 248;
+    const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
+    const driverDemand = Math.max(throttle, brake, Math.abs(steer));
+    const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
+    const wheelspinTarget = onTrack
+      ? clamp(throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) + tractionStress * overspeed * 0.35, 0, 1)
+      : clamp(throttle * 0.6 + speedRatio * 0.18, 0, 1);
+    const lockupTarget = onTrack
+      ? clamp(brake * speedRatio * (0.18 + overspeed * 0.9 + (1 - this.grip) * 0.75), 0, 1)
+      : clamp(brake * 0.45 + speedRatio * 0.18, 0, 1);
+    const understeerTarget = clamp(
+      Math.abs(steer) * speedRatio * (track.section.difficulty * 0.24 + overspeed * 0.82 + (1 - this.grip) * 0.7),
+      0,
+      1
+    );
+
+    this.wheelspin = approach(this.wheelspin, wheelspinTarget, dt * 7.5);
+    this.lockup = approach(this.lockup, lockupTarget, dt * 10);
+    this.understeer = approach(this.understeer, understeerTarget, dt * 6);
+
+    const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34);
+    const braking = brake * 248 * (1 - this.lockup * 0.22);
     const boostPower = boost * 72;
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
+    const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
     const offTrackDrag = onTrack ? 0 : 82;
 
-    this.speed += (acceleration + boostPower - braking - drag - offTrackDrag) * dt;
+    this.speed += (acceleration + boostPower - braking - drag - instabilityDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
-    const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const gripTarget = onTrack
-      ? clamp(1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32, 0.48, 1)
+      ? clamp(1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32, 0.44, 1)
       : 0.42;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
-    const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip;
+    const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35);
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += this.yawRate * dt;
-    this.slip = clamp(Math.abs(this.yawRate) * speedRatio * (1.25 - this.grip), 0, 1);
+    this.slip = clamp(
+      Math.max(
+        Math.abs(this.yawRate) * speedRatio * (1.25 - this.grip),
+        this.wheelspin * 0.45,
+        this.lockup * 0.55,
+        this.understeer * 0.62
+      ),
+      0,
+      1
+    );
 
     const metersPerSecond = this.speed * (1000 / 3600);
     this.z += metersPerSecond * dt * 1.55;
@@ -323,6 +372,9 @@ export class SimcadeRaceModel {
 
   private updateRivals(dt: number) {
     for (const rival of this.rivals) {
+      const track = sampleTrack(rival.distance);
+      const targetSpeed = clamp(track.targetSpeedKph * rival.pace + 18, 76, 292);
+      rival.speed = approach(rival.speed, targetSpeed, dt * (rival.speed > targetSpeed ? 2.4 : 0.65));
       rival.distance += rival.speed * (1000 / 3600) * dt * 1.48;
       if (rival.distance < this.z - 60 && this.position > 1) {
         this.position -= 1;
