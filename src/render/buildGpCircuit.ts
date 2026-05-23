@@ -98,8 +98,7 @@ function makeRacingLine() {
 
   for (let ahead = -150; ahead <= RENDERED_TRACK_LENGTH; ahead += 14) {
     const sample = sampleTrack(ahead);
-    const nextCurve = trackCurveAt(ahead + 42);
-    const racingOffset = -nextCurve * 70;
+    const racingOffset = sample.racingLineOffset;
     const width = sample.brakingZone ? 0.34 : 0.22;
     const center = sample.center + Math.max(-2.8, Math.min(2.8, racingOffset));
     vertices.push(center - width, 0.041, -ahead, center + width, 0.041, -ahead);

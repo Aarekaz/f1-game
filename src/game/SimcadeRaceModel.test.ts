@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
-import { sampleTrack, trackCenterAt } from "./trackPath";
+import { TRACK_NAME, sampleTrack, trackCenterAt } from "./trackPath";
 
 const idle: RaceActions = {
   steer: 0,
@@ -28,6 +28,7 @@ describe("SimcadeRaceModel", () => {
     telemetry = run(model, 3.2, { throttle: 1 });
     expect(telemetry.phase).toBe("racing");
     expect(telemetry.speedKph).toBeGreaterThan(40);
+    expect(telemetry.scenarioName).toContain(TRACK_NAME);
   });
 
   it("accelerates, brakes, and spends ERS only under throttle", () => {
@@ -67,6 +68,10 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.trackSection).toBe(sampleTrack(telemetry.car.z).section.name);
     expect(telemetry.trackSector).toBe(sampleTrack(telemetry.car.z).section.sector);
     expect(telemetry.trackCue.length).toBeGreaterThan(0);
+    expect(telemetry.trackInstruction.length).toBeGreaterThan(0);
+    expect(telemetry.targetSpeedKph).toBeGreaterThan(0);
+    expect(typeof telemetry.cornerPhase).toBe("string");
+    expect(telemetry.cleanLap).toBe(true);
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);
     expect(telemetry.rpm).toBeGreaterThan(0);
     expect(typeof telemetry.brakingZone).toBe("boolean");
@@ -91,16 +96,29 @@ describe("SimcadeRaceModel", () => {
   });
 
   it("moves through named circuit sections", () => {
-    const samples = [sampleTrack(20), sampleTrack(280), sampleTrack(840), sampleTrack(1370)];
+    const samples = [sampleTrack(20), sampleTrack(360), sampleTrack(1120), sampleTrack(1700)];
 
     expect(samples.map((sample) => sample.section.id)).toEqual([
-      "pit-straight",
-      "turn-one-hairpin",
-      "technical-chicane",
-      "final-hairpin"
+      "front-straight",
+      "basilica-hairpin",
+      "cava-chicane",
+      "station-hairpin"
     ]);
     expect(samples[1].brakingZone).toBe(true);
     expect(samples[2].section.kind).toBe("chicane");
+  });
+
+  it("defines authored target speeds and corner phases for Aurelia GP", () => {
+    const hairpin = sampleTrack(390);
+    const chicane = sampleTrack(1110);
+    const parabolica = sampleTrack(1900);
+
+    expect(hairpin.section.name).toBe("Basilica Hairpin");
+    expect(hairpin.targetSpeedKph).toBeLessThan(100);
+    expect(hairpin.cornerPhase).not.toBe("flat");
+    expect(chicane.section.instruction).toMatch(/kerb/);
+    expect(parabolica.section.name).toBe("Parabolica");
+    expect(parabolica.targetSpeedKph).toBeGreaterThan(200);
   });
 
   it("preserves final lap timing when the race finishes", () => {

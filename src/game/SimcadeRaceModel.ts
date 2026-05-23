@@ -1,4 +1,4 @@
-import { TRACK_LOOP_LENGTH, sampleTrack, trackCurveAt } from "./trackPath";
+import { TRACK_LOOP_LENGTH, TRACK_NAME, sampleTrack, trackCurveAt } from "./trackPath";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
 
@@ -18,6 +18,7 @@ export type RaceTelemetry = {
   countdown: number;
   position: number;
   targetPosition: number;
+  scenarioName: string;
   speedKph: number;
   gear: number;
   rpm: number;
@@ -36,7 +37,13 @@ export type RaceTelemetry = {
   trackSection: string;
   trackSector: 1 | 2 | 3;
   trackCue: string;
+  trackInstruction: string;
+  cornerPhase: string;
+  targetSpeedKph: number;
+  paceDeltaKph: number;
   brakingZone: boolean;
+  cleanLap: boolean;
+  trackLimitWarnings: number;
   lapProgress: number;
   raceProgress: number;
   objective: string;
@@ -69,6 +76,7 @@ type RivalState = {
 
 const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
+const SCENARIO_NAME = `${TRACK_NAME} Sprint`;
 const MAX_SPEED = 310;
 const MIN_RACE_SPEED = 16;
 const RIVAL_COLORS = ["#24c7ff", "#f4d35e", "#f7f7f2", "#ff7a2d", "#b88cff", "#1fd17f", "#ff4f83"];
@@ -109,6 +117,9 @@ export class SimcadeRaceModel {
   private splitDelta: number | null = null;
   private totalTime = 0;
   private overtakeStreak = 0;
+  private trackLimitWarnings = 0;
+  private offTrackTime = 0;
+  private cleanLap = true;
   private message = "Hold throttle to launch";
   private messageTimer = 0;
   private lastBrake = 0;
@@ -158,6 +169,7 @@ export class SimcadeRaceModel {
       countdown: this.countdown,
       position: this.position,
       targetPosition: 3,
+      scenarioName: SCENARIO_NAME,
       speedKph: Math.round(this.speed),
       gear: this.gear(),
       rpm: this.rpm(),
@@ -176,7 +188,13 @@ export class SimcadeRaceModel {
       trackSection: track.section.name,
       trackSector: track.section.sector,
       trackCue: this.trackCue(track),
+      trackInstruction: track.section.instruction,
+      cornerPhase: track.cornerPhase,
+      targetSpeedKph: track.targetSpeedKph,
+      paceDeltaKph: Math.round(this.speed - track.targetSpeedKph),
       brakingZone: track.brakingZone,
+      cleanLap: this.cleanLap,
+      trackLimitWarnings: this.trackLimitWarnings,
       lapProgress: clamp(lapDistance / LAP_LENGTH, 0, 1),
       raceProgress: this.phase === "finished" ? 1 : clamp((this.lap - 1 + lapDistance / LAP_LENGTH) / LAPS, 0, 1),
       objective: this.position <= 3 ? "Hold podium pace" : `Catch P${Math.max(3, this.position - 1)}`,
@@ -218,6 +236,9 @@ export class SimcadeRaceModel {
     this.splitDelta = null;
     this.totalTime = 0;
     this.overtakeStreak = 0;
+    this.trackLimitWarnings = 0;
+    this.offTrackTime = 0;
+    this.cleanLap = true;
     this.message = "Hold throttle to launch";
     this.messageTimer = 0;
     this.lastBrake = 0;
@@ -244,8 +265,11 @@ export class SimcadeRaceModel {
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
-    const cornerLoad = Math.abs(track.curve) * speedRatio * 3.2;
-    const gripTarget = onTrack ? clamp(1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad, 0.54, 1) : 0.42;
+    const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
+    const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
+    const gripTarget = onTrack
+      ? clamp(1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32, 0.48, 1)
+      : 0.42;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
     const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip;
@@ -258,8 +282,25 @@ export class SimcadeRaceModel {
     this.z += metersPerSecond * dt * 1.55;
     this.x += Math.sin(this.heading) * metersPerSecond * dt * 0.28 + steer * speedRatio * dt * 2.3 + track.curve * metersPerSecond * dt * 0.95;
     this.x = clamp(this.x, track.center - 9, track.center + 9);
+    this.updateTrackLimits(dt, onTrack);
     this.lapTime += dt;
     this.totalTime += dt;
+  }
+
+  private updateTrackLimits(dt: number, onTrack: boolean) {
+    if (onTrack) {
+      this.offTrackTime = 0;
+      return;
+    }
+
+    this.offTrackTime += dt;
+    if (this.offTrackTime > 0.42) {
+      this.cleanLap = false;
+      this.trackLimitWarnings += 1;
+      this.offTrackTime = -1.8;
+      this.message = this.trackLimitWarnings >= 3 ? "Lap invalidated" : "Track limits";
+      this.messageTimer = 1.3;
+    }
   }
 
   private gear() {
@@ -296,7 +337,15 @@ export class SimcadeRaceModel {
 
   private trackCue(track: ReturnType<typeof sampleTrack>) {
     if (track.brakingZone) {
-      return this.speed > 178 ? "Brake now" : "Set up the apex";
+      return this.speed > track.targetSpeedKph + 28 ? "Brake now" : "Trail to apex";
+    }
+
+    if (track.cornerPhase === "apex") {
+      return this.speed > track.targetSpeedKph + 18 ? "Too hot" : "Clip the apex";
+    }
+
+    if (track.cornerPhase === "exit") {
+      return "Open hands";
     }
 
     if (track.section.kind === "straight") {
@@ -326,6 +375,8 @@ export class SimcadeRaceModel {
         this.messageTimer = 8;
       } else {
         this.lapTime = 0;
+        this.cleanLap = true;
+        this.offTrackTime = 0;
       }
     }
   }

@@ -42,6 +42,8 @@ export class HudController {
   private sectionName = optionalElement("section-name");
   private sectionMeta = optionalElement("section-meta");
   private trackCue = optionalElement("track-cue");
+  private trackInstruction = optionalElement("track-instruction");
+  private paceTarget = optionalElement("pace-target");
   private mapPath = optionalElement<SVGPathElement>("track-map-path");
   private mapCar = optionalElement<SVGCircleElement>("map-car");
   private raceProgress = requireElement("race-progress");
@@ -149,6 +151,16 @@ export class HudController {
       this.trackCue.textContent = telemetry.trackCue;
       this.trackCue.classList.toggle("brake", telemetry.brakingZone);
     }
+
+    if (this.trackInstruction) {
+      this.trackInstruction.textContent = telemetry.trackInstruction;
+    }
+
+    if (this.paceTarget) {
+      const signedDelta = telemetry.paceDeltaKph > 0 ? `+${telemetry.paceDeltaKph}` : String(telemetry.paceDeltaKph);
+      this.paceTarget.textContent = `${telemetry.cornerPhase.toUpperCase()} / ${telemetry.targetSpeedKph} kph / ${signedDelta}`;
+      this.paceTarget.classList.toggle("too-hot", telemetry.paceDeltaKph > 22);
+    }
   }
 
   private updateMessage(telemetry: RaceTelemetry) {
@@ -184,7 +196,11 @@ export class HudController {
     if (telemetry.phase !== "finished") return;
 
     this.resultTitle.textContent =
-      telemetry.position <= telemetry.targetPosition ? "Podium Target Hit" : `Finished P${telemetry.position}`;
+      telemetry.position <= telemetry.targetPosition
+        ? telemetry.cleanLap
+          ? "Clean Podium Run"
+          : "Podium With Warnings"
+        : `Finished P${telemetry.position}`;
     this.resultTotal.textContent = formatTime(telemetry.totalTime);
     this.resultBest.textContent = formatTime(telemetry.bestLap);
 

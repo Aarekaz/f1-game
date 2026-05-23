@@ -51,6 +51,8 @@ async function checkDesktop(browser) {
     mapPath: document.querySelector("#track-map-path")?.getAttribute("d") ?? "",
     mapCarX: Number(document.querySelector("#map-car")?.getAttribute("cx") ?? 0),
     section: document.querySelector("#section-name")?.textContent ?? "",
+    instruction: document.querySelector("#track-instruction")?.textContent ?? "",
+    paceTarget: document.querySelector("#pace-target")?.textContent ?? "",
     cue: document.querySelector("#track-cue")?.textContent ?? "",
     lapTime: document.querySelector("#current-lap-time")?.textContent ?? "",
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
@@ -72,6 +74,8 @@ async function checkDesktop(browser) {
   assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");
   assert(state.mapCarX > 0, "desktop minimap car marker was not positioned");
+  assert(state.instruction.length > 0, "desktop track instruction was missing");
+  assert(/kph/i.test(state.paceTarget), `desktop pace target missing: ${state.paceTarget}`);
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.section.length > 0, "desktop circuit section was missing");
   assert(state.cue.length > 0, "desktop driving cue was missing");

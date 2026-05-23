@@ -299,6 +299,41 @@ body {
   background: #e20e3b;
 }
 
+.pace-readout {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pace-readout span,
+.pace-readout strong {
+  display: block;
+  overflow: hidden;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pace-readout span {
+  color: #cfd6cc;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.pace-readout strong {
+  color: #d7eb8f;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.pace-readout strong.too-hot {
+  color: #ff8f7d;
+}
+
 .mini-map {
   margin-top: 10px;
   padding: 8px;
@@ -679,6 +714,10 @@ body {
     min-width: 0;
     padding: 5px 6px;
     font-size: 9px;
+  }
+
+  .pace-readout {
+    display: none;
   }
 
   .mini-map {
