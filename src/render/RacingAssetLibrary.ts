@@ -49,7 +49,6 @@ export class RacingAssetLibrary {
     return this.createAsset("raceCarRed").then((car) => {
       car.name = "kenney-racing-car";
       tintBodyMaterials(car, color);
-      car.rotation.y = Math.PI;
       car.position.y = 0.1;
       return car;
     });
