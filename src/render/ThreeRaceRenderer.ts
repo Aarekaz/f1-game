@@ -39,10 +39,11 @@ export class ThreeRaceRenderer {
   private readonly horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly tireSmoke = this.buildTireSmoke();
-  private readonly cameraPosition = new THREE.Vector3(0, 5.3, 10.7);
-  private readonly cameraTarget = new THREE.Vector3(0, 0.62, -9.5);
+  private readonly cameraPosition = new THREE.Vector3(0, 4.8, 15.4);
+  private readonly cameraTarget = new THREE.Vector3(0, 0.72, -13.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
   private readonly desiredCameraTarget = new THREE.Vector3();
+  private readonly carScreenPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly handleResize = () => this.resize();
 
@@ -93,27 +94,39 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
     const carX = telemetry.car.x;
     const carZ = -telemetry.car.z;
-    this.car.position.set(carX, 0, carZ);
-    this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
-    this.car.rotation.z = -telemetry.car.yawRate * 0.22 + telemetry.car.understeer * 0.025 - telemetry.car.lockup * 0.018;
-
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
+    this.car.position.set(carX, 0, carZ);
+    this.car.position.y = Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026;
+    this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
+    this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018;
+    this.car.rotation.z = -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024;
+
     this.updateSpeedStreaks(carX, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
     this.updateTireSmoke(carX, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
-    this.camera.fov = 57 + speedRatio * 12;
+    this.camera.fov = 54 + speedRatio * 13 + telemetry.car.braking * 2;
+
+    const lookAhead = 12 + speedRatio * 24;
+    const cameraLag = 12.6 + speedRatio * 8.2 + telemetry.car.throttle * 2.4 - telemetry.car.braking * 3.8;
+    const lateralShoulder = carX * (0.48 + speedRatio * 0.16) - telemetry.car.yawRate * 2.6;
+    const targetX = carX + telemetry.car.yawRate * 4.8 - telemetry.curve * 2.6;
     this.desiredCameraPosition.set(
-      carX,
-      5.3 - telemetry.car.braking * 0.52 + telemetry.car.slip * 0.3,
-      carZ + 10.7 + speedRatio * 2.4
+      lateralShoulder,
+      4.7 - telemetry.car.braking * 0.45 + telemetry.car.slip * 0.36 + speedRatio * 0.24,
+      carZ + cameraLag
     );
-    this.desiredCameraTarget.set(carX - telemetry.curve * 5, 0.62, carZ - 9.5 - speedRatio * 5.4);
-    const follow = 0.08 + speedRatio * 0.06;
-    this.cameraPosition.lerp(this.desiredCameraPosition, follow);
-    this.cameraTarget.lerp(this.desiredCameraTarget, follow * 1.4);
+    this.desiredCameraTarget.set(targetX, 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);
+    const positionFollow = 0.032 + speedRatio * 0.026 + telemetry.car.braking * 0.025;
+    const targetFollow = 0.07 + speedRatio * 0.04;
+    this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
+    this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
     this.camera.position.copy(this.cameraPosition);
     this.camera.lookAt(this.cameraTarget);
     this.camera.updateProjectionMatrix();
-    this.horizon.position.z = this.camera.position.z - 10.7;
+    this.carScreenPosition.copy(this.car.position).project(this.camera);
+    this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
+    this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
+    this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
+    this.horizon.position.z = this.camera.position.z - 15.4;
 
     for (const rival of telemetry.rivals) {
       const existing = this.rivals.get(rival.id);

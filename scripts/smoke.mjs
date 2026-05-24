@@ -31,7 +31,8 @@ async function checkDesktop(browser) {
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
-    circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0)
+    circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
+    carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0)
   }));
   assert(ready.startVisible, "desktop start panel was not visible");
   assert(ready.speed === 0, "desktop race moved before start");
@@ -62,6 +63,9 @@ async function checkDesktop(browser) {
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
+    cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
+    carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
+    carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     carSlip: Number(document.querySelector("#game canvas")?.dataset.carSlip ?? 0),
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
@@ -75,6 +79,9 @@ async function checkDesktop(browser) {
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
   assert(state.carWorldZ > ready.carWorldZ + 10, "desktop car did not move through world space");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
+  assert(state.cameraWorldZ < 0, "desktop chase camera did not move into world space");
+  assert(Math.abs(state.carScreenY - ready.carScreenY) > 0.01, "desktop car stayed visually pinned to the same screen position");
+  assert(Number.isFinite(state.carScreenX), "desktop car screen-space X telemetry was missing");
   assert(Number.isFinite(state.carSlip), "desktop slip telemetry was missing");
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
