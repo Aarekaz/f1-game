@@ -3,10 +3,27 @@ import { InputState } from "../game/InputState";
 import { SimcadeRaceModel, type RaceActions } from "../game/SimcadeRaceModel";
 import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
+import { DEFAULT_SESSION, findTrack, findWeather, type SessionConfig } from "../world/FictionalGpWorld";
 
 type ControlName = "left" | "right" | "throttle" | "brake" | "boost";
 
 const MAX_DT = 1 / 20;
+
+function readSessionConfig(): SessionConfig {
+  const trackSelect = document.getElementById("track-select") as HTMLSelectElement | null;
+  const weatherSelect = document.getElementById("weather-select") as HTMLSelectElement | null;
+  return {
+    track: findTrack(trackSelect?.value),
+    weather: findWeather(weatherSelect?.value)
+  };
+}
+
+function syncSessionBrief(config: SessionConfig) {
+  const brief = document.getElementById("session-brief");
+  if (brief) {
+    brief.textContent = `${config.track.region}. ${config.weather.mood}. ${config.track.character}.`;
+  }
+}
 
 function createTouchBridge() {
   const activeControls = new Set<ControlName>();
@@ -72,13 +89,22 @@ export function createRaceApp() {
 
   const input = new InputState();
   const touch = createTouchBridge();
-  const model = new SimcadeRaceModel();
+  const model = new SimcadeRaceModel(DEFAULT_SESSION);
   const renderer = new ThreeRaceRenderer(container);
   const hud = new HudController();
   const audio = new RaceAudioController();
   let last = performance.now();
   let frame = 0;
 
+  const refreshSession = () => {
+    const session = readSessionConfig();
+    syncSessionBrief(session);
+    model.configure(session);
+  };
+
+  document.getElementById("track-select")?.addEventListener("change", refreshSession);
+  document.getElementById("weather-select")?.addEventListener("change", refreshSession);
+  refreshSession();
   input.attach();
   audio.attach();
 
@@ -106,6 +132,8 @@ export function createRaceApp() {
     destroy() {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
+      document.getElementById("track-select")?.removeEventListener("change", refreshSession);
+      document.getElementById("weather-select")?.removeEventListener("change", refreshSession);
       input.detach();
       touch.destroy();
       audio.dispose();

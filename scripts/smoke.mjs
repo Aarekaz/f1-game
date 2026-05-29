@@ -26,8 +26,13 @@ try {
 async function checkDesktop(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await page.goto(url, { waitUntil: "networkidle" });
+  await page.selectOption("#track-select", "northstar");
+  await page.selectOption("#weather-select", "storm");
   const ready = await page.evaluate(() => ({
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
+    trackSelect: document.querySelector("#track-select")?.value ?? "",
+    weatherSelect: document.querySelector("#weather-select")?.value ?? "",
+    sessionBrief: document.querySelector("#session-brief")?.textContent ?? "",
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
@@ -35,6 +40,9 @@ async function checkDesktop(browser) {
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0)
   }));
   assert(ready.startVisible, "desktop start panel was not visible");
+  assert(ready.trackSelect === "northstar", "desktop fictional track selector did not update");
+  assert(ready.weatherSelect === "storm", "desktop fictional weather selector did not update");
+  assert(/alpine|wet|spray/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
   assert(ready.speed === 0, "desktop race moved before start");
 
   await page.keyboard.down("ArrowUp");
@@ -70,7 +78,10 @@ async function checkDesktop(browser) {
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
-    assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? ""
+    assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
+    assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
+    sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
+    sessionWeather: document.querySelector("#session-weather")?.textContent ?? ""
   }));
 
   await page.close();
@@ -89,6 +100,9 @@ async function checkDesktop(browser) {
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);
+  assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
+  assert(state.sessionTrack === "Northstar Ring", `desktop session track missing: ${state.sessionTrack}`);
+  assert(state.sessionWeather === "Wet Storm", `desktop session weather missing: ${state.sessionWeather}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");
   assert(state.mapCarX > 0, "desktop minimap car marker was not positioned");
   assert(state.instruction.length > 0, "desktop track instruction was missing");

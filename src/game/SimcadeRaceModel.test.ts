@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
 import { TRACK_NAME, sampleTrack, trackCenterAt } from "./trackPath";
+import { findTrack, findWeather } from "../world/FictionalGpWorld";
 
 const idle: RaceActions = {
   steer: 0,
@@ -29,6 +30,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.phase).toBe("racing");
     expect(telemetry.speedKph).toBeGreaterThan(40);
     expect(telemetry.scenarioName).toContain(TRACK_NAME);
+    expect(telemetry.trackName).toBe(TRACK_NAME);
+    expect(telemetry.weatherName).toBe("Clear Practice");
   });
 
   it("accelerates, brakes, and spends ERS only under throttle", () => {
@@ -41,6 +44,22 @@ describe("SimcadeRaceModel", () => {
     const slowed = run(model, 1, { brake: 1 });
     expect(slowed.speedKph).toBeLessThan(fast.speedKph);
     expect(slowed.ers).toBeGreaterThan(fast.ers);
+  });
+
+  it("configures fictional GP tracks and weather as session state", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm")
+    });
+
+    const telemetry = model.telemetry();
+
+    expect(telemetry.scenarioName).toBe("Northstar Ring Sprint");
+    expect(telemetry.trackName).toBe("Northstar Ring");
+    expect(telemetry.weatherName).toBe("Wet Storm");
+    expect(telemetry.surfaceGrip).toBeLessThan(0.9);
+    expect(telemetry.roadWetness).toBeGreaterThan(0.8);
+    expect(telemetry.rainIntensity).toBeGreaterThan(0.8);
   });
 
   it("steers with grip limits and loses grip off track", () => {
@@ -70,6 +89,10 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.trackCue.length).toBeGreaterThan(0);
     expect(telemetry.trackInstruction.length).toBeGreaterThan(0);
     expect(telemetry.targetSpeedKph).toBeGreaterThan(0);
+    expect(telemetry.surfaceGrip).toBe(1);
+    expect(telemetry.roadWetness).toBe(0);
+    expect(telemetry.rainIntensity).toBe(0);
+    expect(telemetry.skyColor).toBe("#c7d8df");
     expect(typeof telemetry.cornerPhase).toBe("string");
     expect(telemetry.cleanLap).toBe(true);
     expect(telemetry.lapValid).toBe(true);

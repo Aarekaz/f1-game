@@ -1,5 +1,6 @@
 import { RaceDirector } from "./RaceDirector";
-import { TRACK_LOOP_LENGTH, TRACK_NAME, sampleTrack, trackCurveAt } from "./trackPath";
+import { TRACK_LOOP_LENGTH, sampleTrack, trackCurveAt } from "./trackPath";
+import { DEFAULT_SESSION, type SessionConfig } from "../world/FictionalGpWorld";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
 
@@ -20,6 +21,15 @@ export type RaceTelemetry = {
   position: number;
   targetPosition: number;
   scenarioName: string;
+  trackName: string;
+  weatherName: string;
+  surfaceGrip: number;
+  roadWetness: number;
+  rainIntensity: number;
+  skyColor: string;
+  fogColor: string;
+  grassColor: string;
+  lightIntensity: number;
   speedKph: number;
   gear: number;
   rpm: number;
@@ -88,7 +98,6 @@ type RivalState = {
 
 const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
-const SCENARIO_NAME = `${TRACK_NAME} Sprint`;
 const MAX_SPEED = 310;
 const MIN_RACE_SPEED = 16;
 const RIVAL_COLORS = ["#24c7ff", "#f4d35e", "#f7f7f2", "#ff7a2d", "#b88cff", "#1fd17f", "#ff4f83"];
@@ -113,6 +122,7 @@ function createRivals(): RivalState[] {
 }
 
 export class SimcadeRaceModel {
+  private session: SessionConfig;
   private phase: RacePhase = "ready";
   private countdown = 0;
   private lap = 1;
@@ -142,6 +152,17 @@ export class SimcadeRaceModel {
   private lastThrottle = 0;
   private rivals = createRivals();
   private director = new RaceDirector(LAPS);
+
+  constructor(session: SessionConfig = DEFAULT_SESSION) {
+    this.session = session;
+  }
+
+  configure(session: SessionConfig) {
+    this.session = session;
+    if (this.phase === "ready") {
+      this.reset();
+    }
+  }
 
   update(dt: number, actions: RaceActions): RaceTelemetry {
     if (this.phase === "ready" && (actions.launch || actions.throttle > 0.1)) {
@@ -177,7 +198,6 @@ export class SimcadeRaceModel {
   }
 
   telemetry(): RaceTelemetry {
-    const lapDistance = this.phase === "finished" ? LAP_LENGTH : this.z % LAP_LENGTH;
     const delta = this.bestLap === null ? 0 : this.lapTime - this.bestLap;
     const track = sampleTrack(this.z);
     const director = this.director.snapshot(this.z);
@@ -188,7 +208,16 @@ export class SimcadeRaceModel {
       countdown: this.countdown,
       position: this.position,
       targetPosition: 3,
-      scenarioName: SCENARIO_NAME,
+      scenarioName: `${this.session.track.name} Sprint`,
+      trackName: this.session.track.name,
+      weatherName: this.session.weather.name,
+      surfaceGrip: this.session.weather.gripMultiplier,
+      roadWetness: this.session.weather.roadWetness,
+      rainIntensity: this.session.weather.rainIntensity,
+      skyColor: this.session.weather.skyColor,
+      fogColor: this.session.weather.fogColor,
+      grassColor: this.session.weather.grassColor,
+      lightIntensity: this.session.weather.lightIntensity,
       speedKph: Math.round(this.speed),
       gear: this.gear(),
       rpm: this.rpm(),
@@ -321,9 +350,11 @@ export class SimcadeRaceModel {
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
+    const weatherGrip = this.session.weather.gripMultiplier;
+    const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const gripTarget = onTrack
-      ? clamp(1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32, 0.44, 1)
-      : 0.42;
+      ? clamp((1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32) * weatherGrip - wetPenalty, 0.34, 1)
+      : 0.42 * weatherGrip;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
     const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35);

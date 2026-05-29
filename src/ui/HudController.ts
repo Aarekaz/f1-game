@@ -39,6 +39,8 @@ export class HudController {
   private gear = optionalElement("gear");
   private rpm = optionalElement("rpm");
   private objective = requireElement("objective");
+  private sessionTrack = optionalElement("session-track");
+  private sessionWeather = optionalElement("session-weather");
   private sectionName = optionalElement("section-name");
   private sectionMeta = optionalElement("section-meta");
   private trackCue = optionalElement("track-cue");
@@ -78,6 +80,7 @@ export class HudController {
     this.speed.textContent = String(telemetry.speedKph);
     this.updatePowertrain(telemetry);
     this.objective.textContent = telemetry.objective;
+    this.updateSessionReadout(telemetry);
     this.updateTrackReadout(telemetry);
     this.updateMiniMap(telemetry);
     setMeter(this.raceProgress, telemetry.raceProgress);
@@ -137,6 +140,16 @@ export class HudController {
 
     if (this.rpm) {
       setMeter(this.rpm, telemetry.rpm / 10000);
+    }
+  }
+
+  private updateSessionReadout(telemetry: RaceTelemetry) {
+    if (this.sessionTrack) {
+      this.sessionTrack.textContent = telemetry.trackName;
+    }
+
+    if (this.sessionWeather) {
+      this.sessionWeather.textContent = telemetry.weatherName;
     }
   }
 

@@ -34,6 +34,8 @@ export class ThreeRaceRenderer {
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1800);
   private readonly assets = new RacingAssetLibrary();
+  private readonly hemi = new THREE.HemisphereLight("#dcefff", "#14210f", 1.7);
+  private readonly sun = new THREE.DirectionalLight("#ffffff", 2.7);
   private readonly car = buildFormulaCarProxy();
   private readonly circuit = buildGpCircuit();
   private readonly horizon = this.buildHorizon();
@@ -56,14 +58,10 @@ export class ThreeRaceRenderer {
     this.parent.appendChild(this.renderer.domElement);
 
     this.scene.fog = new THREE.Fog("#c7d8df", 180, 920);
-
-    const hemi = new THREE.HemisphereLight("#dcefff", "#14210f", 1.7);
-    this.scene.add(hemi);
-
-    const sun = new THREE.DirectionalLight("#ffffff", 2.7);
-    sun.position.set(-12, 30, -22);
-    sun.castShadow = true;
-    this.scene.add(sun);
+    this.scene.add(this.hemi);
+    this.sun.position.set(-12, 30, -22);
+    this.sun.castShadow = true;
+    this.scene.add(this.sun);
 
     this.scene.add(this.circuit);
     this.scene.add(this.horizon);
@@ -92,6 +90,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
     this.renderer.domElement.dataset.carUndersteer = telemetry.car.understeer.toFixed(3);
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
+    this.renderer.domElement.dataset.weather = telemetry.weatherName;
+    this.renderer.domElement.dataset.trackName = telemetry.trackName;
+    this.applyAtmosphere(telemetry);
     const carX = telemetry.car.x;
     const carZ = -telemetry.car.z;
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
@@ -211,6 +212,20 @@ export class ThreeRaceRenderer {
     target.add(asset);
   }
 
+  private applyAtmosphere(telemetry: RaceTelemetry) {
+    const horizonMaterials = this.horizon.userData.materials as
+      | { sky: THREE.MeshBasicMaterial; treeline: THREE.MeshBasicMaterial }
+      | undefined;
+    this.renderer.setClearColor(telemetry.skyColor);
+    this.scene.fog = new THREE.Fog(telemetry.fogColor, 150 - telemetry.roadWetness * 35, 880 - telemetry.rainIntensity * 250);
+    this.hemi.color.set(telemetry.skyColor);
+    this.hemi.groundColor.set(telemetry.grassColor);
+    this.hemi.intensity = 1.25 + telemetry.lightIntensity * 0.18;
+    this.sun.intensity = telemetry.lightIntensity;
+    horizonMaterials?.sky.color.set(telemetry.skyColor);
+    horizonMaterials?.treeline.color.set(telemetry.grassColor);
+  }
+
   private buildHorizon() {
     const horizon = new THREE.Group();
     horizon.name = "soft-gp-horizon";
@@ -233,6 +248,7 @@ export class ThreeRaceRenderer {
     const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, 54), treelineMaterial);
     treeline.position.set(0, 22, -755);
     horizon.add(treeline);
+    horizon.userData.materials = { sky: skyMaterial, treeline: treelineMaterial };
 
     return horizon;
   }

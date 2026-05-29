@@ -110,6 +110,40 @@ body {
   line-height: 1.45;
 }
 
+.session-selectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.session-selectors label {
+  display: grid;
+  gap: 6px;
+}
+
+.session-selectors span {
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.session-selectors select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 7px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.session-brief {
+  min-height: 40px;
+}
+
 .game-panel button {
   justify-self: start;
   min-width: 140px;
@@ -247,6 +281,28 @@ body {
   font-size: 12px;
   font-weight: 950;
   letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.session-chip {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.session-chip span {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.session-chip strong {
+  color: #d7eb8f;
+  font-size: 11px;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
