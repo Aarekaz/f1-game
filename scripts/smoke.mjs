@@ -137,6 +137,8 @@ async function checkDesktop(browser) {
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
+    cameraWorldX: Number(document.querySelector("#game canvas")?.dataset.cameraWorldX ?? 0),
+    cameraWorldY: Number(document.querySelector("#game canvas")?.dataset.cameraWorldY ?? 0),
     cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
@@ -186,7 +188,9 @@ async function checkDesktop(browser) {
   assert(Math.abs(state.carWorldZ - ready.carWorldZ) > 10, "desktop car did not move through world-space circuit coordinates");
   assert(Number.isFinite(state.carWorldY) && state.carWorldY > 0.5, "desktop car did not receive elevated track height");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
-  assert(state.cameraWorldZ < 0, "desktop chase camera did not move into world space");
+  assert(Number.isFinite(state.cameraWorldX), "desktop chase camera X telemetry was missing");
+  assert(Number.isFinite(state.cameraWorldY) && state.cameraWorldY > state.carWorldY, "desktop chase camera did not sit above the car");
+  assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
   assert(Math.abs(state.carScreenY - ready.carScreenY) > 0.01, "desktop car stayed visually pinned to the same screen position");
   assert(Number.isFinite(state.carScreenX), "desktop car screen-space X telemetry was missing");
   assert(Number.isFinite(state.carSlip), "desktop slip telemetry was missing");
@@ -219,7 +223,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.assistThrottleTrim), "desktop assist throttle telemetry was missing");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
-  assert(state.assetCar === "apex-procedural", `desktop fictional formula car did not load, asset=${state.assetCar}`);
+  assert(state.assetCar === "apex-procedural-f25", `desktop fictional formula car did not load, asset=${state.assetCar}`);
   assert(state.tracksideAssets === "kenney", `desktop free trackside assets did not load, assets=${state.tracksideAssets}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);

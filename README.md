@@ -12,7 +12,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
-- Animated formula-car details: spinning wheels, wheel-speed blur, steering fronts, brake glow, and active rear-wing movement.
+- A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
 - Local personal bests per fictional track and weather pairing.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.
@@ -64,6 +64,6 @@ The main rule is simple: game state lives in `src/game`, rendering lives in `src
 
 ## Current direction
 
-The next big improvement is authored 3D assets: a better fictional formula car, richer circuit furniture, grandstands, marshal posts, trees, lighting, and materials that make the track feel less like a prototype. The code is set up so those can come in as GLB or glTF assets later without changing the race model.
+The next big improvement is authored 3D circuit dressing: richer grandstands, marshal posts, trees, lighting, surface materials, and a cleaner GLB/glTF asset pipeline for anything that should stop being procedural.
 
 For now, the game uses a mix of procedural geometry and a small CC0 asset subset. That is intentional: it keeps the game fast to iterate on while the handling, camera, HUD, sound, and track language settle.
