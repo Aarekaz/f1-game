@@ -265,7 +265,7 @@ async function checkDesktop(browser) {
   assert(/\d\/[67]/.test(state.checkpoint), `desktop checkpoint readout missing: ${state.checkpoint}`);
   assert(state.penalty.length > 0, "desktop penalty readout was missing");
   assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
-  assert(state.hintVisible, "desktop keyboard hint was not visible");
+  assert(!state.hintVisible, "desktop keyboard hint stayed visible during racing");
   assert(!state.startVisible, "desktop start panel stayed visible after countdown");
 }
 
