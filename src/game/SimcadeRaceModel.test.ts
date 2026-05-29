@@ -355,6 +355,36 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(state.assistSteer) + state.assistBrake + state.assistThrottleTrim).toBeGreaterThan(0.05);
   });
 
+  it("keeps a wet throttle-only stint from becoming an off-track shortcut", () => {
+    const assisted = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
+    });
+    assisted.update(1 / 60, { ...idle, launch: true });
+
+    const state = run(assisted, 25, { throttle: 1, ers: true });
+
+    expect(state.surfaceName).not.toBe("Gravel");
+    expect(state.position).toBeGreaterThan(1);
+    expect(state.flowScore).toBeGreaterThan(0.16);
+  });
+
+  it("does not award race positions from gravel or runoff shortcuts", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+
+    const state = run(model, 26, { throttle: 1, steer: 1, ers: true });
+
+    expect(state.trackLimitWarnings).toBeGreaterThan(0);
+    expect(state.position).toBeGreaterThan(1);
+    expect(state.penaltySeconds).toBeGreaterThan(0);
+  });
+
   it("scores smooth corner rhythm higher than messy inputs", () => {
     const smooth = new SimcadeRaceModel();
     smooth.update(1 / 60, { ...idle, launch: true });
