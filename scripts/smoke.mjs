@@ -182,6 +182,7 @@ async function checkDesktop(browser) {
     circuitMarshalPosts: Number(document.querySelector("#game canvas")?.dataset.circuitMarshalPosts ?? 0),
     circuitCheckpointGates: Number(document.querySelector("#game canvas")?.dataset.circuitCheckpointGates ?? 0),
     circuitVenueHero: document.querySelector("#game canvas")?.dataset.circuitVenueHero ?? "",
+    surfaceTerrainBands: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainBands ?? 0),
     surfaceRacingGroove: document.querySelector("#game canvas")?.dataset.surfaceRacingGroove ?? "",
     surfaceWetSheen: document.querySelector("#game canvas")?.dataset.surfaceWetSheen ?? "",
     surfaceEdgeLines: document.querySelector("#game canvas")?.dataset.surfaceEdgeLines ?? "",
@@ -193,6 +194,9 @@ async function checkDesktop(browser) {
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
+    horizonRenderPolicy: document.querySelector("#game canvas")?.dataset.horizonRenderPolicy ?? "",
+    horizonSkyDepthWrite: document.querySelector("#game canvas")?.dataset.horizonSkyDepthWrite ?? "",
+    horizonSkyRenderOrder: Number(document.querySelector("#game canvas")?.dataset.horizonSkyRenderOrder ?? 0),
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
@@ -290,6 +294,7 @@ async function checkDesktop(browser) {
   assert(state.circuitMarshalPosts >= 3, `desktop marshal posts were missing: ${state.circuitMarshalPosts}`);
   assert(state.circuitCheckpointGates >= 7, `desktop checkpoint gates were missing: ${state.circuitCheckpointGates}`);
   assert(/northstar-venue-hero/.test(state.circuitVenueHero), `desktop venue hero did not match selected track: ${state.circuitVenueHero}`);
+  assert(state.surfaceTerrainBands >= 2, `desktop terrain was not split into road-safe bands: ${state.surfaceTerrainBands}`);
   assert(state.surfaceRacingGroove === "rubbered-racing-groove", `desktop rubbered racing groove was missing: ${state.surfaceRacingGroove}`);
   assert(state.surfaceWetSheen === "wet-asphalt-sheen", `desktop wet surface sheen was missing: ${state.surfaceWetSheen}`);
   assert(/painted-left-track-edge/.test(state.surfaceEdgeLines), `desktop painted edge lines were missing: ${state.surfaceEdgeLines}`);
@@ -301,6 +306,9 @@ async function checkDesktop(browser) {
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);
+  assert(state.horizonRenderPolicy === "background-depth-safe", `desktop horizon render policy was unsafe: ${state.horizonRenderPolicy}`);
+  assert(state.horizonSkyDepthWrite === "false", `desktop horizon sky wrote to depth: ${state.horizonSkyDepthWrite}`);
+  assert(state.horizonSkyRenderOrder <= -1000, `desktop horizon sky did not render behind the world: ${state.horizonSkyRenderOrder}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
   assert(state.hudCoverage < 0.16, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
   assert(state.racingStatusWidth <= 250, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);

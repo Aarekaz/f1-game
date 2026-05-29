@@ -105,6 +105,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.assetCar = "apex-procedural-f25";
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.parent.appendChild(this.renderer.domElement);
+    this.syncHorizonTelemetry();
 
     this.scene.fog = new THREE.Fog("#c7d8df", 180, 920);
     this.scene.add(this.hemi);
@@ -148,6 +149,7 @@ export class ThreeRaceRenderer {
     this.positionLoadedTracksideAssets();
     this.renderer.domElement.dataset.trackLayout = session.track.id;
     this.renderer.domElement.dataset.horizonTrack = session.track.id;
+    this.syncHorizonTelemetry();
     this.syncCircuitDressingTelemetry();
   }
 
@@ -416,6 +418,15 @@ export class ThreeRaceRenderer {
     }
   }
 
+  private syncHorizonTelemetry() {
+    this.renderer.domElement.dataset.horizonRenderPolicy = String(this.horizon.userData.renderPolicy ?? "");
+    const sky = this.horizon.getObjectByName("background-sky-plane");
+    const skyMesh = sky instanceof THREE.Mesh ? sky : null;
+    const material = skyMesh?.material instanceof THREE.MeshBasicMaterial ? skyMesh.material : null;
+    this.renderer.domElement.dataset.horizonSkyDepthWrite = material ? String(material.depthWrite) : "";
+    this.renderer.domElement.dataset.horizonSkyRenderOrder = skyMesh ? String(skyMesh.renderOrder) : "";
+  }
+
   private syncCircuitDressingTelemetry() {
     const stats = this.circuit.userData.dressingStats as
       | {
@@ -429,6 +440,7 @@ export class ThreeRaceRenderer {
       | undefined;
     const surfaceStats = this.circuit.userData.surfaceStats as
       | {
+          terrainBands: number;
           racingGroove: string;
           wetSheen: string;
           edgeLines: string[];
@@ -448,6 +460,7 @@ export class ThreeRaceRenderer {
     }
 
     if (surfaceStats) {
+      this.renderer.domElement.dataset.surfaceTerrainBands = String(surfaceStats.terrainBands);
       this.renderer.domElement.dataset.surfaceRacingGroove = surfaceStats.racingGroove;
       this.renderer.domElement.dataset.surfaceWetSheen = surfaceStats.wetSheen;
       this.renderer.domElement.dataset.surfaceEdgeLines = surfaceStats.edgeLines.join(",");
@@ -520,6 +533,8 @@ export class ThreeRaceRenderer {
     const skyMaterial = new THREE.MeshBasicMaterial({
       color: "#bfd4dc",
       fog: false,
+      depthTest: false,
+      depthWrite: false,
       side: THREE.DoubleSide
     });
     const treelineMaterial = new THREE.MeshBasicMaterial({
@@ -540,6 +555,8 @@ export class ThreeRaceRenderer {
     });
 
     const sky = new THREE.Mesh(new THREE.PlaneGeometry(2200, 540), skyMaterial);
+    sky.name = "background-sky-plane";
+    sky.renderOrder = -1000;
     sky.position.set(0, 250, -760);
     horizon.add(sky);
 
@@ -553,6 +570,7 @@ export class ThreeRaceRenderer {
       this.addVenueSilhouette(horizon, layout.id, reliefMaterial);
     }
     horizon.userData.materials = { sky: skyMaterial, treeline: treelineMaterial, relief: reliefMaterial };
+    horizon.userData.renderPolicy = "background-depth-safe";
 
     return horizon;
   }

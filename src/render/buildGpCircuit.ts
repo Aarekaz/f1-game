@@ -538,7 +538,9 @@ export function buildGpCircuit() {
     makeBoardMaterial("S3", "#e20e3b", "#ffffff")
   ];
 
-  circuit.add(makeTrackStrip("terrain-following-grass", grass, -88, 88, -0.18, 0, RENDERED_TRACK_LENGTH, 26));
+  const leftTerrain = makeTrackStrip("left-terrain-following-grass", grass, -88, -15.8, -0.18, 0, RENDERED_TRACK_LENGTH, 26);
+  const rightTerrain = makeTrackStrip("right-terrain-following-grass", grass, 15.8, 88, -0.18, 0, RENDERED_TRACK_LENGTH, 26);
+  circuit.add(leftTerrain, rightTerrain);
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
   const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
   const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
@@ -823,6 +825,7 @@ export function buildGpCircuit() {
     venueHero: venueHero.name
   };
   circuit.userData.surfaceStats = {
+    terrainBands: 2,
     racingGroove: racingGroove.name,
     wetSheen: wetSheen.name,
     edgeLines: [leftEdgeLine.name, rightEdgeLine.name],
