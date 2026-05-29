@@ -209,7 +209,7 @@ export class HudController {
     }
 
     if (this.sessionWeather) {
-      this.sessionWeather.textContent = telemetry.weatherName;
+      this.sessionWeather.textContent = `${telemetry.weatherName} / ${telemetry.assistName.replace(" Assist", "")}`;
     }
   }
 

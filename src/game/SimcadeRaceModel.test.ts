@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
 import { TRACK_NAME, sampleTrack, trackCenterAt } from "./trackPath";
-import { findTrack, findWeather } from "../world/FictionalGpWorld";
+import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 
 const idle: RaceActions = {
   steer: 0,
@@ -71,14 +71,16 @@ describe("SimcadeRaceModel", () => {
   it("turns the countdown into a throttle-controlled launch", () => {
     const disciplined = new SimcadeRaceModel({
       track: findTrack("northstar"),
-      weather: findWeather("storm")
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
     });
     disciplined.update(1 / 60, { ...idle, launch: true });
     const controlled = run(disciplined, 3.2, { throttle: 0.6 });
 
     const overRevved = new SimcadeRaceModel({
       track: findTrack("northstar"),
-      weather: findWeather("storm")
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
     });
     overRevved.update(1 / 60, { ...idle, launch: true });
     const messy = run(overRevved, 3.2, { throttle: 1 });
@@ -91,7 +93,8 @@ describe("SimcadeRaceModel", () => {
   it("configures fictional GP tracks and weather as session state", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
-      weather: findWeather("storm")
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
     });
 
     const telemetry = model.telemetry();
@@ -102,6 +105,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceGrip).toBeLessThan(0.9);
     expect(telemetry.roadWetness).toBeGreaterThan(0.8);
     expect(telemetry.rainIntensity).toBeGreaterThan(0.8);
+    expect(telemetry.assistName).toBe("Balanced Assist");
   });
 
   it("steers with grip limits and loses grip off track", () => {
@@ -164,6 +168,10 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.launchCharge).toBe(0);
     expect(telemetry.launchQuality).toBe(0);
+    expect(telemetry.assistName).toBe("Balanced Assist");
+    expect(telemetry.assistSteer).toBe(0);
+    expect(telemetry.assistBrake).toBe(0);
+    expect(telemetry.assistThrottleTrim).toBe(0);
     expect(telemetry.draft).toBe(0);
     expect(telemetry.dirtyAir).toBe(0);
     expect(telemetry.airState).toBe("Clean air");
@@ -286,6 +294,31 @@ describe("SimcadeRaceModel", () => {
     expect(controlledTurn.grip).toBeGreaterThan(lateTurn.grip);
     expect(controlledTurn.car.slip).toBeLessThan(lateTurn.car.slip);
     expect(controlledTurn.car.understeer).toBeLessThan(lateTurn.car.understeer);
+  });
+
+  it("settles casual throttle driving better with balanced assists than manual inputs", () => {
+    const assisted = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    assisted.update(1 / 60, { ...idle, launch: true });
+    const assistedState = run(assisted, 7.4, { throttle: 1, ers: true });
+
+    const manual = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    manual.update(1 / 60, { ...idle, launch: true });
+    const manualState = run(manual, 7.4, { throttle: 1, ers: true });
+
+    expect(assistedState.assistName).toBe("Balanced Assist");
+    expect(Math.abs(assistedState.assistSteer) + assistedState.assistBrake + assistedState.assistThrottleTrim).toBeGreaterThan(0);
+    expect(assistedState.flowScore).toBeGreaterThan(manualState.flowScore);
+    expect(Math.abs(assistedState.carX - sampleTrack(assistedState.trackOffset).racingLineOffset)).toBeLessThan(
+      Math.abs(manualState.carX - sampleTrack(manualState.trackOffset).racingLineOffset)
+    );
   });
 
   it("scores smooth corner rhythm higher than messy inputs", () => {

@@ -27,7 +27,7 @@ async function checkDesktop(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await page.addInitScript(() => {
     window.localStorage.setItem(
-      "apex-formula:pb:northstar:storm",
+      "apex-formula:pb:northstar:storm:balanced",
       JSON.stringify({
         bestTotalTime: 181.34,
         bestLap: 58.77,
@@ -48,6 +48,7 @@ async function checkDesktop(browser) {
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     trackSelect: document.querySelector("#track-select")?.value ?? "",
     weatherSelect: document.querySelector("#weather-select")?.value ?? "",
+    assistSelect: document.querySelector("#assist-select")?.value ?? "",
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionBrief: document.querySelector("#session-brief")?.textContent ?? "",
     sessionBest: document.querySelector("#session-best")?.textContent ?? "",
@@ -62,8 +63,9 @@ async function checkDesktop(browser) {
   assert(ready.startVisible, "desktop start panel was not visible");
   assert(ready.trackSelect === "northstar", "desktop fictional track selector did not update");
   assert(ready.weatherSelect === "storm", "desktop fictional weather selector did not update");
+  assert(ready.assistSelect === "balanced", "desktop assist selector did not default to balanced");
   assert(ready.hudPhase === "ready", `desktop HUD did not expose ready phase: ${ready.hudPhase}`);
-  assert(/alpine|wet|spray/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
+  assert(/alpine|wet|spray|settles/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
   assert(/Best|flow/i.test(ready.sessionBest), `desktop personal best readout missing: ${ready.sessionBest}`);
   assert(ready.speed === 0, "desktop race moved before start");
 
@@ -131,6 +133,9 @@ async function checkDesktop(browser) {
     roadWetness: Number(document.querySelector("#game canvas")?.dataset.roadWetness ?? 0),
     launchCharge: Number(document.querySelector("#game canvas")?.dataset.launchCharge ?? 0),
     launchQuality: Number(document.querySelector("#game canvas")?.dataset.launchQuality ?? 0),
+    assistSteer: Number(document.querySelector("#game canvas")?.dataset.assistSteer ?? 0),
+    assistBrake: Number(document.querySelector("#game canvas")?.dataset.assistBrake ?? 0),
+    assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
@@ -176,6 +181,9 @@ async function checkDesktop(browser) {
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
   assert(Number.isFinite(state.launchQuality), "desktop launch quality telemetry was missing");
+  assert(Number.isFinite(state.assistSteer), "desktop assist steering telemetry was missing");
+  assert(Number.isFinite(state.assistBrake), "desktop assist brake telemetry was missing");
+  assert(Number.isFinite(state.assistThrottleTrim), "desktop assist throttle telemetry was missing");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "apex-procedural", `desktop fictional formula car did not load, asset=${state.assetCar}`);
@@ -185,7 +193,7 @@ async function checkDesktop(browser) {
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
   assert(state.sessionTrack === "Northstar Ring", `desktop session track missing: ${state.sessionTrack}`);
-  assert(state.sessionWeather === "Wet Storm", `desktop session weather missing: ${state.sessionWeather}`);
+  assert(state.sessionWeather === "Wet Storm / Balanced", `desktop session weather and assist missing: ${state.sessionWeather}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");
   assert(state.mapCarX > 0, "desktop minimap car marker was not positioned");
   assert(state.instruction.length > 0, "desktop track instruction was missing");

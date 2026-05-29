@@ -33,7 +33,7 @@ export type PersonalBestUpdate = {
 };
 
 export function sessionKey(session: SessionConfig) {
-  return `${STORAGE_PREFIX}${session.track.id}:${session.weather.id}`;
+  return `${STORAGE_PREFIX}${session.track.id}:${session.weather.id}:${session.assist.id}`;
 }
 
 export function resultFromTelemetry(telemetry: RaceTelemetry): SessionResult {

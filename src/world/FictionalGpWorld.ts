@@ -1,5 +1,6 @@
 export type FictionalTrackId = "aurelia" | "mirage" | "northstar";
 export type FictionalWeatherId = "clear" | "overcast" | "storm" | "dusk";
+export type FictionalAssistId = "balanced" | "manual";
 
 export type FictionalTrack = {
   id: FictionalTrackId;
@@ -23,9 +24,19 @@ export type FictionalWeather = {
   lightIntensity: number;
 };
 
+export type FictionalAssist = {
+  id: FictionalAssistId;
+  name: string;
+  description: string;
+  steeringHelp: number;
+  throttleHelp: number;
+  brakeHelp: number;
+};
+
 export type SessionConfig = {
   track: FictionalTrack;
   weather: FictionalWeather;
+  assist: FictionalAssist;
 };
 
 export const FICTIONAL_TRACKS: FictionalTrack[] = [
@@ -106,9 +117,29 @@ export const FICTIONAL_WEATHERS: FictionalWeather[] = [
   }
 ];
 
+export const FICTIONAL_ASSISTS: FictionalAssist[] = [
+  {
+    id: "balanced",
+    name: "Balanced Assist",
+    description: "settles the car toward the racing line",
+    steeringHelp: 0.46,
+    throttleHelp: 0.38,
+    brakeHelp: 0.28
+  },
+  {
+    id: "manual",
+    name: "Manual",
+    description: "raw inputs, no driving assist",
+    steeringHelp: 0,
+    throttleHelp: 0,
+    brakeHelp: 0
+  }
+];
+
 export const DEFAULT_SESSION: SessionConfig = {
   track: FICTIONAL_TRACKS[0],
-  weather: FICTIONAL_WEATHERS[0]
+  weather: FICTIONAL_WEATHERS[0],
+  assist: FICTIONAL_ASSISTS[0]
 };
 
 export function findTrack(id: string | null | undefined) {
@@ -117,4 +148,8 @@ export function findTrack(id: string | null | undefined) {
 
 export function findWeather(id: string | null | undefined) {
   return FICTIONAL_WEATHERS.find((weather) => weather.id === id) ?? DEFAULT_SESSION.weather;
+}
+
+export function findAssist(id: string | null | undefined) {
+  return FICTIONAL_ASSISTS.find((assist) => assist.id === id) ?? DEFAULT_SESSION.assist;
 }

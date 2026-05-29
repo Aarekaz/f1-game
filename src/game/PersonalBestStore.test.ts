@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { gradeResult, mergePersonalBest, type SessionResult } from "./PersonalBestStore";
+import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
+import { gradeResult, mergePersonalBest, sessionKey, type SessionResult } from "./PersonalBestStore";
 
 const cleanPodium: SessionResult = {
   totalTime: 182.4,
@@ -44,5 +45,15 @@ describe("PersonalBestStore", () => {
     expect(second.best.cleanFinishes).toBe(1);
     expect(second.isNewLapBest).toBe(true);
     expect(second.isNewFlowBest).toBe(false);
+  });
+
+  it("keeps assisted and manual personal bests separate", () => {
+    const baseSession = {
+      track: findTrack("northstar"),
+      weather: findWeather("storm")
+    };
+
+    expect(sessionKey({ ...baseSession, assist: findAssist("balanced") })).toBe("apex-formula:pb:northstar:storm:balanced");
+    expect(sessionKey({ ...baseSession, assist: findAssist("manual") })).toBe("apex-formula:pb:northstar:storm:manual");
   });
 });

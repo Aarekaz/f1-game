@@ -33,6 +33,10 @@ export type RaceTelemetry = {
   rainIntensity: number;
   launchCharge: number;
   launchQuality: number;
+  assistName: string;
+  assistSteer: number;
+  assistBrake: number;
+  assistThrottleTrim: number;
   skyColor: string;
   fogColor: string;
   grassColor: string;
@@ -186,6 +190,7 @@ export class SimcadeRaceModel {
   private messageTimer = 0;
   private lastBrake = 0;
   private lastThrottle = 0;
+  private latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
   private rivals = createRivals();
   private director = new RaceDirector(LAPS);
 
@@ -259,6 +264,10 @@ export class SimcadeRaceModel {
       rainIntensity: this.session.weather.rainIntensity,
       launchCharge: this.launchCharge,
       launchQuality: this.launchQuality,
+      assistName: this.session.assist.name,
+      assistSteer: this.latestAssist.steer,
+      assistBrake: this.latestAssist.brake,
+      assistThrottleTrim: this.latestAssist.throttleTrim,
       skyColor: this.session.weather.skyColor,
       fogColor: this.session.weather.fogColor,
       grassColor: this.session.weather.grassColor,
@@ -377,6 +386,7 @@ export class SimcadeRaceModel {
     this.messageTimer = 0;
     this.lastBrake = 0;
     this.lastThrottle = 0;
+    this.latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
     this.rivals = createRivals();
     this.director.reset();
   }
@@ -418,13 +428,17 @@ export class SimcadeRaceModel {
   }
 
   private updateDriving(dt: number, actions: RaceActions) {
-    const throttle = clamp(actions.throttle, 0, 1);
-    const brake = clamp(actions.brake, 0, 1);
-    const steer = clamp(actions.steer, -1, 1);
+    const rawThrottle = clamp(actions.throttle, 0, 1);
+    const rawBrake = clamp(actions.brake, 0, 1);
+    const rawSteer = clamp(actions.steer, -1, 1);
+    const track = sampleTrack(this.z);
+    const assist = this.drivingAssist(track, rawThrottle, rawBrake, rawSteer);
+    const throttle = clamp(rawThrottle * (1 - assist.throttleTrim), 0, 1);
+    const brake = clamp(Math.max(rawBrake, assist.brake), 0, 1);
+    const steer = clamp(rawSteer + assist.steer, -1, 1);
     this.lastBrake = brake;
     this.lastThrottle = throttle;
 
-    const track = sampleTrack(this.z);
     const surface = this.drivingSurface(track);
     const onTrack = surface.trackLegal;
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
@@ -542,6 +556,33 @@ export class SimcadeRaceModel {
     }
 
     return { name: "Gravel" as const, grip: 0.54, roughness: 0.82, drag: 112, trackLegal: false };
+  }
+
+  private drivingAssist(track: ReturnType<typeof sampleTrack>, throttle: number, brake: number, steer: number) {
+    const assist = this.session.assist;
+    if (assist.steeringHelp === 0 && assist.throttleHelp === 0 && assist.brakeHelp === 0) {
+      this.latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
+      return this.latestAssist;
+    }
+
+    const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
+    const lineError = this.x - track.center - track.racingLineOffset;
+    const lineCorrection = clamp(-lineError / Math.max(3.8, track.halfWidth * 0.78), -1, 1);
+    const driverOverride = clamp(Math.abs(steer) * 1.25 + brake * 0.75, 0, 1);
+    const cornerNeed = track.section.kind === "straight" ? 0.12 : clamp(track.section.difficulty, 0.32, 1);
+    const steeringAssist = lineCorrection * assist.steeringHelp * cornerNeed * (1 - driverOverride * 0.78);
+    const paceOvershoot = clamp((this.speed - track.targetSpeedKph) / 95, 0, 1);
+    const brakingWindow = track.brakingZone ? 1 : track.cornerPhase === "turn-in" ? 0.42 : 0;
+    const brakeAssist = assist.brakeHelp * paceOvershoot * brakingWindow * (1 - brake) * (0.35 + throttle * 0.65);
+    const throttleTrim =
+      assist.throttleHelp * paceOvershoot * cornerNeed * clamp(speedRatio + 0.12, 0, 1) * (track.section.kind === "straight" ? 0.16 : 1);
+
+    this.latestAssist = {
+      steer: Math.abs(steeringAssist) < 0.01 ? 0 : steeringAssist,
+      brake: brakeAssist < 0.01 ? 0 : brakeAssist,
+      throttleTrim: throttleTrim < 0.01 ? 0 : throttleTrim
+    };
+    return this.latestAssist;
   }
 
   private updateFlowScore(dt: number, track: ReturnType<typeof sampleTrack>, onTrack: boolean) {
