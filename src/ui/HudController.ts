@@ -158,6 +158,9 @@ export class HudController {
   }
 
   private racecraftText(telemetry: RaceTelemetry) {
+    if (telemetry.surfaceName === "Gravel") return `Gravel ${(telemetry.surfaceRumble * 100).toFixed(0)}%`;
+    if (telemetry.surfaceName === "Runoff") return "Runoff";
+    if (telemetry.surfaceName === "Kerb" && telemetry.surfaceRumble > 0.18) return "Kerb vibration";
     if (telemetry.contactRisk > 0.54) return `Contact risk ${(telemetry.contactRisk * 100).toFixed(0)}%`;
     if (telemetry.sideBySide > 0.22) return `Wheel to wheel ${(telemetry.sideBySide * 100).toFixed(0)}%`;
     if (telemetry.defensiveRivals > 0 && telemetry.rivalProximity > 0.12) return "Defensive car ahead";

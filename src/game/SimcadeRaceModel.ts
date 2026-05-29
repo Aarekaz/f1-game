@@ -13,6 +13,8 @@ export type RaceActions = {
   restart: boolean;
 };
 
+export type TrackSurfaceName = "Asphalt" | "Kerb" | "Runoff" | "Gravel";
+
 export type RaceTelemetry = {
   phase: RacePhase;
   lap: number;
@@ -24,6 +26,9 @@ export type RaceTelemetry = {
   trackName: string;
   weatherName: string;
   surfaceGrip: number;
+  surfaceName: TrackSurfaceName;
+  surfaceGripModifier: number;
+  surfaceRumble: number;
   roadWetness: number;
   rainIntensity: number;
   launchCharge: number;
@@ -166,6 +171,7 @@ export class SimcadeRaceModel {
   private contactRisk = 0;
   private racecraftCooldown = 0;
   private flowScore = 0.62;
+  private surfaceRumble = 0;
   private grip = 1;
   private ers = 1;
   private lapTime = 0;
@@ -246,6 +252,9 @@ export class SimcadeRaceModel {
       trackName: this.session.track.name,
       weatherName: this.session.weather.name,
       surfaceGrip: this.session.weather.gripMultiplier,
+      surfaceName: this.drivingSurface(track).name,
+      surfaceGripModifier: this.drivingSurface(track).grip,
+      surfaceRumble: this.surfaceRumble,
       roadWetness: this.session.weather.roadWetness,
       rainIntensity: this.session.weather.rainIntensity,
       launchCharge: this.launchCharge,
@@ -353,6 +362,7 @@ export class SimcadeRaceModel {
     this.contactRisk = 0;
     this.racecraftCooldown = 0;
     this.flowScore = 0.62;
+    this.surfaceRumble = 0;
     this.grip = 1;
     this.ers = 1;
     this.lapTime = 0;
@@ -415,7 +425,8 @@ export class SimcadeRaceModel {
     this.lastThrottle = throttle;
 
     const track = sampleTrack(this.z);
-    const onTrack = Math.abs(this.x - track.center) <= track.halfWidth;
+    const surface = this.drivingSurface(track);
+    const onTrack = surface.trackLegal;
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
@@ -436,11 +447,11 @@ export class SimcadeRaceModel {
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const wheelspinTarget = onTrack
-      ? clamp(throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) + tractionStress * overspeed * 0.35, 0, 1)
-      : clamp(throttle * 0.6 + speedRatio * 0.18, 0, 1);
+      ? clamp(throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) + tractionStress * overspeed * 0.35 + surface.roughness * throttle * 0.18, 0, 1)
+      : clamp(throttle * (0.48 + surface.roughness * 0.34) + speedRatio * 0.18, 0, 1);
     const lockupTarget = onTrack
-      ? clamp(brake * speedRatio * (0.18 + overspeed * 0.9 + (1 - this.grip) * 0.75), 0, 1)
-      : clamp(brake * 0.45 + speedRatio * 0.18, 0, 1);
+      ? clamp(brake * speedRatio * (0.18 + overspeed * 0.9 + (1 - this.grip) * 0.75 + surface.roughness * 0.2), 0, 1)
+      : clamp(brake * (0.38 + surface.roughness * 0.26) + speedRatio * 0.18, 0, 1);
     const understeerTarget = clamp(
       Math.abs(steer) * speedRatio * (track.section.difficulty * 0.24 + overspeed * 0.82 + (1 - this.grip) * 0.7),
       0,
@@ -460,14 +471,15 @@ export class SimcadeRaceModel {
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6;
-    const offTrackDrag = onTrack ? 0 : 82;
+    const offTrackDrag = surface.drag;
+    this.surfaceRumble = approach(this.surfaceRumble, surface.roughness * clamp(0.25 + speedRatio, 0, 1), dt * 12);
 
     this.speed += (acceleration + boostPower + draftPower + gradeForce - braking - drag - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
-    const weatherGrip = this.session.weather.gripMultiplier;
+    const weatherGrip = this.session.weather.gripMultiplier * surface.grip;
     const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
@@ -503,7 +515,7 @@ export class SimcadeRaceModel {
     this.z += metersPerSecond * dt * 1.55;
     this.x +=
       Math.sin(this.heading) * metersPerSecond * dt * 0.28 +
-      steer * speedRatio * dt * 2.3 +
+      steer * (0.16 + speedRatio) * dt * 2.3 +
       track.curve * metersPerSecond * dt * 0.95 +
       racecraft.squeeze * this.contactRisk * dt * 0.7;
     this.x = clamp(this.x, track.center - 9, track.center + 9);
@@ -511,6 +523,25 @@ export class SimcadeRaceModel {
     this.totalTime += dt;
     this.updateFlowScore(dt, track, onTrack);
     this.updateTrackLimits(dt, onTrack);
+  }
+
+  private drivingSurface(track: ReturnType<typeof sampleTrack>) {
+    const lateral = Math.abs(this.x - track.center);
+    const legalEdge = track.halfWidth;
+
+    if (lateral <= legalEdge - 0.55) {
+      return { name: "Asphalt" as const, grip: 1, roughness: 0, drag: 0, trackLegal: true };
+    }
+
+    if (lateral <= legalEdge + 0.35) {
+      return { name: "Kerb" as const, grip: 0.94, roughness: 0.52, drag: 6, trackLegal: true };
+    }
+
+    if (lateral <= legalEdge + 2.25) {
+      return { name: "Runoff" as const, grip: 0.72, roughness: 0.38, drag: 48, trackLegal: false };
+    }
+
+    return { name: "Gravel" as const, grip: 0.54, roughness: 0.82, drag: 112, trackLegal: false };
   }
 
   private updateFlowScore(dt: number, track: ReturnType<typeof sampleTrack>, onTrack: boolean) {
@@ -698,6 +729,11 @@ export class SimcadeRaceModel {
     if (track.brakingZone) {
       return this.speed > track.targetSpeedKph + 28 ? "Brake now" : "Trail to apex";
     }
+
+    const surface = this.drivingSurface(track);
+    if (surface.name === "Gravel") return "Gravel trap";
+    if (surface.name === "Runoff") return "Rejoin safely";
+    if (surface.name === "Kerb") return "Kerb strike";
 
     if (this.dirtyAir > 0.28 && track.section.kind !== "straight") {
       return "Washout risk";

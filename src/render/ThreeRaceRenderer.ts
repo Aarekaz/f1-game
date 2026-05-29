@@ -145,6 +145,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
     this.renderer.domElement.dataset.flowScore = telemetry.flowScore.toFixed(3);
     this.renderer.domElement.dataset.flowState = telemetry.flowState;
+    this.renderer.domElement.dataset.surfaceName = telemetry.surfaceName;
+    this.renderer.domElement.dataset.surfaceGripModifier = telemetry.surfaceGripModifier.toFixed(2);
+    this.renderer.domElement.dataset.surfaceRumble = telemetry.surfaceRumble.toFixed(3);
     this.renderer.domElement.dataset.draft = telemetry.draft.toFixed(3);
     this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
     this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);
@@ -165,10 +168,12 @@ export class ThreeRaceRenderer {
     const carZ = -telemetry.car.z;
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
     this.car.position.set(carX, carY, carZ);
-    this.car.position.y += Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026;
+    const rumblePulse = Math.sin(performance.now() * 0.052) * telemetry.surfaceRumble;
+    this.car.position.y += Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026 + rumblePulse * 0.032;
     this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
-    this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018;
-    this.car.rotation.z = -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16;
+    this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018 + rumblePulse * 0.018;
+    this.car.rotation.z =
+      -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
 
     this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateTireSmoke(carX, carY, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
@@ -181,7 +186,7 @@ export class ThreeRaceRenderer {
     const targetX = carX * 0.36 + telemetry.car.yawRate * 3.2 - telemetry.curve * 2.1;
     this.desiredCameraPosition.set(
       lateralShoulder,
-      carY + 3.35 - telemetry.car.braking * 0.24 + telemetry.car.slip * 0.26 + speedRatio * 0.22,
+      carY + 3.35 - telemetry.car.braking * 0.24 + telemetry.car.slip * 0.26 + speedRatio * 0.22 + telemetry.surfaceRumble * 0.08,
       carZ + cameraLag
     );
     this.desiredCameraTarget.set(targetX, carY + 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);

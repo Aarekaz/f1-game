@@ -20,6 +20,28 @@ function run(model: SimcadeRaceModel, seconds: number, input: Partial<RaceAction
   return telemetry;
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function runGuided(model: SimcadeRaceModel, seconds: number) {
+  let telemetry = model.telemetry();
+  for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+    const steer = clamp(-telemetry.carX / 3.8, -0.8, 0.8);
+    telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true, steer });
+  }
+  return telemetry;
+}
+
+function runUntilFinished(model: SimcadeRaceModel, maxSeconds: number) {
+  let telemetry = model.telemetry();
+  for (let elapsed = 0; elapsed < maxSeconds && telemetry.phase !== "finished"; elapsed += 1 / 60) {
+    const steer = clamp(-telemetry.carX / 2.4, -1, 1);
+    telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true, steer });
+  }
+  return telemetry;
+}
+
 describe("SimcadeRaceModel", () => {
   it("starts with a countdown and moves into racing", () => {
     const model = new SimcadeRaceModel();
@@ -92,6 +114,31 @@ describe("SimcadeRaceModel", () => {
     const offTrack = run(model, 2, { throttle: 1, steer: 1 });
     expect(offTrack.grip).toBeLessThan(0.9);
     expect(offTrack.onTrack).toBe(false);
+    expect(offTrack.surfaceName).not.toBe("Asphalt");
+    expect(offTrack.surfaceGripModifier).toBeLessThan(1);
+    expect(offTrack.surfaceRumble).toBeGreaterThan(0.1);
+  });
+
+  it("turns kerbs and runoff into tactile surface feedback", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4, { throttle: 1 });
+
+    const sampledSurfaces = new Set<string>();
+    let peakRumble = 0;
+    let lowestSurfaceGrip = 1;
+
+    for (let elapsed = 0; elapsed < 3; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 1 });
+      sampledSurfaces.add(telemetry.surfaceName);
+      peakRumble = Math.max(peakRumble, telemetry.surfaceRumble);
+      lowestSurfaceGrip = Math.min(lowestSurfaceGrip, telemetry.surfaceGripModifier);
+    }
+
+    expect([...sampledSurfaces]).toEqual(expect.arrayContaining(["Kerb"]));
+    expect([...sampledSurfaces].some((surface) => surface === "Runoff" || surface === "Gravel")).toBe(true);
+    expect(peakRumble).toBeGreaterThan(0.25);
+    expect(lowestSurfaceGrip).toBeLessThan(0.8);
   });
 
   it("keeps compatibility telemetry fields available", () => {
@@ -110,6 +157,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.trackInstruction.length).toBeGreaterThan(0);
     expect(telemetry.targetSpeedKph).toBeGreaterThan(0);
     expect(telemetry.surfaceGrip).toBe(1);
+    expect(telemetry.surfaceName).toBe("Asphalt");
+    expect(telemetry.surfaceGripModifier).toBe(1);
+    expect(telemetry.surfaceRumble).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.launchCharge).toBe(0);
@@ -195,7 +245,7 @@ describe("SimcadeRaceModel", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
 
-    const finished = run(model, 90, { throttle: 1, ers: true });
+    const finished = runUntilFinished(model, 700);
 
     expect(finished.phase).toBe("finished");
     expect(finished.lap).toBe(finished.laps);
@@ -210,7 +260,7 @@ describe("SimcadeRaceModel", () => {
   it("resets after finishing when restart is requested", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
-    run(model, 90, { throttle: 1, ers: true });
+    runUntilFinished(model, 700);
 
     const reset = model.update(1 / 60, { ...idle, restart: true });
 

@@ -37,7 +37,8 @@ export class RaceAudioController {
       telemetry.car.braking * 0.28,
       telemetry.car.wheelspin * 0.72,
       telemetry.car.lockup * 0.9,
-      telemetry.car.understeer * 0.5
+      telemetry.car.understeer * 0.5,
+      telemetry.surfaceRumble * 0.62
     );
     const ersActive = racing && telemetry.speedKph > 130 && telemetry.ers < 0.85;
 
@@ -45,7 +46,7 @@ export class RaceAudioController {
     this.engine.frequency.setTargetAtTime(70 + rpm * 560 + speed * 80, now, 0.04);
     this.engineGain.gain.setTargetAtTime(racing ? 0.045 + speed * 0.075 : 0.018, now, 0.05);
     this.tire.frequency.setTargetAtTime(280 + speed * 620, now, 0.04);
-    this.tireGain.gain.setTargetAtTime(racing ? slip * 0.045 : 0, now, 0.035);
+    this.tireGain.gain.setTargetAtTime(racing ? slip * 0.045 + telemetry.surfaceRumble * 0.012 : 0, now, 0.035);
     this.ers.frequency.setTargetAtTime(760 + speed * 520, now, 0.04);
     this.ersGain.gain.setTargetAtTime(ersActive ? 0.018 : 0, now, 0.05);
   }

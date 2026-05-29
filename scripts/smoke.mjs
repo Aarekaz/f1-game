@@ -96,6 +96,9 @@ async function checkDesktop(browser) {
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
     flowState: document.querySelector("#game canvas")?.dataset.flowState ?? "",
     flowMeter: document.querySelector("#flow")?.style.getPropertyValue("--value") ?? "",
+    surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
+    surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
+    surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
     draft: Number(document.querySelector("#game canvas")?.dataset.draft ?? 0),
     dirtyAir: Number(document.querySelector("#game canvas")?.dataset.dirtyAir ?? 0),
     rivalProximity: Number(document.querySelector("#game canvas")?.dataset.rivalProximity ?? 0),
@@ -136,6 +139,9 @@ async function checkDesktop(browser) {
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
   assert(state.flowState.length > 0, "desktop flow state was missing");
   assert(/%/.test(state.flowMeter), `desktop flow meter did not update: ${state.flowMeter}`);
+  assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
+  assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
+  assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
   assert(Number.isFinite(state.draft), "desktop draft telemetry was missing");
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
   assert(Number.isFinite(state.rivalProximity), "desktop rival proximity telemetry was missing");
@@ -144,7 +150,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
