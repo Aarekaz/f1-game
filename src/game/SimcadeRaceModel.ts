@@ -10,6 +10,7 @@ export type RaceActions = {
   brake: number;
   ers: boolean;
   launch: boolean;
+  recover: boolean;
   restart: boolean;
 };
 
@@ -86,6 +87,7 @@ export type RaceTelemetry = {
   raceProgress: number;
   objective: string;
   message: string;
+  cameraSnap: boolean;
   car: {
     x: number;
     y: number;
@@ -201,6 +203,7 @@ export class SimcadeRaceModel {
   private racecraftCooldown = 0;
   private raceControlCooldown = 0;
   private positionGainLockout = 0;
+  private cameraSnapTimer = 0;
   private flowScore = 0.62;
   private surfaceRumble = 0;
   private grip = 1;
@@ -260,12 +263,17 @@ export class SimcadeRaceModel {
     }
 
     if (this.phase === "racing") {
-      this.updateDriving(dt, actions);
+      if (actions.recover) {
+        this.recoverToCircuit();
+      } else {
+        this.updateDriving(dt, actions);
+      }
       this.updateRivals(dt);
       this.updateRaceDirector();
     }
 
     this.messageTimer = Math.max(0, this.messageTimer - dt);
+    this.cameraSnapTimer = Math.max(0, this.cameraSnapTimer - dt);
     return this.telemetry();
   }
 
@@ -344,6 +352,7 @@ export class SimcadeRaceModel {
       raceProgress: director.raceProgress,
       objective: this.position <= 3 ? "Hold podium pace" : `Catch P${Math.max(3, this.position - 1)}`,
       message: this.messageTimer > 0 ? this.message : "",
+      cameraSnap: this.cameraSnapTimer > 0,
       car: {
         x: this.x,
         y: track.elevation + 0.065,
@@ -402,6 +411,7 @@ export class SimcadeRaceModel {
     this.racecraftCooldown = 0;
     this.raceControlCooldown = 0;
     this.positionGainLockout = 0;
+    this.cameraSnapTimer = 0;
     this.flowScore = 0.62;
     this.surfaceRumble = 0;
     this.grip = 1;
@@ -579,6 +589,28 @@ export class SimcadeRaceModel {
     this.totalTime += dt;
     this.updateFlowScore(dt, track, onTrack);
     this.updateTrackLimits(dt, onTrack);
+  }
+
+  private recoverToCircuit() {
+    const track = sampleTrack(this.z);
+    this.x = track.center + track.racingLineOffset * 0.25;
+    this.heading = -track.curve * 0.16;
+    this.yawRate = 0;
+    this.speed = Math.max(this.speed, 58);
+    this.slip = 0.08;
+    this.wheelspin = 0;
+    this.understeer = 0;
+    this.lockup = 0;
+    this.grip = Math.max(this.grip, 0.62);
+    this.surfaceRumble = 0;
+    this.cleanLap = false;
+    this.positionGainLockout = Math.max(this.positionGainLockout, 2.8);
+    this.offTrackTime = -2.4;
+    this.director.addPenalty(4);
+    this.message = "Recovered to track: +4s";
+    this.messageTimer = 1.3;
+    this.cameraSnapTimer = 0.45;
+    this.latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
   }
 
   private drivingSurface(track: ReturnType<typeof sampleTrack>) {

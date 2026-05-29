@@ -9,6 +9,7 @@ const idle: RaceActions = {
   brake: 0,
   ers: false,
   launch: false,
+  recover: false,
   restart: false
 };
 
@@ -193,6 +194,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rpm).toBeGreaterThan(0);
     expect(telemetry.flowScore).toBeGreaterThan(0);
     expect(telemetry.flowState).toBe("Good rhythm");
+    expect(telemetry.cameraSnap).toBe(false);
     expect(typeof telemetry.brakingZone).toBe("boolean");
     expect(telemetry.car.throttle).toBe(0);
     expect(Number.isFinite(telemetry.car.y)).toBe(true);
@@ -398,6 +400,28 @@ describe("SimcadeRaceModel", () => {
     expect(state.trackLimitWarnings).toBeGreaterThan(0);
     expect(state.position).toBeGreaterThan(1);
     expect(state.penaltySeconds).toBeGreaterThan(0);
+  });
+
+  it("lets stranded manual drivers recover to the circuit with a penalty", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const stranded = run(model, 18, { throttle: 1, steer: 1 });
+
+    expect(stranded.surfaceName).toBe("Gravel");
+    expect(stranded.speedKph).toBeLessThanOrEqual(20);
+
+    const recovered = model.update(1 / 60, { ...idle, recover: true });
+
+    expect(["Asphalt", "Kerb"]).toContain(recovered.surfaceName);
+    expect(recovered.speedKph).toBeGreaterThan(stranded.speedKph);
+    expect(recovered.penaltySeconds).toBeGreaterThan(stranded.penaltySeconds);
+    expect(recovered.cleanLap).toBe(false);
+    expect(recovered.message).toMatch(/Recovered/);
+    expect(recovered.cameraSnap).toBe(true);
   });
 
   it("scores smooth corner rhythm higher than messy inputs", () => {

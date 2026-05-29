@@ -952,7 +952,7 @@ body {
 
 .pedal-pad {
   right: max(14px, env(safe-area-inset-right));
-  grid-template-columns: 54px 54px 70px;
+  grid-template-columns: 50px 50px 50px 70px;
 }
 
 .touch-controls button {
@@ -1188,7 +1188,7 @@ body {
   }
 
   .pedal-pad {
-    grid-template-columns: 46px 48px 64px;
+    grid-template-columns: 44px 44px 44px 64px;
   }
 
   .steer-pad button {

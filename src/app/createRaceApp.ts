@@ -13,7 +13,7 @@ import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
 import { DEFAULT_SESSION, findAssist, findTrack, findWeather, type SessionConfig } from "../world/FictionalGpWorld";
 
-type ControlName = "left" | "right" | "throttle" | "brake" | "boost";
+type ControlName = "left" | "right" | "throttle" | "brake" | "boost" | "recover";
 
 const MAX_DT = 1 / 20;
 
@@ -110,6 +110,7 @@ function createTouchBridge() {
   const activeControls = new Set<ControlName>();
   const cleanups: Array<() => void> = [];
   let launchPulse = false;
+  let recoverPulse = false;
 
   document.querySelectorAll<HTMLButtonElement>("[data-control]").forEach((button) => {
     const control = button.dataset.control;
@@ -119,6 +120,7 @@ function createTouchBridge() {
       event.preventDefault();
       activeControls.add(control);
       if (control === "throttle") launchPulse = true;
+      if (control === "recover") recoverPulse = true;
     };
     const deactivate = (event: Event) => {
       event.preventDefault();
@@ -147,9 +149,11 @@ function createTouchBridge() {
         throttle: activeControls.has("throttle") ? 1 : actions.throttle,
         brake: activeControls.has("brake") ? 1 : actions.brake,
         ers: actions.ers || activeControls.has("boost"),
-        launch: actions.launch || launchPulse || activeControls.has("throttle")
+        launch: actions.launch || launchPulse || activeControls.has("throttle"),
+        recover: actions.recover || recoverPulse
       };
       launchPulse = false;
+      recoverPulse = false;
       return merged;
     },
     destroy() {
@@ -161,7 +165,7 @@ function createTouchBridge() {
 }
 
 function isControlName(value: string | undefined): value is ControlName {
-  return value === "left" || value === "right" || value === "throttle" || value === "brake" || value === "boost";
+  return value === "left" || value === "right" || value === "throttle" || value === "brake" || value === "boost" || value === "recover";
 }
 
 export function createRaceApp() {

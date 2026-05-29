@@ -7,6 +7,7 @@ type KeyMap = {
   brake: boolean;
   ers: boolean;
   launch: boolean;
+  recover: boolean;
   restart: boolean;
 };
 
@@ -26,6 +27,7 @@ export class InputState {
     brake: false,
     ers: false,
     launch: false,
+    recover: false,
     restart: false
   };
 
@@ -33,6 +35,7 @@ export class InputState {
   private throttle = 0;
   private brake = 0;
   private launchPulse = false;
+  private recoverPulse = false;
   private restartPulse = false;
 
   attach(target: Window = window) {
@@ -64,9 +67,11 @@ export class InputState {
       brake: this.brake,
       ers: this.keys.ers || gamepad.ers,
       launch: this.launchPulse || this.keys.launch || this.keys.throttle || gamepad.launch,
+      recover: this.recoverPulse || gamepad.recover,
       restart: this.restartPulse || this.keys.restart || gamepad.restart
     };
     this.launchPulse = false;
+    this.recoverPulse = false;
     this.restartPulse = false;
     return actions;
   }
@@ -79,16 +84,25 @@ export class InputState {
       brake: false,
       ers: false,
       launch: false,
+      recover: false,
       restart: false
     };
     this.steer = 0;
     this.throttle = 0;
     this.brake = 0;
     this.launchPulse = false;
+    this.recoverPulse = false;
     this.restartPulse = false;
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
+    if (event.code === "KeyR" && !event.repeat) {
+      this.recoverPulse = true;
+      this.restartPulse = true;
+      event.preventDefault();
+      return;
+    }
+
     if (this.setKey(event.code, true)) {
       event.preventDefault();
     }
@@ -134,9 +148,6 @@ export class InputState {
       case "Space":
         this.keys.launch = active;
         return true;
-      case "KeyR":
-        this.keys.restart = active;
-        return true;
       default:
         return false;
     }
@@ -145,7 +156,7 @@ export class InputState {
   private readGamepad() {
     const gamepad = navigator.getGamepads?.().find(Boolean);
     if (!gamepad) {
-      return { steer: 0, throttle: 0, brake: 0, ers: false, launch: false, restart: false };
+      return { steer: 0, throttle: 0, brake: 0, ers: false, launch: false, recover: false, restart: false };
     }
 
     const axisSteer = Math.abs(gamepad.axes[0] ?? 0) > 0.08 ? gamepad.axes[0] ?? 0 : 0;
@@ -158,6 +169,7 @@ export class InputState {
       brake: leftTrigger,
       ers: gamepad.buttons[1]?.pressed ?? false,
       launch: rightTrigger > 0.1 || faceDown,
+      recover: gamepad.buttons[2]?.pressed ?? false,
       restart: gamepad.buttons[3]?.pressed ?? false
     };
   }
