@@ -176,6 +176,12 @@ async function checkDesktop(browser) {
     circuitPitWallModules: Number(document.querySelector("#game canvas")?.dataset.circuitPitWallModules ?? 0),
     circuitMarshalPosts: Number(document.querySelector("#game canvas")?.dataset.circuitMarshalPosts ?? 0),
     circuitVenueHero: document.querySelector("#game canvas")?.dataset.circuitVenueHero ?? "",
+    surfaceRacingGroove: document.querySelector("#game canvas")?.dataset.surfaceRacingGroove ?? "",
+    surfaceWetSheen: document.querySelector("#game canvas")?.dataset.surfaceWetSheen ?? "",
+    surfaceGridSlots: Number(document.querySelector("#game canvas")?.dataset.surfaceGridSlots ?? 0),
+    surfacePuddles: Number(document.querySelector("#game canvas")?.dataset.surfacePuddles ?? 0),
+    surfaceWetSheenOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceWetSheenOpacity ?? 0),
+    surfacePuddleOpacity: Number(document.querySelector("#game canvas")?.dataset.surfacePuddleOpacity ?? 0),
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
@@ -235,6 +241,12 @@ async function checkDesktop(browser) {
   assert(state.circuitPitWallModules >= 5, `desktop pit wall modules were missing: ${state.circuitPitWallModules}`);
   assert(state.circuitMarshalPosts >= 3, `desktop marshal posts were missing: ${state.circuitMarshalPosts}`);
   assert(/northstar-venue-hero/.test(state.circuitVenueHero), `desktop venue hero did not match selected track: ${state.circuitVenueHero}`);
+  assert(state.surfaceRacingGroove === "rubbered-racing-groove", `desktop rubbered racing groove was missing: ${state.surfaceRacingGroove}`);
+  assert(state.surfaceWetSheen === "wet-asphalt-sheen", `desktop wet surface sheen was missing: ${state.surfaceWetSheen}`);
+  assert(state.surfaceGridSlots >= 10, `desktop painted grid slots were missing: ${state.surfaceGridSlots}`);
+  assert(state.surfacePuddles >= 5, `desktop standing water details were missing: ${state.surfacePuddles}`);
+  assert(state.surfaceWetSheenOpacity > 0.1, `desktop wet sheen did not react to storm weather: ${state.surfaceWetSheenOpacity}`);
+  assert(state.surfacePuddleOpacity > 0.2, `desktop puddles did not react to storm weather: ${state.surfacePuddleOpacity}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);

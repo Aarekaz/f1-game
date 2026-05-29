@@ -8,7 +8,7 @@ type AssetName = "raceCarRed" | "grandStand" | "lightPostLarge";
 
 const assetScales: Record<AssetName, number> = {
   raceCarRed: 3.05,
-  grandStand: 2.1,
+  grandStand: 0.78,
   lightPostLarge: 4.2
 };
 

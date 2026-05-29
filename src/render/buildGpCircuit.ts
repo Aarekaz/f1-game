@@ -170,6 +170,92 @@ function makeRacingLine() {
   return mesh;
 }
 
+function makeSurfaceRibbon(
+  name: string,
+  material: THREE.Material,
+  centerOffset: (sample: TrackSample) => number,
+  width: (sample: TrackSample) => number,
+  y: number,
+  startAhead = -150,
+  endAhead = RENDERED_TRACK_LENGTH,
+  step = 14
+) {
+  const geometry = new THREE.BufferGeometry();
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  const uvs: number[] = [];
+  let row = 0;
+
+  for (let ahead = startAhead; ahead <= endAhead; ahead += step) {
+    const sample = sampleTrack(ahead);
+    const center = centerOffset(sample);
+    const halfWidth = width(sample) * 0.5;
+    const left = trackWorldPointAt(ahead, center - halfWidth);
+    const right = trackWorldPointAt(ahead, center + halfWidth);
+    vertices.push(
+      left.x,
+      surfaceY(sample, center - halfWidth, y),
+      left.z,
+      right.x,
+      surfaceY(sample, center + halfWidth, y),
+      right.z
+    );
+    uvs.push(0, row, 1, row);
+
+    if (row > 0) {
+      const base = row * 2;
+      indices.push(base - 2, base - 1, base, base - 1, base + 1, base);
+    }
+
+    row += 1;
+  }
+
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+function makeGridSlot(distance: number, lateral: number, material: THREE.Material) {
+  const slot = new THREE.Group();
+  slot.name = "painted-grid-slot";
+  slot.position.set(...worldPosition(distance, lateral, 0.064));
+  slot.rotation.y = trackWorldHeadingAt(distance);
+
+  const sideWidth = 0.08;
+  const slotWidth = 2.15;
+  const slotLength = 4.75;
+  const pieces = [
+    makePlane("grid-slot-side", [sideWidth, slotLength], [-slotWidth / 2, 0, 0], material),
+    makePlane("grid-slot-side", [sideWidth, slotLength], [slotWidth / 2, 0, 0], material),
+    makePlane("grid-slot-end", [slotWidth, sideWidth], [0, 0, -slotLength / 2], material),
+    makePlane("grid-slot-end", [slotWidth, sideWidth], [0, 0, slotLength / 2], material)
+  ];
+
+  for (const piece of pieces) {
+    piece.renderOrder = 2;
+    slot.add(piece);
+  }
+
+  return slot;
+}
+
+function makeWetPuddle(distance: number, lateral: number, scale: [number, number], material: THREE.Material) {
+  const puddle = new THREE.Mesh(new THREE.CircleGeometry(1, 28), material);
+  puddle.name = "edge-standing-water";
+  puddle.rotation.x = -Math.PI / 2;
+  puddle.rotation.y = trackWorldHeadingAt(distance);
+  puddle.scale.set(scale[0], scale[1], 1);
+  puddle.position.set(...worldPosition(distance, lateral, 0.058));
+  puddle.renderOrder = 2;
+  return puddle;
+}
+
 function makeBoardMaterial(label: string, background = "#f4f7ef", foreground = "#17211b") {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -382,6 +468,10 @@ export function buildGpCircuit() {
   const glassMaterial = new THREE.MeshStandardMaterial({ color: "#9bb3b6", roughness: 0.2, metalness: 0.18, transparent: true, opacity: 0.72 });
   const accentMaterial = new THREE.MeshStandardMaterial({ color: layout.id === "mirage" ? "#20b7ff" : layout.id === "northstar" ? "#f3d348" : "#e20e3b", roughness: 0.42, metalness: 0.2 });
   const skidMaterial = new THREE.MeshBasicMaterial({ color: "#121514", transparent: true, opacity: 0.22, depthWrite: false });
+  const grooveMaterial = new THREE.MeshBasicMaterial({ color: "#101413", transparent: true, opacity: 0.2, depthWrite: false });
+  const wetSheenMaterial = new THREE.MeshBasicMaterial({ color: "#c9dde1", transparent: true, opacity: 0, depthWrite: false });
+  const puddleMaterial = new THREE.MeshBasicMaterial({ color: "#b9d3d9", transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  const gridPaintMaterial = new THREE.MeshBasicMaterial({ color: "#f4f7ef", transparent: true, opacity: 0.74, depthWrite: false });
   const chevronMaterial = makeBoardMaterial(">>", "#e20e3b", "#ffffff");
   const brakeMaterial = makeBoardMaterial("BRAKE", "#e20e3b", "#ffffff");
   const board150 = makeBoardMaterial("150");
@@ -393,7 +483,32 @@ export function buildGpCircuit() {
   const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
   const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
   const racingLine = makeRacingLine();
-  circuit.add(roadMesh, leftRunoff, rightRunoff, racingLine);
+  const racingGroove = makeSurfaceRibbon(
+    "rubbered-racing-groove",
+    grooveMaterial,
+    (sample) => Math.max(-2.8, Math.min(2.8, sample.racingLineOffset)),
+    (sample) => (sample.brakingZone ? 2.2 : 1.55),
+    0.047
+  );
+  const wetSheen = makeSurfaceRibbon("wet-asphalt-sheen", wetSheenMaterial, () => 0, (sample) => sample.halfWidth * 1.78, 0.056, -80, RENDERED_TRACK_LENGTH, 22);
+  circuit.add(roadMesh, leftRunoff, rightRunoff, racingGroove, wetSheen, racingLine);
+
+  for (let index = 0; index < 10; index += 1) {
+    const distance = 34 + index * 13.2;
+    const lateral = index % 2 === 0 ? -2.25 : 2.25;
+    circuit.add(makeGridSlot(distance, lateral, gridPaintMaterial));
+  }
+
+  const puddlePlacements = [
+    { distance: 276, lateral: 6.0, scale: [1.6, 0.42] as [number, number] },
+    { distance: 526, lateral: -6.1, scale: [1.25, 0.34] as [number, number] },
+    { distance: 1034, lateral: 5.9, scale: [1.45, 0.38] as [number, number] },
+    { distance: 1418, lateral: -6.0, scale: [1.3, 0.36] as [number, number] },
+    { distance: 1814, lateral: 6.2, scale: [1.75, 0.44] as [number, number] }
+  ];
+  for (const puddle of puddlePlacements) {
+    circuit.add(makeWetPuddle(puddle.distance, puddle.lateral, puddle.scale, puddleMaterial));
+  }
 
   const technicalSections = [
     { name: "north-hairpin-runoff", x: -22, z: 280, w: 18, d: 120 },
@@ -474,12 +589,12 @@ export function buildGpCircuit() {
   }
 
   for (const placement of [
-    { distance: 104, lateral: -31 },
-    { distance: 132, lateral: -31 },
-    { distance: 160, lateral: -31 }
+    { distance: 108, lateral: -50 },
+    { distance: 142, lateral: -50 },
+    { distance: 176, lateral: -50 }
   ]) {
     const paddock = makeFictionalPaddock("fictional-team-garages", paddockMaterial, accentMaterial, glassMaterial);
-    paddock.scale.setScalar(0.72);
+    paddock.scale.setScalar(0.46);
     dynamicPieces.push({ object: paddock, ahead: placement.distance, lateral: placement.lateral, curveScale: 0.2 });
     circuit.add(paddock);
   }
@@ -572,6 +687,10 @@ export function buildGpCircuit() {
     glassMaterial,
     accentMaterial,
     skidMaterial,
+    grooveMaterial,
+    wetSheenMaterial,
+    puddleMaterial,
+    gridPaintMaterial,
     chevronMaterial,
     brakeMaterial,
     board150,
@@ -579,13 +698,29 @@ export function buildGpCircuit() {
     board50
   ];
   circuit.userData.dynamicPieces = dynamicPieces;
-  circuit.userData.weatherMaterials = { asphalt, runoff, racingLine: racingLine.material, fence: fenceMaterial, glass: glassMaterial };
+  circuit.userData.weatherMaterials = {
+    asphalt,
+    runoff,
+    racingLine: racingLine.material,
+    fence: fenceMaterial,
+    glass: glassMaterial,
+    groove: grooveMaterial,
+    wetSheen: wetSheenMaterial,
+    puddle: puddleMaterial,
+    gridPaint: gridPaintMaterial
+  };
   circuit.userData.dressingStats = {
     dynamicPieces: dynamicPieces.length,
     catchFences: dynamicPieces.filter((piece) => piece.object.name === "catch-fence").length,
     pitWallModules: dynamicPieces.filter((piece) => piece.object.name === "fictional-pit-wall").length,
     marshalPosts: dynamicPieces.filter((piece) => piece.object.name === "marshal-post").length,
     venueHero: venueHero.name
+  };
+  circuit.userData.surfaceStats = {
+    racingGroove: racingGroove.name,
+    wetSheen: wetSheen.name,
+    gridSlots: 10,
+    puddles: puddlePlacements.length
   };
   positionTracksidePieces(circuit);
   return circuit;

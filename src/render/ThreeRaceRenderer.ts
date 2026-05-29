@@ -361,25 +361,13 @@ export class ThreeRaceRenderer {
   }
 
   private async addTracksideAssets() {
-    const stands = await Promise.all([this.assets.createGrandstand(), this.assets.createGrandstand(), this.assets.createGrandstand()]);
     const lights = await Promise.all([this.assets.createLightPost(), this.assets.createLightPost(), this.assets.createLightPost(), this.assets.createLightPost()]);
-    const standPlacements = [
-      { distance: 120, lateral: -24, rotation: Math.PI * 0.52 },
-      { distance: 620, lateral: 23, rotation: -Math.PI * 0.48 },
-      { distance: 1540, lateral: -22, rotation: Math.PI * 0.52 }
-    ];
     const lightPlacements = [
       { distance: 210, lateral: 18 },
       { distance: 760, lateral: -18 },
       { distance: 1160, lateral: 18 },
       { distance: 1470, lateral: -18 }
     ];
-
-    stands.forEach((stand, index) => {
-      const placement = standPlacements[index];
-      stand.userData.tracksidePlacement = placement;
-      this.tracksideAssets.add(stand);
-    });
 
     lights.forEach((light, index) => {
       const placement = lightPlacements[index];
@@ -412,13 +400,29 @@ export class ThreeRaceRenderer {
           venueHero: string;
         }
       | undefined;
+    const surfaceStats = this.circuit.userData.surfaceStats as
+      | {
+          racingGroove: string;
+          wetSheen: string;
+          gridSlots: number;
+          puddles: number;
+        }
+      | undefined;
 
-    if (!stats) return;
-    this.renderer.domElement.dataset.circuitDressingPieces = String(stats.dynamicPieces);
-    this.renderer.domElement.dataset.circuitCatchFences = String(stats.catchFences);
-    this.renderer.domElement.dataset.circuitPitWallModules = String(stats.pitWallModules);
-    this.renderer.domElement.dataset.circuitMarshalPosts = String(stats.marshalPosts);
-    this.renderer.domElement.dataset.circuitVenueHero = stats.venueHero;
+    if (stats) {
+      this.renderer.domElement.dataset.circuitDressingPieces = String(stats.dynamicPieces);
+      this.renderer.domElement.dataset.circuitCatchFences = String(stats.catchFences);
+      this.renderer.domElement.dataset.circuitPitWallModules = String(stats.pitWallModules);
+      this.renderer.domElement.dataset.circuitMarshalPosts = String(stats.marshalPosts);
+      this.renderer.domElement.dataset.circuitVenueHero = stats.venueHero;
+    }
+
+    if (surfaceStats) {
+      this.renderer.domElement.dataset.surfaceRacingGroove = surfaceStats.racingGroove;
+      this.renderer.domElement.dataset.surfaceWetSheen = surfaceStats.wetSheen;
+      this.renderer.domElement.dataset.surfaceGridSlots = String(surfaceStats.gridSlots);
+      this.renderer.domElement.dataset.surfacePuddles = String(surfaceStats.puddles);
+    }
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
@@ -432,6 +436,10 @@ export class ThreeRaceRenderer {
           racingLine: THREE.MeshBasicMaterial;
           fence: THREE.MeshBasicMaterial;
           glass: THREE.MeshStandardMaterial;
+          groove: THREE.MeshBasicMaterial;
+          wetSheen: THREE.MeshBasicMaterial;
+          puddle: THREE.MeshBasicMaterial;
+          gridPaint: THREE.MeshBasicMaterial;
         }
       | undefined;
     this.renderer.setClearColor(telemetry.skyColor);
@@ -452,6 +460,12 @@ export class ThreeRaceRenderer {
       weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
       weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
       weatherMaterials.glass.opacity = 0.62 + telemetry.roadWetness * 0.16;
+      weatherMaterials.groove.opacity = 0.18 + telemetry.roadWetness * 0.08;
+      weatherMaterials.wetSheen.opacity = telemetry.roadWetness * (0.12 + telemetry.rainIntensity * 0.1);
+      weatherMaterials.puddle.opacity = telemetry.roadWetness * 0.28;
+      weatherMaterials.gridPaint.opacity = 0.82 - telemetry.roadWetness * 0.16;
+      this.renderer.domElement.dataset.surfaceWetSheenOpacity = weatherMaterials.wetSheen.opacity.toFixed(2);
+      this.renderer.domElement.dataset.surfacePuddleOpacity = weatherMaterials.puddle.opacity.toFixed(2);
     }
   }
 
@@ -471,8 +485,11 @@ export class ThreeRaceRenderer {
       side: THREE.DoubleSide
     });
     const reliefMaterial = new THREE.MeshBasicMaterial({
-      color: layout.id === "mirage" ? "#77878d" : layout.id === "northstar" ? "#3f5a51" : "#667b58",
+      color: layout.id === "mirage" ? "#8ea1a6" : layout.id === "northstar" ? "#8da19a" : "#839874",
       fog: false,
+      transparent: true,
+      opacity: layout.id === "northstar" ? 0.28 : 0.42,
+      depthWrite: false,
       side: THREE.DoubleSide
     });
 
@@ -509,13 +526,13 @@ export class ThreeRaceRenderer {
     }
 
     const peaks = layoutId === "northstar" ? 12 : 10;
-    const baseY = layoutId === "northstar" ? 18 : 16;
-    const spacing = layoutId === "northstar" ? 92 : 96;
-    const heightBase = layoutId === "northstar" ? 32 : 28;
+    const baseY = layoutId === "northstar" ? 8 : 15;
+    const spacing = layoutId === "northstar" ? 116 : 96;
+    const heightBase = layoutId === "northstar" ? 10 : 24;
 
     for (let index = 0; index < peaks; index += 1) {
       const width = spacing * (1.25 + (index % 3) * 0.18);
-      const height = heightBase + ((index * 19) % (layoutId === "northstar" ? 28 : 22));
+      const height = heightBase + ((index * 19) % (layoutId === "northstar" ? 8 : 18));
       const shape = new THREE.Shape();
       shape.moveTo(-width * 0.5, 0);
       shape.lineTo(-width * 0.12, height * 0.72);
