@@ -188,6 +188,7 @@ export class SimcadeRaceModel {
   private x = 0;
   private z = 0;
   private heading = 0;
+  private lateralVelocity = 0;
   private yawRate = 0;
   private slip = 0;
   private wheelspin = 0;
@@ -396,6 +397,7 @@ export class SimcadeRaceModel {
     this.x = 0;
     this.z = 0;
     this.heading = 0;
+    this.lateralVelocity = 0;
     this.yawRate = 0;
     this.slip = 0;
     this.wheelspin = 0;
@@ -574,15 +576,21 @@ export class SimcadeRaceModel {
 
     const metersPerSecond = this.speed * (1000 / 3600);
     this.z += metersPerSecond * dt * 1.55;
-    this.x +=
-      Math.sin(this.heading) * metersPerSecond * dt * 0.28 +
-      steer * (0.16 + speedRatio) * dt * 2.3 +
-      track.curve * metersPerSecond * dt * 0.95 +
-      racecraft.squeeze * this.contactRisk * dt * 0.7;
+    const steeringSlipLimit = clamp(this.grip - this.understeer * 0.24 - this.lockup * 0.12, 0.22, 1);
+    const steeringLoad = 1 - clamp(speedRatio * 0.38 + this.wheelspin * 0.12, 0, 0.52);
+    const lateralIntent =
+      Math.sin(this.heading) * metersPerSecond * 0.28 +
+      steer * (1.25 + speedRatio * 1.7) * steeringSlipLimit * steeringLoad +
+      track.curve * metersPerSecond * 0.9 +
+      racecraft.squeeze * this.contactRisk * 0.72;
+    const tireDamping = onTrack ? 4.6 + this.grip * 2.2 - this.slip * 1.4 : 2.2 + surface.grip * 1.4;
+    this.lateralVelocity = approach(this.lateralVelocity, lateralIntent, dt * tireDamping);
+    this.x += this.lateralVelocity * dt;
     if (!onTrack && this.session.assist.steeringHelp > 0) {
       const rejoinNeed = clamp((Math.abs(this.x - track.center) - track.halfWidth + 0.2) / 3.4, 0, 1);
       const rejoinTarget = track.center + track.racingLineOffset * 0.35;
       this.x = approach(this.x, rejoinTarget, dt * this.session.assist.steeringHelp * rejoinNeed * (7.5 + speedRatio * 4.2));
+      this.lateralVelocity = approach(this.lateralVelocity, 0, dt * this.session.assist.steeringHelp * rejoinNeed * 6.5);
     }
     this.x = clamp(this.x, track.center - 9, track.center + 9);
     this.lapTime += dt;
@@ -595,6 +603,7 @@ export class SimcadeRaceModel {
     const track = sampleTrack(this.z);
     this.x = track.center + track.racingLineOffset * 0.25;
     this.heading = -track.curve * 0.16;
+    this.lateralVelocity = 0;
     this.yawRate = 0;
     this.speed = Math.max(this.speed, 58);
     this.slip = 0.08;
@@ -842,7 +851,7 @@ export class SimcadeRaceModel {
       const longitudinalPressure = clamp(1 - Math.abs(gap) / 72, 0, 1);
       const lateralPressure = clamp(1 - lateralGap / 8.2, 0, 1);
       const alongsidePressure = clamp(1 - Math.abs(gap) / 18, 0, 1) * clamp(1 - lateralGap / 6.2, 0, 1);
-      const contactPressure = clamp(1 - Math.abs(gap) / 8, 0, 1) * clamp(1 - lateralGap / 3.1, 0, 1);
+      const contactPressure = clamp(1 - Math.abs(gap) / 12, 0, 1) * clamp(1 - lateralGap / 4.4, 0, 1);
 
       proximity = Math.max(proximity, longitudinalPressure * lateralPressure);
       sideBySide = Math.max(sideBySide, alongsidePressure);

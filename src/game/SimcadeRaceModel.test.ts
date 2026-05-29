@@ -146,6 +146,21 @@ describe("SimcadeRaceModel", () => {
     expect(lowestSurfaceGrip).toBeLessThan(0.8);
   });
 
+  it("smooths keyboard steering into a recoverable tire response", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 5, { throttle: 1 });
+
+    const correction = run(model, 0.65, { throttle: 1, steer: 1 });
+    expect(correction.carX).toBeGreaterThan(0.1);
+    expect(correction.onTrack).toBe(true);
+    expect(correction.car.slip).toBeLessThan(0.7);
+
+    const overdriven = run(model, 3, { throttle: 1, steer: 1 });
+    expect(overdriven.onTrack).toBe(false);
+    expect(overdriven.surfaceName).not.toBe("Asphalt");
+  });
+
   it("keeps compatibility telemetry fields available", () => {
     const model = new SimcadeRaceModel();
     const telemetry = model.telemetry();
