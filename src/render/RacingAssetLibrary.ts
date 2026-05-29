@@ -8,7 +8,7 @@ type AssetName = "raceCarRed" | "grandStand" | "lightPostLarge";
 
 const assetScales: Record<AssetName, number> = {
   raceCarRed: 3.05,
-  grandStand: 3.8,
+  grandStand: 2.1,
   lightPostLarge: 4.2
 };
 
@@ -41,6 +41,30 @@ function tintBodyMaterials(root: THREE.Object3D, color: string) {
   });
 }
 
+function normalizeVenueMaterials(root: THREE.Object3D) {
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!("color" in material)) continue;
+
+      const color = material.color as THREE.Color;
+      const brightness = color.r + color.g + color.b;
+      if ("map" in material && material.map) {
+        material.map = null;
+      }
+      if (brightness < 1.1) {
+        color.set("#5f6c69");
+      }
+      if ("emissive" in material) material.emissive = new THREE.Color("#111816");
+      if ("emissiveIntensity" in material) material.emissiveIntensity = 0.16;
+      if ("roughness" in material) material.roughness = 0.68;
+      if ("metalness" in material) material.metalness = 0.06;
+      material.needsUpdate = true;
+    }
+  });
+}
+
 export class RacingAssetLibrary {
   private readonly manager = new THREE.LoadingManager();
   private readonly templates = new Map<AssetName, Promise<THREE.Object3D>>();
@@ -58,6 +82,7 @@ export class RacingAssetLibrary {
     return this.createAsset("grandStand").then((stand) => {
       stand.name = "kenney-grandstand";
       stand.rotation.y = Math.PI;
+      normalizeVenueMaterials(stand);
       return stand;
     });
   }

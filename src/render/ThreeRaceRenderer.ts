@@ -143,6 +143,7 @@ export class ThreeRaceRenderer {
     this.positionLoadedTracksideAssets();
     this.renderer.domElement.dataset.trackLayout = session.track.id;
     this.renderer.domElement.dataset.horizonTrack = session.track.id;
+    this.syncCircuitDressingTelemetry();
   }
 
   update(telemetry: RaceTelemetry) {
@@ -401,6 +402,25 @@ export class ThreeRaceRenderer {
     }
   }
 
+  private syncCircuitDressingTelemetry() {
+    const stats = this.circuit.userData.dressingStats as
+      | {
+          dynamicPieces: number;
+          catchFences: number;
+          pitWallModules: number;
+          marshalPosts: number;
+          venueHero: string;
+        }
+      | undefined;
+
+    if (!stats) return;
+    this.renderer.domElement.dataset.circuitDressingPieces = String(stats.dynamicPieces);
+    this.renderer.domElement.dataset.circuitCatchFences = String(stats.catchFences);
+    this.renderer.domElement.dataset.circuitPitWallModules = String(stats.pitWallModules);
+    this.renderer.domElement.dataset.circuitMarshalPosts = String(stats.marshalPosts);
+    this.renderer.domElement.dataset.circuitVenueHero = stats.venueHero;
+  }
+
   private applyAtmosphere(telemetry: RaceTelemetry) {
     const horizonMaterials = this.horizon.userData.materials as
       | { sky: THREE.MeshBasicMaterial; treeline: THREE.MeshBasicMaterial }
@@ -410,6 +430,8 @@ export class ThreeRaceRenderer {
           asphalt: THREE.MeshStandardMaterial;
           runoff: THREE.MeshStandardMaterial;
           racingLine: THREE.MeshBasicMaterial;
+          fence: THREE.MeshBasicMaterial;
+          glass: THREE.MeshStandardMaterial;
         }
       | undefined;
     this.renderer.setClearColor(telemetry.skyColor);
@@ -427,6 +449,9 @@ export class ThreeRaceRenderer {
       weatherMaterials.asphalt.metalness = 0.02 + telemetry.roadWetness * 0.16;
       weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#59645f" : getActiveTrackLayout().runoffColor);
       weatherMaterials.racingLine.opacity = 0.32 - telemetry.roadWetness * 0.11;
+      weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
+      weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
+      weatherMaterials.glass.opacity = 0.62 + telemetry.roadWetness * 0.16;
     }
   }
 

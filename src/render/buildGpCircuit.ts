@@ -209,6 +209,92 @@ function makeTracksideBoard(name: string, material: THREE.Material) {
   return board;
 }
 
+function makeCatchFence(name: string, length: number, material: THREE.Material, postMaterial: THREE.Material) {
+  const fence = new THREE.Group();
+  fence.name = name;
+
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(length, 1.65, 10, 1), material);
+  mesh.name = `${name}-mesh`;
+  mesh.position.y = 1.55;
+  mesh.castShadow = true;
+  fence.add(mesh);
+
+  const postCount = Math.max(2, Math.round(length / 3));
+  for (let index = 0; index < postCount; index += 1) {
+    const t = postCount === 1 ? 0 : index / (postCount - 1);
+    const post = makeBox(`${name}-post`, [0.08, 2.1, 0.08], [THREE.MathUtils.lerp(-length / 2, length / 2, t), 1.05, 0], postMaterial);
+    post.castShadow = true;
+    fence.add(post);
+  }
+
+  return fence;
+}
+
+function makeMarshalPost(name: string, material: THREE.Material, roofMaterial: THREE.Material) {
+  const post = new THREE.Group();
+  post.name = name;
+  post.add(makeBox(`${name}-base`, [1.9, 0.16, 1.1], [0, 0.08, 0], material));
+  post.add(makeBox(`${name}-booth`, [1.55, 1.05, 0.82], [0, 0.68, 0], material));
+  post.add(makeBox(`${name}-roof`, [1.9, 0.18, 1.12], [0, 1.3, 0], roofMaterial));
+  post.add(makeBox(`${name}-flag-panel`, [0.55, 0.5, 0.05], [0.46, 0.83, -0.44], roofMaterial));
+  return post;
+}
+
+function makePitWallModule(name: string, material: THREE.Material, accentMaterial: THREE.Material, glassMaterial: THREE.Material) {
+  const module = new THREE.Group();
+  module.name = name;
+  module.add(makeBox(`${name}-wall`, [0.4, 0.92, 5.6], [0, 0.46, 0], material));
+  module.add(makeBox(`${name}-timing-screens`, [0.16, 0.58, 2.6], [-0.22, 1.18, -0.4], glassMaterial));
+  module.add(makeBox(`${name}-accent-rail`, [0.08, 0.12, 5.7], [-0.26, 0.98, 0], accentMaterial));
+  return module;
+}
+
+function makeFictionalPaddock(name: string, material: THREE.Material, accentMaterial: THREE.Material, glassMaterial: THREE.Material) {
+  const paddock = new THREE.Group();
+  paddock.name = name;
+  paddock.add(makeBox(`${name}-garage-block`, [14.2, 3.2, 7.8], [0, 1.6, 0], material));
+  paddock.add(makeBox(`${name}-upper-suite`, [12.4, 1.45, 5.4], [0, 4.0, -0.55], glassMaterial));
+  paddock.add(makeBox(`${name}-roof-blade`, [15.4, 0.24, 8.6], [0, 4.86, 0], accentMaterial));
+  for (let bay = 0; bay < 5; bay += 1) {
+    paddock.add(makeBox(`${name}-garage-door`, [2.1, 1.65, 0.08], [-5.0 + bay * 2.5, 1.1, -3.96], glassMaterial));
+  }
+  return paddock;
+}
+
+function makeVenueHero(layoutId: string, material: THREE.Material, accentMaterial: THREE.Material, glassMaterial: THREE.Material) {
+  const hero = new THREE.Group();
+  hero.name = `${layoutId}-venue-hero`;
+
+  if (layoutId === "mirage") {
+    hero.add(makeBox("mirage-marina-club", [10.8, 2.6, 5.2], [0, 1.3, 0], material));
+    hero.add(makeBox("mirage-glass-deck", [9.2, 1.1, 4.2], [0, 3.1, -0.2], glassMaterial));
+    for (let mast = 0; mast < 7; mast += 1) {
+      const pole = makeBox("mirage-yacht-mast", [0.07, 5.4 + (mast % 3) * 0.6, 0.07], [-4.8 + mast * 1.6, 3.1, 3.1], accentMaterial);
+      pole.rotation.z = (mast % 2 === 0 ? -1 : 1) * 0.05;
+      hero.add(pole);
+    }
+    return hero;
+  }
+
+  if (layoutId === "northstar") {
+    hero.add(makeBox("northstar-lodge", [9.8, 2.8, 5.4], [0, 1.4, 0], material));
+    const roof = makeBox("northstar-lodge-roof", [11.2, 0.38, 6.2], [0, 3.1, 0], accentMaterial);
+    roof.rotation.z = 0.08;
+    hero.add(roof);
+    for (let beam = 0; beam < 5; beam += 1) {
+      hero.add(makeBox("northstar-timber-beam", [0.16, 2.1, 0.16], [-4 + beam * 2, 1.26, -2.82], accentMaterial));
+    }
+    return hero;
+  }
+
+  hero.add(makeBox("aurelia-stone-pavilion", [9.6, 2.8, 5.2], [0, 1.4, 0], material));
+  hero.add(makeBox("aurelia-terrace-glass", [8.2, 1.0, 4.2], [0, 3.15, -0.2], glassMaterial));
+  for (let arch = 0; arch < 4; arch += 1) {
+    hero.add(makeBox("aurelia-arch-column", [0.22, 2.1, 0.22], [-3.6 + arch * 2.4, 1.05, -2.72], accentMaterial));
+  }
+  return hero;
+}
+
 function makeTree(name: string, height: number, color: string) {
   const tree = new THREE.Group();
   tree.name = name;
@@ -290,7 +376,11 @@ export function buildGpCircuit() {
   const kerbRed = new THREE.MeshStandardMaterial({ color: "#d62b3a", roughness: 0.54 });
   const kerbWhite = new THREE.MeshStandardMaterial({ color: "#f5f7f4", roughness: 0.5 });
   const barrierMaterial = new THREE.MeshStandardMaterial({ color: "#dce3e8", roughness: 0.62, metalness: 0.08 });
-  const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#202832", roughness: 0.48, metalness: 0.25 });
+  const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#303c40", roughness: 0.52, metalness: 0.18 });
+  const fenceMaterial = new THREE.MeshBasicMaterial({ color: "#dce7e4", transparent: true, opacity: 0.26, side: THREE.DoubleSide });
+  const paddockMaterial = new THREE.MeshStandardMaterial({ color: "#68736f", roughness: 0.6, metalness: 0.08 });
+  const glassMaterial = new THREE.MeshStandardMaterial({ color: "#9bb3b6", roughness: 0.2, metalness: 0.18, transparent: true, opacity: 0.72 });
+  const accentMaterial = new THREE.MeshStandardMaterial({ color: layout.id === "mirage" ? "#20b7ff" : layout.id === "northstar" ? "#f3d348" : "#e20e3b", roughness: 0.42, metalness: 0.2 });
   const skidMaterial = new THREE.MeshBasicMaterial({ color: "#121514", transparent: true, opacity: 0.22, depthWrite: false });
   const chevronMaterial = makeBoardMaterial(">>", "#e20e3b", "#ffffff");
   const brakeMaterial = makeBoardMaterial("BRAKE", "#e20e3b", "#ffffff");
@@ -362,8 +452,58 @@ export function buildGpCircuit() {
       const barrier = makeBox("low-techpro-barrier", [0.34, 0.82, 14], [side * 15.1, 0.42, -ahead], barrierMaterial);
       dynamicPieces.push({ object: barrier, ahead, lateral: side * 15.1, curveScale: 1.15 });
       circuit.add(barrier);
+
+      if (index % 2 === 0) {
+        const fence = makeCatchFence("catch-fence", 12.5, fenceMaterial, bridgeMaterial);
+        dynamicPieces.push({ object: fence, ahead, lateral: side * 16.2, curveScale: 1.15 });
+        circuit.add(fence);
+      }
     }
   }
+
+  for (const placement of [
+    { distance: 72, lateral: -18.2 },
+    { distance: 96, lateral: -18.2 },
+    { distance: 120, lateral: -18.2 },
+    { distance: 144, lateral: -18.2 },
+    { distance: 168, lateral: -18.2 }
+  ]) {
+    const pitWall = makePitWallModule("fictional-pit-wall", bridgeMaterial, accentMaterial, glassMaterial);
+    dynamicPieces.push({ object: pitWall, ahead: placement.distance, lateral: placement.lateral, curveScale: 0.4 });
+    circuit.add(pitWall);
+  }
+
+  for (const placement of [
+    { distance: 104, lateral: -31 },
+    { distance: 132, lateral: -31 },
+    { distance: 160, lateral: -31 }
+  ]) {
+    const paddock = makeFictionalPaddock("fictional-team-garages", paddockMaterial, accentMaterial, glassMaterial);
+    paddock.scale.setScalar(0.72);
+    dynamicPieces.push({ object: paddock, ahead: placement.distance, lateral: placement.lateral, curveScale: 0.2 });
+    circuit.add(paddock);
+  }
+
+  for (const placement of [
+    { distance: 410, lateral: 18.4 },
+    { distance: 1010, lateral: -18.6 },
+    { distance: 1510, lateral: 18.8 }
+  ]) {
+    const marshalPost = makeMarshalPost("marshal-post", paddockMaterial, accentMaterial);
+    dynamicPieces.push({ object: marshalPost, ahead: placement.distance, lateral: placement.lateral, curveScale: 1.1 });
+    circuit.add(marshalPost);
+  }
+
+  const heroPlacement =
+    layout.id === "mirage"
+      ? { distance: 670, lateral: 34 }
+      : layout.id === "northstar"
+        ? { distance: 930, lateral: -34 }
+        : { distance: 650, lateral: 33 };
+  const venueHero = makeVenueHero(layout.id, paddockMaterial, accentMaterial, glassMaterial);
+  venueHero.scale.setScalar(1.08);
+  dynamicPieces.push({ object: venueHero, ahead: heroPlacement.distance, lateral: heroPlacement.lateral, curveScale: 0.35 });
+  circuit.add(venueHero);
 
   for (let lap = 0; lap < 1; lap += 1) {
     const lapStart = lap * TRACK_LOOP_LENGTH;
@@ -427,6 +567,10 @@ export function buildGpCircuit() {
     kerbWhite,
     barrierMaterial,
     bridgeMaterial,
+    fenceMaterial,
+    paddockMaterial,
+    glassMaterial,
+    accentMaterial,
     skidMaterial,
     chevronMaterial,
     brakeMaterial,
@@ -435,7 +579,14 @@ export function buildGpCircuit() {
     board50
   ];
   circuit.userData.dynamicPieces = dynamicPieces;
-  circuit.userData.weatherMaterials = { asphalt, runoff, racingLine: racingLine.material };
+  circuit.userData.weatherMaterials = { asphalt, runoff, racingLine: racingLine.material, fence: fenceMaterial, glass: glassMaterial };
+  circuit.userData.dressingStats = {
+    dynamicPieces: dynamicPieces.length,
+    catchFences: dynamicPieces.filter((piece) => piece.object.name === "catch-fence").length,
+    pitWallModules: dynamicPieces.filter((piece) => piece.object.name === "fictional-pit-wall").length,
+    marshalPosts: dynamicPieces.filter((piece) => piece.object.name === "marshal-post").length,
+    venueHero: venueHero.name
+  };
   positionTracksidePieces(circuit);
   return circuit;
 }
