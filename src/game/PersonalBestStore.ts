@@ -56,6 +56,14 @@ export function gradeResult(result: SessionResult) {
   return "Scrappy";
 }
 
+export function resultHeadline(result: SessionResult) {
+  if (result.position > 3) return `Finished P${result.position}`;
+  if (!result.cleanLap) return "Podium With Warnings";
+  if (result.flowScore >= 0.76) return "Apex Podium Run";
+  if (result.flowScore >= 0.62) return "Clean Podium Run";
+  return "Podium, Rhythm Needed";
+}
+
 export function mergePersonalBest(previous: PersonalBest | null, result: SessionResult, now = new Date()) {
   const grade = gradeResult(result);
   const isNewTotalBest = previous?.bestTotalTime == null || result.totalTime < previous.bestTotalTime;

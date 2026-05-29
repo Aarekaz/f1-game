@@ -1,5 +1,5 @@
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import type { PersonalBest, PersonalBestUpdate } from "../game/PersonalBestStore";
+import { resultHeadline, type PersonalBest, type PersonalBestUpdate } from "../game/PersonalBestStore";
 import { TRACK_LOOP_LENGTH, trackWorldPointAt, wrapDistance } from "../game/trackPath";
 
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -321,12 +321,14 @@ export class HudController {
   private updateResults(telemetry: RaceTelemetry) {
     if (telemetry.phase !== "finished") return;
 
-    this.resultTitle.textContent =
-      telemetry.position <= telemetry.targetPosition
-        ? telemetry.cleanLap
-          ? "Clean Podium Run"
-          : "Podium With Warnings"
-        : `Finished P${telemetry.position}`;
+    this.resultTitle.textContent = resultHeadline({
+      totalTime: telemetry.totalTime,
+      bestLap: telemetry.bestLap,
+      flowScore: telemetry.flowScore,
+      position: telemetry.position,
+      overtakes: telemetry.overtakeStreak,
+      cleanLap: telemetry.cleanLap
+    });
     this.resultTotal.textContent = formatTime(telemetry.totalTime);
     this.resultBest.textContent = formatTime(telemetry.bestLap);
 

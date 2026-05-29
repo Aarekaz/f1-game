@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
-import { gradeResult, mergePersonalBest, sessionKey, type SessionResult } from "./PersonalBestStore";
+import { gradeResult, mergePersonalBest, resultHeadline, sessionKey, type SessionResult } from "./PersonalBestStore";
 
 const cleanPodium: SessionResult = {
   totalTime: 182.4,
@@ -18,6 +18,14 @@ describe("PersonalBestStore", () => {
     expect(gradeResult({ ...cleanPodium, position: 5, flowScore: 0.5 })).toBe("Points");
     expect(gradeResult({ ...cleanPodium, position: 7, flowScore: 0.42 })).toBe("Clean");
     expect(gradeResult({ ...cleanPodium, cleanLap: false })).toBe("Scrappy");
+  });
+
+  it("labels podium results honestly when the driving rhythm was rough", () => {
+    expect(resultHeadline({ ...cleanPodium, flowScore: 0.8 })).toBe("Apex Podium Run");
+    expect(resultHeadline({ ...cleanPodium, flowScore: 0.66 })).toBe("Clean Podium Run");
+    expect(resultHeadline({ ...cleanPodium, flowScore: 0.22 })).toBe("Podium, Rhythm Needed");
+    expect(resultHeadline({ ...cleanPodium, cleanLap: false })).toBe("Podium With Warnings");
+    expect(resultHeadline({ ...cleanPodium, position: 6, flowScore: 0.5 })).toBe("Finished P6");
   });
 
   it("merges new personal bests without losing stronger older marks", () => {
