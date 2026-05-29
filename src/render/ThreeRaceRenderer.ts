@@ -390,11 +390,23 @@ export class ThreeRaceRenderer {
 
   private async addTracksideAssets() {
     const lights = await Promise.all([this.assets.createLightPost(), this.assets.createLightPost(), this.assets.createLightPost(), this.assets.createLightPost()]);
+    const grandstands = await Promise.all([
+      this.assets.createGrandstand(),
+      this.assets.createGrandstand(),
+      this.assets.createGrandstand(),
+      this.assets.createGrandstand()
+    ]);
     const lightPlacements = [
       { distance: 210, lateral: 18 },
       { distance: 760, lateral: -18 },
       { distance: 1160, lateral: 18 },
       { distance: 1470, lateral: -18 }
+    ];
+    const grandstandPlacements = [
+      { distance: 128, lateral: -42 },
+      { distance: 338, lateral: 40 },
+      { distance: 870, lateral: -42 },
+      { distance: 1390, lateral: 40 }
     ];
 
     lights.forEach((light, index) => {
@@ -403,7 +415,15 @@ export class ThreeRaceRenderer {
       this.tracksideAssets.add(light);
     });
 
+    grandstands.forEach((stand, index) => {
+      const placement = grandstandPlacements[index];
+      stand.userData.tracksidePlacement = { ...placement, rotation: placement.lateral > 0 ? -Math.PI * 0.5 : Math.PI * 0.5 };
+      this.tracksideAssets.add(stand);
+    });
+
     this.positionLoadedTracksideAssets();
+    this.renderer.domElement.dataset.tracksideLightPosts = String(lights.length);
+    this.renderer.domElement.dataset.tracksideGrandstands = String(grandstands.length);
   }
 
   private positionLoadedTracksideAssets() {

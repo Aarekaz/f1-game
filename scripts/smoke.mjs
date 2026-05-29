@@ -176,6 +176,8 @@ async function checkDesktop(browser) {
     assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
+    tracksideGrandstands: Number(document.querySelector("#game canvas")?.dataset.tracksideGrandstands ?? 0),
+    tracksideLightPosts: Number(document.querySelector("#game canvas")?.dataset.tracksideLightPosts ?? 0),
     circuitDressingPieces: Number(document.querySelector("#game canvas")?.dataset.circuitDressingPieces ?? 0),
     circuitCatchFences: Number(document.querySelector("#game canvas")?.dataset.circuitCatchFences ?? 0),
     circuitPitWallModules: Number(document.querySelector("#game canvas")?.dataset.circuitPitWallModules ?? 0),
@@ -288,6 +290,8 @@ async function checkDesktop(browser) {
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "apex-procedural-f25", `desktop fictional formula car did not load, asset=${state.assetCar}`);
   assert(state.tracksideAssets === "kenney", `desktop free trackside assets did not load, assets=${state.tracksideAssets}`);
+  assert(state.tracksideGrandstands >= 4, `desktop free grandstand assets did not load, grandstands=${state.tracksideGrandstands}`);
+  assert(state.tracksideLightPosts >= 4, `desktop free light-post assets did not load, lights=${state.tracksideLightPosts}`);
   assert(state.circuitDressingPieces >= 280, `desktop circuit dressing was too sparse: ${state.circuitDressingPieces}`);
   assert(state.circuitCatchFences >= 90, `desktop catch fencing was missing: ${state.circuitCatchFences}`);
   assert(state.circuitPitWallModules >= 5, `desktop pit wall modules were missing: ${state.circuitPitWallModules}`);

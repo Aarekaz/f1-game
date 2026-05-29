@@ -8,7 +8,7 @@ type AssetName = "raceCarRed" | "grandStand" | "lightPostLarge";
 
 const assetScales: Record<AssetName, number> = {
   raceCarRed: 3.05,
-  grandStand: 0.78,
+  grandStand: 3.9,
   lightPostLarge: 4.2
 };
 
@@ -65,6 +65,23 @@ function normalizeVenueMaterials(root: THREE.Object3D) {
   });
 }
 
+function addCrowdRows(root: THREE.Object3D) {
+  const colors = ["#d7eb8f", "#24c7ff", "#f3d348", "#e20e3b"];
+  for (let row = 0; row < 4; row += 1) {
+    const material = new THREE.MeshStandardMaterial({
+      color: colors[row % colors.length],
+      roughness: 0.72,
+      metalness: 0.02
+    });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.035, 0.055), material);
+    mesh.name = "grandstand-crowd-band";
+    mesh.position.set(-0.5, 0.32 + row * 0.12, 0.22 + row * 0.15);
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+    root.add(mesh);
+  }
+}
+
 export class RacingAssetLibrary {
   private readonly manager = new THREE.LoadingManager();
   private readonly templates = new Map<AssetName, Promise<THREE.Object3D>>();
@@ -83,6 +100,7 @@ export class RacingAssetLibrary {
       stand.name = "kenney-grandstand";
       stand.rotation.y = Math.PI;
       normalizeVenueMaterials(stand);
+      addCrowdRows(stand);
       return stand;
     });
   }
