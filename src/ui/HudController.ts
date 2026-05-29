@@ -1,4 +1,5 @@
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
+import type { PersonalBest, PersonalBestUpdate } from "../game/PersonalBestStore";
 import { trackCenterAt, TRACK_LOOP_LENGTH, wrapDistance } from "../game/trackPath";
 
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -67,7 +68,11 @@ export class HudController {
   private resultBest = requireElement("result-best");
   private resultOvertakes = optionalElement("result-overtakes");
   private resultFlow = optionalElement("result-flow");
+  private resultGrade = optionalElement("result-grade");
+  private resultPersonalBest = optionalElement("result-pb");
   private renderedTrackName = "";
+  private latestBest: PersonalBest | null = null;
+  private latestUpdate: PersonalBestUpdate | null = null;
 
   constructor() {
     this.buildMiniMap();
@@ -155,6 +160,14 @@ export class HudController {
     if (this.rpm) {
       setMeter(this.rpm, telemetry.rpm / 10000);
     }
+  }
+
+  setPersonalBest(best: PersonalBest | null) {
+    this.latestBest = best;
+  }
+
+  setPersonalBestUpdate(update: PersonalBestUpdate | null) {
+    this.latestUpdate = update;
   }
 
   private racecraftText(telemetry: RaceTelemetry) {
@@ -276,6 +289,16 @@ export class HudController {
 
     if (this.resultFlow) {
       this.resultFlow.textContent = `${Math.round(telemetry.flowScore * 100)}%`;
+    }
+
+    if (this.resultGrade) {
+      this.resultGrade.textContent = this.latestUpdate?.grade ?? this.latestBest?.grade ?? "--";
+    }
+
+    if (this.resultPersonalBest) {
+      const update = this.latestUpdate;
+      this.resultPersonalBest.textContent =
+        update && (update.isNewTotalBest || update.isNewLapBest || update.isNewFlowBest) ? "New" : this.latestBest ? "Held" : "--";
     }
   }
 }

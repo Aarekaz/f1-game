@@ -1,5 +1,12 @@
 import { RaceAudioController } from "../audio/RaceAudioController";
 import { InputState } from "../game/InputState";
+import {
+  mergePersonalBest,
+  readPersonalBest,
+  resultFromTelemetry,
+  savePersonalBest,
+  type PersonalBest
+} from "../game/PersonalBestStore";
 import { SimcadeRaceModel, type RaceActions } from "../game/SimcadeRaceModel";
 import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
@@ -23,6 +30,22 @@ function syncSessionBrief(config: SessionConfig) {
   if (brief) {
     brief.textContent = `${config.track.region}. ${config.weather.mood}. ${config.track.character}.`;
   }
+}
+
+function formatTime(seconds: number | null) {
+  if (seconds === null) return "--.--";
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds - minutes * 60;
+  return minutes > 0 ? `${minutes}:${rest.toFixed(2).padStart(5, "0")}` : rest.toFixed(2);
+}
+
+function syncSessionBest(best: PersonalBest | null) {
+  const bestReadout = document.getElementById("session-best");
+  if (!bestReadout) return;
+
+  bestReadout.textContent = best
+    ? `Best ${formatTime(best.bestTotalTime)} / lap ${formatTime(best.bestLap)} / ${Math.round(best.bestFlowScore * 100)}% flow`
+    : "No personal best yet.";
 }
 
 function createTouchBridge() {
@@ -95,12 +118,19 @@ export function createRaceApp() {
   const audio = new RaceAudioController();
   let last = performance.now();
   let frame = 0;
+  let session = readSessionConfig();
+  let lastPhase = model.telemetry().phase;
 
   const refreshSession = () => {
-    const session = readSessionConfig();
+    session = readSessionConfig();
+    const best = readPersonalBest(session);
     syncSessionBrief(session);
+    syncSessionBest(best);
+    hud.setPersonalBest(best);
+    hud.setPersonalBestUpdate(null);
     model.configure(session);
     renderer.configure(session);
+    lastPhase = model.telemetry().phase;
   };
 
   document.getElementById("track-select")?.addEventListener("change", refreshSession);
@@ -115,9 +145,18 @@ export function createRaceApp() {
 
     const actions = touch.merge(input.update(dt));
     const telemetry = model.update(dt, actions);
+    if (telemetry.phase === "finished" && lastPhase !== "finished") {
+      const update = mergePersonalBest(readPersonalBest(session), resultFromTelemetry(telemetry));
+      savePersonalBest(session, update.best);
+      syncSessionBest(update.best);
+      hud.setPersonalBest(update.best);
+      hud.setPersonalBestUpdate(update);
+    }
+
     renderer.update(telemetry);
     hud.update(telemetry);
     audio.update(telemetry);
+    lastPhase = telemetry.phase;
     frame = requestAnimationFrame(tick);
   }
 

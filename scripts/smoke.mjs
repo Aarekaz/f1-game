@@ -25,6 +25,22 @@ try {
 
 async function checkDesktop(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "apex-formula:pb:northstar:storm",
+      JSON.stringify({
+        bestTotalTime: 181.34,
+        bestLap: 58.77,
+        bestFlowScore: 0.82,
+        bestPosition: 3,
+        bestOvertakes: 5,
+        cleanFinishes: 1,
+        runs: 1,
+        grade: "Apex",
+        updatedAt: "2026-05-29T00:00:00.000Z"
+      })
+    );
+  });
   await page.goto(url, { waitUntil: "networkidle" });
   await page.selectOption("#track-select", "northstar");
   await page.selectOption("#weather-select", "storm");
@@ -34,6 +50,7 @@ async function checkDesktop(browser) {
     weatherSelect: document.querySelector("#weather-select")?.value ?? "",
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionBrief: document.querySelector("#session-brief")?.textContent ?? "",
+    sessionBest: document.querySelector("#session-best")?.textContent ?? "",
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
@@ -46,6 +63,7 @@ async function checkDesktop(browser) {
   assert(ready.weatherSelect === "storm", "desktop fictional weather selector did not update");
   assert(ready.hudPhase === "ready", `desktop HUD did not expose ready phase: ${ready.hudPhase}`);
   assert(/alpine|wet|spray/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
+  assert(/Best|flow/i.test(ready.sessionBest), `desktop personal best readout missing: ${ready.sessionBest}`);
   assert(ready.speed === 0, "desktop race moved before start");
 
   await page.keyboard.down("ArrowUp");
