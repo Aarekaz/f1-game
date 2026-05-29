@@ -35,6 +35,9 @@ export type RaceTelemetry = {
   rpm: number;
   ers: number;
   grip: number;
+  draft: number;
+  dirtyAir: number;
+  airState: string;
   onTrack: boolean;
   lapTime: number;
   bestLap: number | null;
@@ -118,9 +121,9 @@ function createRivals(): RivalState[] {
   return RIVAL_COLORS.map((color, index) => ({
     id: index + 1,
     lane: ((index % 3) - 1) * 2.4,
-    distance: 90 + index * 48,
-    speed: 142 + index * 8,
-    pace: 0.9 + index * 0.012,
+    distance: 58 + index * 44,
+    speed: 126 + index * 7,
+    pace: 0.86 + index * 0.012,
     color
   }));
 }
@@ -140,6 +143,8 @@ export class SimcadeRaceModel {
   private wheelspin = 0;
   private understeer = 0;
   private lockup = 0;
+  private draft = 0;
+  private dirtyAir = 0;
   private grip = 1;
   private ers = 1;
   private lapTime = 0;
@@ -231,6 +236,9 @@ export class SimcadeRaceModel {
       rpm: this.rpm(),
       ers: this.ers,
       grip: this.grip,
+      draft: this.draft,
+      dirtyAir: this.dirtyAir,
+      airState: this.airState(),
       onTrack: Math.abs(this.x - track.center) <= track.halfWidth,
       lapTime: this.lapTime,
       bestLap: this.bestLap,
@@ -305,6 +313,8 @@ export class SimcadeRaceModel {
     this.wheelspin = 0;
     this.understeer = 0;
     this.lockup = 0;
+    this.draft = 0;
+    this.dirtyAir = 0;
     this.grip = 1;
     this.ers = 1;
     this.lapTime = 0;
@@ -335,6 +345,9 @@ export class SimcadeRaceModel {
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
+    const air = this.raceAirEffect(track);
+    this.draft = approach(this.draft, air.draft, dt * 4.2);
+    this.dirtyAir = approach(this.dirtyAir, air.dirtyAir, dt * 5.4);
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const wheelspinTarget = onTrack
@@ -356,13 +369,14 @@ export class SimcadeRaceModel {
     const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34);
     const braking = brake * 248 * (1 - this.lockup * 0.22);
     const boostPower = boost * 72;
+    const draftPower = this.draft * throttle * (16 + speedRatio * 28);
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
     const offTrackDrag = onTrack ? 0 : 82;
 
-    this.speed += (acceleration + boostPower + gradeForce - braking - drag - instabilityDrag - offTrackDrag) * dt;
+    this.speed += (acceleration + boostPower + draftPower + gradeForce - braking - drag - instabilityDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
@@ -370,12 +384,14 @@ export class SimcadeRaceModel {
     const weatherGrip = this.session.weather.gripMultiplier;
     const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
+    const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
     const gripTarget = onTrack
       ? clamp(
           (1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32) *
             weatherGrip *
             bankingSupport -
-            wetPenalty,
+            wetPenalty -
+            dirtyAirPenalty,
           0.34,
           1
         )
@@ -458,7 +474,42 @@ export class SimcadeRaceModel {
     }
   }
 
+  private raceAirEffect(track: ReturnType<typeof sampleTrack>) {
+    let draft = 0;
+    let dirtyAir = 0;
+
+    for (const rival of this.rivals) {
+      const gap = rival.distance - this.z;
+      if (gap <= 0 || gap > 220) continue;
+
+      const rivalTrack = sampleTrack(rival.distance);
+      const lateralGap = Math.abs(rivalTrack.center + rival.lane - this.x);
+      const alignment = clamp((6.2 - lateralGap) / 6.2, 0, 1);
+      const wake = clamp((220 - gap) / 190, 0, 1) * alignment;
+      draft = Math.max(draft, wake * clamp((gap - 6) / 28, 0, 1));
+
+      const cornerWake = track.section.kind === "straight" ? 0.18 : 1;
+      dirtyAir = Math.max(dirtyAir, wake * clamp((58 - gap) / 42, 0, 1) * cornerWake);
+    }
+
+    return { draft: clamp(draft, 0, 1), dirtyAir: clamp(dirtyAir, 0, 1) };
+  }
+
+  private airState() {
+    if (this.dirtyAir > 0.16) return "Dirty air";
+    if (this.draft > 0.03) return "Slipstream";
+    return "Clean air";
+  }
+
   private trackCue(track: ReturnType<typeof sampleTrack>) {
+    if (this.dirtyAir > 0.28 && track.section.kind !== "straight") {
+      return "Washout risk";
+    }
+
+    if (this.draft > 0.03 && track.section.kind === "straight") {
+      return this.draft > 0.12 ? "Tow active" : "Tow building";
+    }
+
     if (track.brakingZone) {
       return this.speed > track.targetSpeedKph + 28 ? "Brake now" : "Trail to apex";
     }

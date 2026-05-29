@@ -92,6 +92,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceGrip).toBe(1);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
+    expect(telemetry.draft).toBe(0);
+    expect(telemetry.dirtyAir).toBe(0);
+    expect(telemetry.airState).toBe("Clean air");
     expect(telemetry.skyColor).toBe("#c7d8df");
     expect(typeof telemetry.cornerPhase).toBe("string");
     expect(telemetry.cleanLap).toBe(true);
@@ -231,6 +234,20 @@ describe("SimcadeRaceModel", () => {
 
     expect(telemetry.rivals[0].speedKph).not.toBe(startingRivalSpeed);
     expect(telemetry.rivals.every((rival) => rival.speedKph >= 76 && rival.speedKph <= 292)).toBe(true);
+  });
+
+  it("models slipstream and dirty air around rivals", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    const straightTow = run(model, 4.4, { throttle: 1 });
+
+    expect(straightTow.draft).toBeGreaterThan(0);
+    expect(["Slipstream", "Dirty air", "Clean air"]).toContain(straightTow.airState);
+
+    const tuckedIn = run(model, 2, { throttle: 1, steer: 0.15 });
+
+    expect(tuckedIn.draft + tuckedIn.dirtyAir).toBeGreaterThan(0);
+    expect(tuckedIn.car.slip).toBeGreaterThanOrEqual(0);
   });
 
   it("invalidates the clean lap after sustained track limits abuse", () => {

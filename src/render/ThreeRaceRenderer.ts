@@ -141,6 +141,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
     this.renderer.domElement.dataset.carUndersteer = telemetry.car.understeer.toFixed(3);
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
+    this.renderer.domElement.dataset.draft = telemetry.draft.toFixed(3);
+    this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
     this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
     this.renderer.domElement.dataset.weather = telemetry.weatherName;
@@ -156,7 +158,7 @@ export class ThreeRaceRenderer {
     this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018;
     this.car.rotation.z = -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16;
 
-    this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
+    this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateTireSmoke(carX, carY, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
     this.camera.fov = 44 + speedRatio * 8 + telemetry.car.braking * 2;
 
@@ -397,11 +399,20 @@ export class ThreeRaceRenderer {
     return group;
   }
 
-  private updateSpeedStreaks(carX: number, carY: number, carZ: number, speedRatio: number, slip: number, braking: number) {
+  private updateSpeedStreaks(
+    carX: number,
+    carY: number,
+    carZ: number,
+    speedRatio: number,
+    slip: number,
+    braking: number,
+    draft: number,
+    dirtyAir: number
+  ) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
     if (material) {
-      material.opacity = Math.max(0, speedRatio - 0.46) * 0.34 + slip * 0.08 + braking * 0.04;
-      material.color.set(braking > 0.25 ? "#ffd7c8" : "#f6fff1");
+      material.opacity = Math.max(0, speedRatio - 0.46) * 0.34 + slip * 0.08 + braking * 0.04 + draft * 0.16 + dirtyAir * 0.08;
+      material.color.set(dirtyAir > 0.2 ? "#d8e0df" : draft > 0.03 ? "#c5fff4" : braking > 0.25 ? "#ffd7c8" : "#f6fff1");
     }
 
     this.speedStreaks.position.z = carZ + (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;

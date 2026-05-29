@@ -107,7 +107,13 @@ export class HudController {
 
     if (this.streak) {
       this.streak.textContent =
-        telemetry.overtakeStreak > 0 ? `${telemetry.overtakeStreak} overtakes banked` : "Clean air";
+        telemetry.overtakeStreak > 0
+          ? `${telemetry.overtakeStreak} overtakes banked`
+          : telemetry.airState === "Slipstream"
+            ? `Slipstream ${(telemetry.draft * 100).toFixed(0)}%`
+            : telemetry.airState === "Dirty air"
+              ? `Dirty air ${(telemetry.dirtyAir * 100).toFixed(0)}%`
+              : "Clean air";
     }
 
     this.updateMessage(telemetry);
