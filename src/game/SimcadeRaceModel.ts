@@ -160,15 +160,16 @@ function approach(current: number, target: number, amount: number) {
 }
 
 function createRivals(): RivalState[] {
+  const fieldSize = RIVAL_GRID.length;
   return RIVAL_GRID.map((rival, index) => ({
     id: index + 1,
     driver: rival.driver,
     team: rival.team,
     position: index + 1,
     lane: ((index % 3) - 1) * 2.4,
-    distance: 58 + index * 44,
-    speed: 126 + index * 7,
-    pace: 0.86 + index * 0.012,
+    distance: 84 + (fieldSize - index - 1) * 62,
+    speed: 166 - index * 5,
+    pace: 0.98 - index * 0.017,
     color: rival.color,
     desiredLane: ((index % 3) - 1) * 2.4,
     defending: false
@@ -722,7 +723,7 @@ export class SimcadeRaceModel {
       rival.speed = approach(rival.speed, targetSpeed, dt * (rival.speed > targetSpeed ? 2.4 : 0.65));
       this.updateRivalLane(rival, track, dt);
       rival.distance += rival.speed * (1000 / 3600) * dt * 1.48;
-      if (rival.distance < this.z - 60 && this.position > 1) {
+      if (rival.position === this.position - 1 && rival.distance < this.z - 60 && this.position > 1) {
         if (!playerCanGainPosition) {
           rival.distance = Math.max(rival.distance, this.z + 48 + rival.id * 7);
           rival.speed = Math.max(rival.speed, this.speed * 0.82);
