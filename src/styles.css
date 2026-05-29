@@ -167,7 +167,7 @@ body {
 
 .game-panel dl {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin: 0;
 }
@@ -562,6 +562,11 @@ body {
 #grip {
   background:
     linear-gradient(90deg, #f3d348 var(--value, 80%), rgba(255, 255, 255, 0.14) 0);
+}
+
+#flow {
+  background:
+    linear-gradient(90deg, #d7eb8f var(--value, 60%), rgba(255, 255, 255, 0.14) 0);
 }
 
 .streak {

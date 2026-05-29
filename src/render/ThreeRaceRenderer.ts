@@ -143,6 +143,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
     this.renderer.domElement.dataset.carUndersteer = telemetry.car.understeer.toFixed(3);
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
+    this.renderer.domElement.dataset.flowScore = telemetry.flowScore.toFixed(3);
+    this.renderer.domElement.dataset.flowState = telemetry.flowState;
     this.renderer.domElement.dataset.draft = telemetry.draft.toFixed(3);
     this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
     this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);

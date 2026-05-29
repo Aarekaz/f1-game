@@ -37,6 +37,8 @@ export type RaceTelemetry = {
   rpm: number;
   ers: number;
   grip: number;
+  flowScore: number;
+  flowState: string;
   draft: number;
   dirtyAir: number;
   airState: string;
@@ -157,6 +159,7 @@ export class SimcadeRaceModel {
   private sideBySide = 0;
   private contactRisk = 0;
   private racecraftCooldown = 0;
+  private flowScore = 0.62;
   private grip = 1;
   private ers = 1;
   private lapTime = 0;
@@ -250,6 +253,8 @@ export class SimcadeRaceModel {
       rpm: this.rpm(),
       ers: this.ers,
       grip: this.grip,
+      flowScore: this.flowScore,
+      flowState: this.flowState(),
       draft: this.draft,
       dirtyAir: this.dirtyAir,
       airState: this.airState(),
@@ -339,6 +344,7 @@ export class SimcadeRaceModel {
     this.sideBySide = 0;
     this.contactRisk = 0;
     this.racecraftCooldown = 0;
+    this.flowScore = 0.62;
     this.grip = 1;
     this.ers = 1;
     this.lapTime = 0;
@@ -495,7 +501,22 @@ export class SimcadeRaceModel {
     this.x = clamp(this.x, track.center - 9, track.center + 9);
     this.lapTime += dt;
     this.totalTime += dt;
+    this.updateFlowScore(dt, track, onTrack);
     this.updateTrackLimits(dt, onTrack);
+  }
+
+  private updateFlowScore(dt: number, track: ReturnType<typeof sampleTrack>, onTrack: boolean) {
+    const paceError = Math.abs(this.speed - track.targetSpeedKph);
+    const paceScore = clamp(1 - paceError / (track.section.kind === "straight" ? 150 : 92), 0, 1);
+    const lineError = Math.abs(this.x - track.center - track.racingLineOffset);
+    const lineScore = clamp(1 - lineError / Math.max(3.8, track.halfWidth * 0.84), 0, 1);
+    const carCalm = clamp(1 - this.slip * 0.76 - this.lockup * 0.72 - this.wheelspin * 0.62 - this.understeer * 0.58, 0, 1);
+    const raceRoom = clamp(1 - this.contactRisk * 0.68 - this.dirtyAir * 0.18, 0, 1);
+    const sectionWeight = track.section.kind === "straight" ? 0.74 : 1;
+    const target = onTrack
+      ? clamp((paceScore * 0.3 + lineScore * 0.3 + carCalm * 0.28 + raceRoom * 0.12) * sectionWeight + 0.08, 0, 1)
+      : 0.08;
+    this.flowScore = approach(this.flowScore, target, dt * (target > this.flowScore ? 0.82 : 2.9));
   }
 
   private updateTrackLimits(dt: number, onTrack: boolean) {
@@ -613,6 +634,13 @@ export class SimcadeRaceModel {
     if (this.sideBySide > 0.32) return "Wheel to wheel";
     if (this.rivalProximity > 0.24) return "Closing rival";
     return this.airState();
+  }
+
+  private flowState() {
+    if (!this.cleanLap || this.flowScore < 0.28) return "Reset rhythm";
+    if (this.flowScore > 0.74) return "In the zone";
+    if (this.flowScore > 0.48) return "Good rhythm";
+    return "Untidy";
   }
 
   private trackCue(track: ReturnType<typeof sampleTrack>) {

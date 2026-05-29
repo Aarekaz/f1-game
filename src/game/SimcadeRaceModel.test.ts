@@ -131,6 +131,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.sectorSplits).toEqual([null, null, null]);
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);
     expect(telemetry.rpm).toBeGreaterThan(0);
+    expect(telemetry.flowScore).toBeGreaterThan(0);
+    expect(telemetry.flowState).toBe("Good rhythm");
     expect(typeof telemetry.brakingZone).toBe("boolean");
     expect(telemetry.car.throttle).toBe(0);
     expect(Number.isFinite(telemetry.car.y)).toBe(true);
@@ -232,6 +234,23 @@ describe("SimcadeRaceModel", () => {
     expect(controlledTurn.grip).toBeGreaterThan(lateTurn.grip);
     expect(controlledTurn.car.slip).toBeLessThan(lateTurn.car.slip);
     expect(controlledTurn.car.understeer).toBeLessThan(lateTurn.car.understeer);
+  });
+
+  it("scores smooth corner rhythm higher than messy inputs", () => {
+    const smooth = new SimcadeRaceModel();
+    smooth.update(1 / 60, { ...idle, launch: true });
+    run(smooth, 4, { throttle: 1 });
+    run(smooth, 0.7, { brake: 0.86 });
+    const tidy = run(smooth, 1.5, { throttle: 0.42, steer: 0.52 });
+
+    const messy = new SimcadeRaceModel();
+    messy.update(1 / 60, { ...idle, launch: true });
+    run(messy, 4, { throttle: 1 });
+    const ragged = run(messy, 1.5, { throttle: 1, steer: 1 });
+
+    expect(tidy.flowScore).toBeGreaterThan(ragged.flowScore);
+    expect(tidy.car.slip).toBeLessThan(ragged.car.slip);
+    expect(["Good rhythm", "In the zone"]).toContain(tidy.flowState);
   });
 
   it("turns traction mistakes into readable car states", () => {

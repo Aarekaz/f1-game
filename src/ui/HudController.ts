@@ -54,6 +54,7 @@ export class HudController {
   private raceProgress = requireElement("race-progress");
   private ers = requireElement("ers");
   private grip = requireElement("grip");
+  private flow = requireElement("flow");
   private message = requireElement("message");
   private startLights = optionalElement("start-lights");
   private messageTitle = this.message.querySelector("strong");
@@ -65,6 +66,7 @@ export class HudController {
   private resultTotal = requireElement("result-total");
   private resultBest = requireElement("result-best");
   private resultOvertakes = optionalElement("result-overtakes");
+  private resultFlow = optionalElement("result-flow");
   private renderedTrackName = "";
 
   constructor() {
@@ -98,6 +100,7 @@ export class HudController {
     setMeter(this.raceProgress, telemetry.raceProgress);
     setMeter(this.ers, telemetry.ers);
     setMeter(this.grip, telemetry.grip);
+    setMeter(this.flow, telemetry.flowScore);
     this.currentLapTime.textContent = formatTime(telemetry.lapTime);
 
     if (this.splitDelta) {
@@ -161,6 +164,7 @@ export class HudController {
     if (telemetry.overtakeStreak > 0) return `${telemetry.overtakeStreak} overtakes banked`;
     if (telemetry.airState === "Slipstream") return `Slipstream ${(telemetry.draft * 100).toFixed(0)}%`;
     if (telemetry.airState === "Dirty air") return `Dirty air ${(telemetry.dirtyAir * 100).toFixed(0)}%`;
+    if (telemetry.phase === "racing") return `${telemetry.flowState} ${(telemetry.flowScore * 100).toFixed(0)}%`;
     return "Clean air";
   }
 
@@ -264,6 +268,10 @@ export class HudController {
 
     if (this.resultOvertakes) {
       this.resultOvertakes.textContent = String(telemetry.overtakeStreak);
+    }
+
+    if (this.resultFlow) {
+      this.resultFlow.textContent = `${Math.round(telemetry.flowScore * 100)}%`;
     }
   }
 }
