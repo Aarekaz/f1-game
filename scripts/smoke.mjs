@@ -83,6 +83,7 @@ async function checkDesktop(browser) {
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
+    tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
@@ -107,7 +108,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
-  assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);
+  assert(state.assetCar === "apex-procedural", `desktop fictional formula car did not load, asset=${state.assetCar}`);
+  assert(state.tracksideAssets === "kenney", `desktop free trackside assets did not load, assets=${state.tracksideAssets}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);

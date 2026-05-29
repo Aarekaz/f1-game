@@ -57,6 +57,7 @@ export class ThreeRaceRenderer {
     this.renderer.setClearColor("#c7d8df");
     this.renderer.shadowMap.enabled = true;
     this.renderer.domElement.className = "race-canvas";
+    this.renderer.domElement.dataset.assetCar = "apex-procedural";
     this.parent.appendChild(this.renderer.domElement);
 
     this.scene.fog = new THREE.Fog("#c7d8df", 180, 920);
@@ -125,20 +126,20 @@ export class ThreeRaceRenderer {
 
     this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
     this.updateTireSmoke(carX, carY, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
-    this.camera.fov = 54 + speedRatio * 13 + telemetry.car.braking * 2;
+    this.camera.fov = 44 + speedRatio * 8 + telemetry.car.braking * 2;
 
-    const lookAhead = 12 + speedRatio * 24;
-    const cameraLag = 12.6 + speedRatio * 8.2 + telemetry.car.throttle * 2.4 - telemetry.car.braking * 3.8;
+    const lookAhead = 8 + speedRatio * 19;
+    const cameraLag = 5.8 + speedRatio * 4.4 + telemetry.car.throttle * 1.3 - telemetry.car.braking * 2.2;
     const lateralShoulder = carX * (0.48 + speedRatio * 0.16) - telemetry.car.yawRate * 2.6;
     const targetX = carX + telemetry.car.yawRate * 4.8 - telemetry.curve * 2.6;
     this.desiredCameraPosition.set(
       lateralShoulder,
-      carY + 4.7 - telemetry.car.braking * 0.45 + telemetry.car.slip * 0.36 + speedRatio * 0.24,
+      carY + 2.85 - telemetry.car.braking * 0.28 + telemetry.car.slip * 0.28 + speedRatio * 0.16,
       carZ + cameraLag
     );
     this.desiredCameraTarget.set(targetX, carY + 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);
-    const positionFollow = 0.032 + speedRatio * 0.026 + telemetry.car.braking * 0.025;
-    const targetFollow = 0.07 + speedRatio * 0.04;
+    const positionFollow = 0.075 + speedRatio * 0.045 + telemetry.car.braking * 0.02;
+    const targetFollow = 0.1 + speedRatio * 0.05;
     this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
     this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
     this.camera.position.copy(this.cameraPosition);
@@ -181,20 +182,15 @@ export class ThreeRaceRenderer {
     mesh.name = `rival-${id}`;
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
-    void this.assets.createCar(color).then((asset) => this.replaceModel(mesh, asset)).catch(() => undefined);
     return mesh;
   }
 
   private async loadRaceAssets() {
     try {
-      const [playerCar] = await Promise.all([
-        this.assets.createCar("#e72436"),
-        this.addTracksideAssets()
-      ]);
-      this.replaceModel(this.car, playerCar);
-      this.renderer.domElement.dataset.assetCar = "kenney";
+      await this.addTracksideAssets();
+      this.renderer.domElement.dataset.tracksideAssets = "kenney";
     } catch {
-      this.renderer.domElement.dataset.assetCar = "proxy";
+      this.renderer.domElement.dataset.tracksideAssets = "procedural-only";
     }
   }
 
@@ -237,12 +233,6 @@ export class ThreeRaceRenderer {
       object.position.set(track.center + placement.lateral, track.elevation, -placement.distance);
       object.rotation.y = placement.rotation;
     }
-  }
-
-  private replaceModel(target: THREE.Group, asset: THREE.Object3D) {
-    disposeObject3D(target);
-    target.clear();
-    target.add(asset);
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
