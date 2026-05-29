@@ -1,4 +1,5 @@
 import { RaceAudioController } from "../audio/RaceAudioController";
+import { summarizeApexSeries, type ApexSeriesEventSummary } from "../game/ApexSeries";
 import { InputState } from "../game/InputState";
 import {
   mergePersonalBest,
@@ -48,6 +49,61 @@ function syncSessionBest(best: PersonalBest | null) {
   bestReadout.textContent = best
     ? `Best ${formatTime(best.bestTotalTime)} / lap ${formatTime(best.bestLap)} / ${Math.round(best.bestFlowScore * 100)}% flow`
     : "No personal best yet.";
+}
+
+function setSelectValue(id: string, value: string) {
+  const select = document.getElementById(id) as HTMLSelectElement | null;
+  if (select) select.value = value;
+}
+
+function appendTextElement<K extends keyof HTMLElementTagNameMap>(
+  parent: HTMLElement,
+  tagName: K,
+  text: string,
+  className?: string
+) {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  element.textContent = text;
+  parent.append(element);
+  return element;
+}
+
+function syncSeriesProgress(activeSession: SessionConfig, onSelect: (event: ApexSeriesEventSummary) => void) {
+  const progress = document.getElementById("series-progress");
+  if (!progress) return;
+
+  const summary = summarizeApexSeries(readPersonalBest);
+  const header = document.createElement("div");
+  header.className = "series-summary";
+  appendTextElement(header, "span", "Apex Series");
+  appendTextElement(header, "strong", `${summary.completed}/${summary.events.length}`);
+  appendTextElement(header, "em", `${summary.score}/${summary.maxScore} pts`);
+
+  const rows = summary.events.map((event) => {
+    const button = document.createElement("button");
+    const isActive =
+      event.session.track.id === activeSession.track.id &&
+      event.session.weather.id === activeSession.weather.id &&
+      event.session.assist.id === activeSession.assist.id;
+
+    button.type = "button";
+    button.className = isActive ? "active" : "";
+    button.dataset.seriesEvent = event.id;
+    button.setAttribute("aria-current", isActive ? "true" : "false");
+    appendTextElement(button, "span", event.round, "series-round");
+    const eventCopy = document.createElement("span");
+    eventCopy.className = "series-event-copy";
+    appendTextElement(eventCopy, "strong", event.title);
+    appendTextElement(eventCopy, "em", `${event.session.track.name} / ${event.session.weather.name}`);
+    button.append(eventCopy);
+    appendTextElement(button, "small", event.target);
+    appendTextElement(button, "b", event.status);
+    button.addEventListener("click", () => onSelect(event));
+    return button;
+  });
+
+  progress.replaceChildren(header, ...rows);
 }
 
 function createTouchBridge() {
@@ -123,11 +179,19 @@ export function createRaceApp() {
   let session = readSessionConfig();
   let lastPhase = model.telemetry().phase;
 
+  function selectSeriesEvent(event: ApexSeriesEventSummary) {
+    setSelectValue("track-select", event.trackId);
+    setSelectValue("weather-select", event.weatherId);
+    setSelectValue("assist-select", event.assistId);
+    refreshSession();
+  }
+
   const refreshSession = () => {
     session = readSessionConfig();
     const best = readPersonalBest(session);
     syncSessionBrief(session);
     syncSessionBest(best);
+    syncSeriesProgress(session, selectSeriesEvent);
     hud.setPersonalBest(best);
     hud.setPersonalBestUpdate(null);
     model.configure(session);
@@ -152,6 +216,7 @@ export function createRaceApp() {
       const update = mergePersonalBest(readPersonalBest(session), resultFromTelemetry(telemetry));
       savePersonalBest(session, update.best);
       syncSessionBest(update.best);
+      syncSeriesProgress(session, selectSeriesEvent);
       hud.setPersonalBest(update.best);
       hud.setPersonalBestUpdate(update);
     }

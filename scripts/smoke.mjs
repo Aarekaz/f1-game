@@ -42,6 +42,29 @@ async function checkDesktop(browser) {
     );
   });
   await page.goto(url, { waitUntil: "networkidle" });
+
+  const seriesStart = await page.evaluate(() => ({
+    rows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? ""),
+    active: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? ""
+  }));
+  assert(seriesStart.rows.length === 3, `desktop Apex Series rows missing: ${seriesStart.rows.join(" | ")}`);
+  assert(/Storm Charge.*Northstar Ring.*Apex \/ P3/i.test(seriesStart.rows.join(" | ")), "desktop Apex Series did not show saved Northstar progress");
+  assert(seriesStart.active === "aurelia-rhythm", `desktop Apex Series default event was not active: ${seriesStart.active}`);
+
+  await page.locator("[data-series-event='mirage-dusk']").click();
+  const seriesPick = await page.evaluate(() => ({
+    trackSelect: document.querySelector("#track-select")?.value ?? "",
+    weatherSelect: document.querySelector("#weather-select")?.value ?? "",
+    assistSelect: document.querySelector("#assist-select")?.value ?? "",
+    active: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? "",
+    sessionBrief: document.querySelector("#session-brief")?.textContent ?? ""
+  }));
+  assert(seriesPick.trackSelect === "mirage", "desktop Apex Series event did not select Mirage");
+  assert(seriesPick.weatherSelect === "dusk", "desktop Apex Series event did not select dusk weather");
+  assert(seriesPick.assistSelect === "balanced", "desktop Apex Series event did not select balanced assists");
+  assert(seriesPick.active === "mirage-dusk", `desktop Apex Series active row was wrong: ${seriesPick.active}`);
+  assert(/gulf|marina|gold|settles/i.test(seriesPick.sessionBrief), `desktop Apex Series brief did not update: ${seriesPick.sessionBrief}`);
+
   await page.selectOption("#track-select", "northstar");
   await page.selectOption("#weather-select", "storm");
   const ready = await page.evaluate(() => ({
@@ -58,7 +81,9 @@ async function checkDesktop(browser) {
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
-    carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0)
+    carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
+    seriesActive: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? "",
+    seriesRows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? "")
   }));
   assert(ready.startVisible, "desktop start panel was not visible");
   assert(ready.trackSelect === "northstar", "desktop fictional track selector did not update");
@@ -67,6 +92,8 @@ async function checkDesktop(browser) {
   assert(ready.hudPhase === "ready", `desktop HUD did not expose ready phase: ${ready.hudPhase}`);
   assert(/alpine|wet|spray|settles/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
   assert(/Best|flow/i.test(ready.sessionBest), `desktop personal best readout missing: ${ready.sessionBest}`);
+  assert(ready.seriesActive === "northstar-storm", `desktop Apex Series selected event did not stay active: ${ready.seriesActive}`);
+  assert(ready.seriesRows.length === 3, "desktop Apex Series row count changed after selection");
   assert(ready.speed === 0, "desktop race moved before start");
 
   await page.keyboard.down("ArrowUp");

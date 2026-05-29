@@ -53,9 +53,11 @@ body {
 .hud[data-phase="ready"] .topbar,
 .hud[data-phase="ready"] .timing-tower,
 .hud[data-phase="ready"] .status-panel,
+.hud[data-phase="ready"] .control-hint,
 .hud[data-phase="finished"] .topbar,
 .hud[data-phase="finished"] .timing-tower,
-.hud[data-phase="finished"] .status-panel {
+.hud[data-phase="finished"] .status-panel,
+.hud[data-phase="finished"] .control-hint {
   opacity: 0;
   transform: translateY(-8px);
 }
@@ -153,6 +155,8 @@ body {
   z-index: 4;
   display: grid;
   width: min(430px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
   gap: 12px;
   padding: 22px;
   border-radius: 8px;
@@ -225,6 +229,128 @@ body {
 
 .session-brief {
   min-height: 40px;
+}
+
+.start-panel {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.series-progress {
+  display: grid;
+  gap: 7px;
+}
+
+.series-summary {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding-top: 2px;
+}
+
+.series-summary span,
+.series-summary em,
+.series-progress small {
+  color: #aeb8aa;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.series-summary strong {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.game-panel .series-progress button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1.4fr) minmax(86px, 0.95fr) auto;
+  align-items: center;
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  height: auto;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-left: 3px solid rgba(226, 14, 59, 0.55);
+  border-radius: 7px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+  text-align: left;
+  text-transform: none;
+}
+
+.game-panel .series-progress button.active {
+  border-left-color: #f3d348;
+  background: rgba(243, 211, 72, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(243, 211, 72, 0.1);
+}
+
+.game-panel .series-progress button:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.series-round {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  color: #17211b;
+  background: #d7eb8f;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.series-event-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.series-event-copy strong,
+.series-event-copy em,
+.series-progress b,
+.series-progress small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.series-event-copy strong {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.series-event-copy em {
+  color: #cfd6cc;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.series-progress b {
+  justify-self: end;
+  min-width: 72px;
+  padding: 5px 7px;
+  border-radius: 999px;
+  color: #17211b;
+  background: #f3d348;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .game-panel button {
@@ -866,12 +992,25 @@ body {
     padding: 18px;
   }
 
+  .start-panel {
+    width: min(440px, calc(100vw - 20px));
+  }
+
   .game-panel dl {
     grid-template-columns: 1fr;
   }
 
   .session-selectors {
     grid-template-columns: 1fr;
+  }
+
+  .game-panel .series-progress button {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .series-progress small {
+    display: none;
   }
 
   .topbar {
