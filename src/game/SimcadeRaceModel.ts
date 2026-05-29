@@ -100,8 +100,18 @@ export type RaceTelemetry = {
     understeer: number;
     lockup: number;
   };
+  leaderboard: Array<{
+    position: number;
+    driver: string;
+    team: string;
+    gap: number | null;
+    accent: string;
+    isPlayer: boolean;
+  }>;
   rivals: Array<{
     id: number;
+    driver: string;
+    team: string;
     x: number;
     y: number;
     z: number;
@@ -115,6 +125,9 @@ export type RaceTelemetry = {
 
 type RivalState = {
   id: number;
+  driver: string;
+  team: string;
+  position: number;
   lane: number;
   distance: number;
   speed: number;
@@ -128,7 +141,15 @@ const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
 const MAX_SPEED = 310;
 const MIN_RACE_SPEED = 16;
-const RIVAL_COLORS = ["#24c7ff", "#f4d35e", "#f7f7f2", "#ff7a2d", "#b88cff", "#1fd17f", "#ff4f83"];
+const RIVAL_GRID = [
+  { driver: "Vega", team: "NOVA", color: "#24c7ff" },
+  { driver: "Kade", team: "ORO", color: "#f4d35e" },
+  { driver: "Sato", team: "LYNX", color: "#f7f7f2" },
+  { driver: "Roux", team: "EMBER", color: "#ff7a2d" },
+  { driver: "Iven", team: "VANTA", color: "#b88cff" },
+  { driver: "Mira", team: "ATLAS", color: "#1fd17f" },
+  { driver: "Vale", team: "PULSE", color: "#ff4f83" }
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -139,13 +160,16 @@ function approach(current: number, target: number, amount: number) {
 }
 
 function createRivals(): RivalState[] {
-  return RIVAL_COLORS.map((color, index) => ({
+  return RIVAL_GRID.map((rival, index) => ({
     id: index + 1,
+    driver: rival.driver,
+    team: rival.team,
+    position: index + 1,
     lane: ((index % 3) - 1) * 2.4,
     distance: 58 + index * 44,
     speed: 126 + index * 7,
     pace: 0.86 + index * 0.012,
-    color,
+    color: rival.color,
     desiredLane: ((index % 3) - 1) * 2.4,
     defending: false
   }));
@@ -331,10 +355,13 @@ export class SimcadeRaceModel {
         understeer: this.understeer,
         lockup: this.lockup
       },
+      leaderboard: this.leaderboard(),
       rivals: this.rivals.map((rival) => {
         const rivalTrack = sampleTrack(rival.distance);
         return {
           id: rival.id,
+          driver: rival.driver,
+          team: rival.team,
           x: rivalTrack.center + rival.lane,
           y: rivalTrack.elevation + 0.055,
           z: rival.distance,
@@ -642,13 +669,15 @@ export class SimcadeRaceModel {
       this.updateRivalLane(rival, track, dt);
       rival.distance += rival.speed * (1000 / 3600) * dt * 1.48;
       if (rival.distance < this.z - 60 && this.position > 1) {
+        const oldPosition = this.position;
         this.position -= 1;
+        rival.position = oldPosition;
         this.overtakeStreak += 1;
-        rival.distance = this.z + 420;
+        rival.distance = this.z - 70 - rival.id * 8;
         rival.lane = (((rival.id + this.position) % 3) - 1) * 2.4;
         rival.desiredLane = rival.lane;
         rival.defending = false;
-        this.message = `Passed for P${this.position}`;
+        this.message = `Passed ${rival.driver} for P${this.position}`;
         this.messageTimer = 1.2;
       }
     }
@@ -744,6 +773,34 @@ export class SimcadeRaceModel {
     }
 
     return nearest;
+  }
+
+  private leaderboard() {
+    const player = {
+      position: this.position,
+      driver: "You",
+      team: "APEX",
+      gap: null,
+      accent: "#e20e3b",
+      isPlayer: true
+    };
+    const rivals = this.rivals.map((rival) => ({
+      position: rival.position,
+      driver: rival.driver,
+      team: rival.team,
+      gap: (rival.distance - this.z) / 42,
+      accent: rival.color,
+      isPlayer: false
+    }));
+
+    const sorted = [...rivals, player].sort((left, right) => left.position - right.position);
+    if (this.position <= 5) return sorted.slice(0, 6);
+
+    const focused = [
+      ...sorted.slice(0, 3),
+      ...sorted.filter((entry) => entry.position >= this.position - 1 && entry.position <= this.position + 1)
+    ];
+    return focused.filter((entry, index) => focused.findIndex((item) => item.position === entry.position) === index).slice(0, 6);
   }
 
   private airState() {

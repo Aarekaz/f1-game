@@ -203,6 +203,22 @@ describe("SimcadeRaceModel", () => {
     expect(Number.isFinite(telemetry.rivals[0].y)).toBe(true);
     expect(Number.isFinite(telemetry.rivals[0].bank)).toBe(true);
     expect(telemetry.rivals[0].speedKph).toBeGreaterThan(0);
+    expect(telemetry.rivals[0].driver.length).toBeGreaterThan(0);
+    expect(telemetry.rivals[0].team.length).toBeGreaterThan(0);
+    expect(telemetry.leaderboard.some((entry) => entry.isPlayer && entry.driver === "You")).toBe(true);
+    expect(telemetry.leaderboard[0]).toMatchObject({ position: 1, driver: "Vega", team: "NOVA" });
+  });
+
+  it("updates the timing tower identity when the player passes a rival", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+
+    const telemetry = run(model, 8, { throttle: 1, ers: true });
+
+    expect(telemetry.position).toBeLessThan(8);
+    expect(telemetry.overtakeStreak).toBeGreaterThan(0);
+    expect(telemetry.leaderboard.some((entry) => entry.isPlayer && entry.position === telemetry.position)).toBe(true);
+    expect(telemetry.leaderboard.some((entry) => entry.driver !== "You" && entry.position > telemetry.position)).toBe(true);
   });
 
   it("surfaces braking-zone cues before heavy corners", () => {

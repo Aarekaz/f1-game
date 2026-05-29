@@ -92,6 +92,8 @@ async function checkDesktop(browser) {
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     gear: Number(document.querySelector("#gear")?.textContent ?? 0),
     objective: document.querySelector("#objective")?.textContent ?? "",
+    timingRows: Array.from(document.querySelectorAll("#timing-tower div")).map((row) => row.textContent ?? ""),
+    timingPlayer: document.querySelector("#timing-tower .player")?.textContent ?? "",
     mapPath: document.querySelector("#track-map-path")?.getAttribute("d") ?? "",
     mapCarX: Number(document.querySelector("#map-car")?.getAttribute("cx") ?? 0),
     section: document.querySelector("#section-name")?.textContent ?? "",
@@ -203,6 +205,8 @@ async function checkDesktop(browser) {
   assert(state.instruction.length > 0, "desktop track instruction was missing");
   assert(/kph/i.test(state.paceTarget), `desktop pace target missing: ${state.paceTarget}`);
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
+  assert(state.timingRows.length >= 4, `desktop timing tower rows missing: ${state.timingRows.join(" | ")}`);
+  assert(/P\d+/.test(state.timingPlayer) && /You|APEX|LIVE/.test(state.timingPlayer), `desktop timing tower player row missing: ${state.timingPlayer}`);
   assert(state.section.length > 0, "desktop circuit section was missing");
   assert(state.cue.length > 0, "desktop driving cue was missing");
   assert(/\d\/[67]/.test(state.checkpoint), `desktop checkpoint readout missing: ${state.checkpoint}`);

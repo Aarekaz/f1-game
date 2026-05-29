@@ -37,6 +37,7 @@ export class HudController {
   private lap = requireElement("lap");
   private best = requireElement("best");
   private delta = requireElement("delta");
+  private timingTower = optionalElement("timing-tower");
   private speed = requireElement("speed");
   private gear = optionalElement("gear");
   private rpm = optionalElement("rpm");
@@ -101,6 +102,7 @@ export class HudController {
     this.objective.textContent =
       telemetry.phase === "countdown" ? `Launch ${(telemetry.launchCharge * 100).toFixed(0)}%` : telemetry.objective;
     this.updateSessionReadout(telemetry);
+    this.updateTimingTower(telemetry);
     this.updateTrackReadout(telemetry);
     this.updateMiniMap(telemetry);
     setMeter(this.raceProgress, telemetry.raceProgress);
@@ -178,6 +180,33 @@ export class HudController {
     if (this.rpm) {
       setMeter(this.rpm, telemetry.rpm / 10000);
     }
+  }
+
+  private updateTimingTower(telemetry: RaceTelemetry) {
+    if (!this.timingTower) return;
+
+    this.timingTower.replaceChildren(
+      ...telemetry.leaderboard.map((entry) => {
+        const row = document.createElement("div");
+        row.className = entry.isPlayer ? "player" : "";
+        row.style.setProperty("--accent", entry.accent);
+
+        const position = document.createElement("span");
+        position.textContent = `P${entry.position}`;
+
+        const identity = document.createElement("strong");
+        identity.textContent = entry.driver;
+
+        const team = document.createElement("em");
+        team.textContent = entry.team;
+
+        const gap = document.createElement("b");
+        gap.textContent = entry.isPlayer ? "LIVE" : entry.position === 1 ? "LEAD" : entry.gap === null ? "--" : `+${Math.abs(entry.gap).toFixed(1)}`;
+
+        row.append(position, identity, team, gap);
+        return row;
+      })
+    );
   }
 
   setPersonalBest(best: PersonalBest | null) {
