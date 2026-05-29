@@ -100,6 +100,7 @@ export function createRaceApp() {
     const session = readSessionConfig();
     syncSessionBrief(session);
     model.configure(session);
+    renderer.configure(session);
   };
 
   document.getElementById("track-select")?.addEventListener("change", refreshSession);

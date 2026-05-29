@@ -1,5 +1,5 @@
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import { trackCenterAt, TRACK_LOOP_LENGTH, wrapDistance } from "../game/trackPath";
 
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -64,12 +64,18 @@ export class HudController {
   private resultTotal = requireElement("result-total");
   private resultBest = requireElement("result-best");
   private resultOvertakes = optionalElement("result-overtakes");
+  private renderedTrackName = "";
 
   constructor() {
     this.buildMiniMap();
   }
 
   update(telemetry: RaceTelemetry) {
+    if (this.renderedTrackName !== telemetry.trackName) {
+      this.renderedTrackName = telemetry.trackName;
+      this.buildMiniMap();
+    }
+
     this.startPanel.classList.toggle("hidden", telemetry.phase !== "ready");
     this.resultsPanel.classList.toggle("hidden", telemetry.phase !== "finished");
 
@@ -127,7 +133,7 @@ export class HudController {
   }
 
   private mapPointAt(distance: number) {
-    const progress = ((distance % TRACK_LOOP_LENGTH) + TRACK_LOOP_LENGTH) / TRACK_LOOP_LENGTH;
+    const progress = wrapDistance(distance) / TRACK_LOOP_LENGTH;
     const x = 90 + trackCenterAt(distance) * 2.4;
     const y = 10 + progress * 96;
     return { x, y };

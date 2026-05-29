@@ -1,5 +1,5 @@
 import { RaceDirector } from "./RaceDirector";
-import { TRACK_LOOP_LENGTH, sampleTrack, trackCurveAt } from "./trackPath";
+import { TRACK_LOOP_LENGTH, getTrackCheckpoints, getTrackSectorEnds, sampleTrack, setActiveTrackLayout, trackCurveAt } from "./trackPath";
 import { DEFAULT_SESSION, type SessionConfig } from "../world/FictionalGpWorld";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
@@ -155,11 +155,15 @@ export class SimcadeRaceModel {
 
   constructor(session: SessionConfig = DEFAULT_SESSION) {
     this.session = session;
+    setActiveTrackLayout(session.track.id);
+    this.director.configure(getTrackCheckpoints(), getTrackSectorEnds(), TRACK_LOOP_LENGTH);
   }
 
   configure(session: SessionConfig) {
     this.session = session;
     if (this.phase === "ready") {
+      setActiveTrackLayout(session.track.id);
+      this.director.configure(getTrackCheckpoints(), getTrackSectorEnds(), TRACK_LOOP_LENGTH);
       this.reset();
     }
   }

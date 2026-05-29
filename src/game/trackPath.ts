@@ -1,3 +1,5 @@
+import type { FictionalTrackId } from "../world/FictionalGpWorld";
+
 export const TRACK_NAME = "Aurelia GP";
 export const TRACK_LOOP_LENGTH = 2200;
 
@@ -38,7 +40,24 @@ type CenterAnchor = {
   center: number;
 };
 
-export const TRACK_SECTIONS: TrackSection[] = [
+export type TrackCheckpoint = {
+  id: string;
+  name: string;
+  distance: number;
+  sector: 1 | 2 | 3;
+};
+
+export type TrackLayout = {
+  id: FictionalTrackId;
+  name: string;
+  loopLength: number;
+  sections: TrackSection[];
+  centerAnchors: CenterAnchor[];
+  checkpoints: TrackCheckpoint[];
+  sectorEnds: readonly [number, number, number];
+};
+
+const AURELIA_SECTIONS: TrackSection[] = [
   {
     id: "front-straight",
     name: "Front Straight",
@@ -152,23 +171,300 @@ export const TRACK_SECTIONS: TrackSection[] = [
   }
 ];
 
-const CENTER_ANCHORS: CenterAnchor[] = [
-  { distance: 0, center: 0 },
-  { distance: 240, center: 0 },
-  { distance: 360, center: -13 },
-  { distance: 535, center: -22 },
-  { distance: 700, center: 8 },
-  { distance: 880, center: 20 },
-  { distance: 1030, center: 7 },
-  { distance: 1150, center: -18 },
-  { distance: 1260, center: -11 },
-  { distance: 1400, center: 15 },
-  { distance: 1580, center: 20 },
-  { distance: 1700, center: -18 },
-  { distance: 1820, center: -22 },
-  { distance: 2020, center: -7 },
-  { distance: TRACK_LOOP_LENGTH, center: 0 }
+const MIRAGE_SECTIONS: TrackSection[] = [
+  {
+    id: "harbor-straight",
+    name: "Harbor Straight",
+    kind: "straight",
+    start: 0,
+    end: 390,
+    sector: 1,
+    halfWidth: 5.6,
+    targetSpeedKph: 315,
+    difficulty: 0.1,
+    instruction: "Pin the throttle by the marina"
+  },
+  {
+    id: "souq-hairpin",
+    name: "Souq Hairpin",
+    kind: "hairpin",
+    start: 390,
+    end: 610,
+    sector: 1,
+    halfWidth: 6,
+    targetSpeedKph: 76,
+    difficulty: 0.98,
+    brakingStart: 0.04,
+    apex: 0.56,
+    exit: 0.8,
+    instruction: "Brake deep, square the exit"
+  },
+  {
+    id: "palm-blvd",
+    name: "Palm Boulevard",
+    kind: "straight",
+    start: 610,
+    end: 920,
+    sector: 1,
+    halfWidth: 5.8,
+    targetSpeedKph: 302,
+    difficulty: 0.16,
+    instruction: "Open the steering for top speed"
+  },
+  {
+    id: "marina-switchback",
+    name: "Marina Switchback",
+    kind: "chicane",
+    start: 920,
+    end: 1190,
+    sector: 2,
+    halfWidth: 6.3,
+    targetSpeedKph: 128,
+    difficulty: 0.86,
+    brakingStart: 0.08,
+    apex: 0.46,
+    exit: 0.78,
+    instruction: "Clip left, wait, clip right"
+  },
+  {
+    id: "hotel-arc",
+    name: "Hotel Arc",
+    kind: "sweeper",
+    start: 1190,
+    end: 1510,
+    sector: 2,
+    halfWidth: 5.9,
+    targetSpeedKph: 232,
+    difficulty: 0.58,
+    apex: 0.48,
+    exit: 0.84,
+    instruction: "Float the car through the arc"
+  },
+  {
+    id: "pier-esses",
+    name: "Pier Esses",
+    kind: "esses",
+    start: 1510,
+    end: 1780,
+    sector: 3,
+    halfWidth: 5.8,
+    targetSpeedKph: 178,
+    difficulty: 0.74,
+    apex: 0.5,
+    exit: 0.86,
+    instruction: "Keep rhythm over the painted kerbs"
+  },
+  {
+    id: "lagoon-kink",
+    name: "Lagoon Kink",
+    kind: "sweeper",
+    start: 1780,
+    end: TRACK_LOOP_LENGTH,
+    sector: 3,
+    halfWidth: 5.9,
+    targetSpeedKph: 256,
+    difficulty: 0.48,
+    apex: 0.4,
+    exit: 0.84,
+    instruction: "Trust the downforce back to start"
+  }
 ];
+
+const NORTHSTAR_SECTIONS: TrackSection[] = [
+  {
+    id: "summit-straight",
+    name: "Summit Straight",
+    kind: "straight",
+    start: 0,
+    end: 270,
+    sector: 1,
+    halfWidth: 5.8,
+    targetSpeedKph: 304,
+    difficulty: 0.12,
+    instruction: "Build speed over the crest"
+  },
+  {
+    id: "pine-sweep",
+    name: "Pine Sweep",
+    kind: "sweeper",
+    start: 270,
+    end: 560,
+    sector: 1,
+    halfWidth: 6.1,
+    targetSpeedKph: 224,
+    difficulty: 0.62,
+    apex: 0.44,
+    exit: 0.82,
+    instruction: "Hold a brave partial throttle"
+  },
+  {
+    id: "glacier-hairpin",
+    name: "Glacier Hairpin",
+    kind: "hairpin",
+    start: 560,
+    end: 810,
+    sector: 1,
+    halfWidth: 6.8,
+    targetSpeedKph: 72,
+    difficulty: 1,
+    brakingStart: 0.05,
+    apex: 0.58,
+    exit: 0.82,
+    instruction: "Brake early, no heroics"
+  },
+  {
+    id: "ravine-run",
+    name: "Ravine Run",
+    kind: "straight",
+    start: 810,
+    end: 1110,
+    sector: 2,
+    halfWidth: 5.7,
+    targetSpeedKph: 296,
+    difficulty: 0.2,
+    instruction: "Let the car breathe downhill"
+  },
+  {
+    id: "cabin-esses",
+    name: "Cabin Esses",
+    kind: "esses",
+    start: 1110,
+    end: 1430,
+    sector: 2,
+    halfWidth: 5.7,
+    targetSpeedKph: 168,
+    difficulty: 0.82,
+    apex: 0.52,
+    exit: 0.88,
+    instruction: "Small inputs, keep the platform flat"
+  },
+  {
+    id: "timber-chicane",
+    name: "Timber Chicane",
+    kind: "chicane",
+    start: 1430,
+    end: 1660,
+    sector: 2,
+    halfWidth: 6.4,
+    targetSpeedKph: 118,
+    difficulty: 0.9,
+    brakingStart: 0.06,
+    apex: 0.44,
+    exit: 0.78,
+    instruction: "Sacrifice entry for clean traction"
+  },
+  {
+    id: "north-bowl",
+    name: "North Bowl",
+    kind: "sweeper",
+    start: 1660,
+    end: TRACK_LOOP_LENGTH,
+    sector: 3,
+    halfWidth: 6.2,
+    targetSpeedKph: 238,
+    difficulty: 0.66,
+    apex: 0.46,
+    exit: 0.86,
+    instruction: "Commit, then unwind onto the hill"
+  }
+];
+
+const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
+  aurelia: {
+    id: "aurelia",
+    name: TRACK_NAME,
+    loopLength: TRACK_LOOP_LENGTH,
+    sections: AURELIA_SECTIONS,
+    sectorEnds: [760, 1580, TRACK_LOOP_LENGTH],
+    checkpoints: checkpointsFromSections(AURELIA_SECTIONS),
+    centerAnchors: [
+      { distance: 0, center: 0 },
+      { distance: 240, center: 0 },
+      { distance: 360, center: -13 },
+      { distance: 535, center: -22 },
+      { distance: 700, center: 8 },
+      { distance: 880, center: 20 },
+      { distance: 1030, center: 7 },
+      { distance: 1150, center: -18 },
+      { distance: 1260, center: -11 },
+      { distance: 1400, center: 15 },
+      { distance: 1580, center: 20 },
+      { distance: 1700, center: -18 },
+      { distance: 1820, center: -22 },
+      { distance: 2020, center: -7 },
+      { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ]
+  },
+  mirage: {
+    id: "mirage",
+    name: "Mirage Bay GP",
+    loopLength: TRACK_LOOP_LENGTH,
+    sections: MIRAGE_SECTIONS,
+    sectorEnds: [920, 1510, TRACK_LOOP_LENGTH],
+    checkpoints: checkpointsFromSections(MIRAGE_SECTIONS),
+    centerAnchors: [
+      { distance: 0, center: 0 },
+      { distance: 320, center: 2 },
+      { distance: 470, center: 23 },
+      { distance: 610, center: 24 },
+      { distance: 780, center: -12 },
+      { distance: 920, center: -22 },
+      { distance: 1040, center: 13 },
+      { distance: 1190, center: -8 },
+      { distance: 1350, center: -24 },
+      { distance: 1510, center: -6 },
+      { distance: 1640, center: 20 },
+      { distance: 1780, center: 6 },
+      { distance: 1980, center: -18 },
+      { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ]
+  },
+  northstar: {
+    id: "northstar",
+    name: "Northstar Ring",
+    loopLength: TRACK_LOOP_LENGTH,
+    sections: NORTHSTAR_SECTIONS,
+    sectorEnds: [810, 1660, TRACK_LOOP_LENGTH],
+    checkpoints: checkpointsFromSections(NORTHSTAR_SECTIONS),
+    centerAnchors: [
+      { distance: 0, center: 0 },
+      { distance: 200, center: 0 },
+      { distance: 360, center: -18 },
+      { distance: 560, center: -25 },
+      { distance: 700, center: 16 },
+      { distance: 810, center: 24 },
+      { distance: 980, center: 4 },
+      { distance: 1110, center: -10 },
+      { distance: 1240, center: 19 },
+      { distance: 1430, center: -18 },
+      { distance: 1540, center: 12 },
+      { distance: 1660, center: 22 },
+      { distance: 1900, center: 10 },
+      { distance: 2080, center: -16 },
+      { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ]
+  }
+};
+
+let activeLayout: TrackLayout = TRACK_LAYOUTS.aurelia;
+
+export function setActiveTrackLayout(trackId: FictionalTrackId) {
+  activeLayout = TRACK_LAYOUTS[trackId] ?? TRACK_LAYOUTS.aurelia;
+}
+
+export function getActiveTrackLayout() {
+  return activeLayout;
+}
+
+export function getTrackCheckpoints() {
+  return activeLayout.checkpoints;
+}
+
+export function getTrackSectorEnds() {
+  return activeLayout.sectorEnds;
+}
+
+export const TRACK_SECTIONS = AURELIA_SECTIONS;
 
 export function sampleTrack(distance: number): TrackSample {
   const d = wrapDistance(distance);
@@ -192,10 +488,11 @@ export function sampleTrack(distance: number): TrackSample {
 
 export function trackCenterAt(distance: number) {
   const d = wrapDistance(distance);
-  const nextIndex = CENTER_ANCHORS.findIndex((anchor) => anchor.distance >= d);
+  const anchors = activeLayout.centerAnchors;
+  const nextIndex = anchors.findIndex((anchor) => anchor.distance >= d);
   const rightIndex = nextIndex <= 0 ? 1 : nextIndex;
-  const left = CENTER_ANCHORS[rightIndex - 1];
-  const right = CENTER_ANCHORS[rightIndex];
+  const left = anchors[rightIndex - 1];
+  const right = anchors[rightIndex];
   const t = smoothstep((d - left.distance) / (right.distance - left.distance));
   return left.center + (right.center - left.center) * t;
 }
@@ -207,11 +504,20 @@ export function trackCurveAt(distance: number) {
 
 export function trackSectionAt(distance: number) {
   const d = wrapDistance(distance);
-  return TRACK_SECTIONS.find((section) => d >= section.start && d < section.end) ?? TRACK_SECTIONS[0];
+  return activeLayout.sections.find((section) => d >= section.start && d < section.end) ?? activeLayout.sections[0];
 }
 
 export function wrapDistance(distance: number) {
-  return ((distance % TRACK_LOOP_LENGTH) + TRACK_LOOP_LENGTH) % TRACK_LOOP_LENGTH;
+  return ((distance % activeLayout.loopLength) + activeLayout.loopLength) % activeLayout.loopLength;
+}
+
+function checkpointsFromSections(sections: TrackSection[]): TrackCheckpoint[] {
+  return sections.slice(1).map((section) => ({
+    id: `${section.id}-entry`,
+    name: `${section.name} Entry`,
+    distance: section.start,
+    sector: section.sector
+  }));
 }
 
 function isBrakingZone(section: TrackSection, sectionProgress: number) {

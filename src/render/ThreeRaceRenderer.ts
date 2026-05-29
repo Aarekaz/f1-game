@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import { setActiveTrackLayout, trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import type { SessionConfig } from "../world/FictionalGpWorld";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
 import { RacingAssetLibrary } from "./RacingAssetLibrary";
@@ -37,7 +38,7 @@ export class ThreeRaceRenderer {
   private readonly hemi = new THREE.HemisphereLight("#dcefff", "#14210f", 1.7);
   private readonly sun = new THREE.DirectionalLight("#ffffff", 2.7);
   private readonly car = buildFormulaCarProxy();
-  private readonly circuit = buildGpCircuit();
+  private circuit = buildGpCircuit();
   private readonly horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly tireSmoke = this.buildTireSmoke();
@@ -79,6 +80,15 @@ export class ThreeRaceRenderer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+  }
+
+  configure(session: SessionConfig) {
+    setActiveTrackLayout(session.track.id);
+    this.scene.remove(this.circuit);
+    disposeObject3D(this.circuit);
+    this.circuit = buildGpCircuit();
+    this.scene.add(this.circuit);
+    this.renderer.domElement.dataset.trackLayout = session.track.id;
   }
 
   update(telemetry: RaceTelemetry) {

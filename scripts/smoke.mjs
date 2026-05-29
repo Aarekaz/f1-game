@@ -80,6 +80,7 @@ async function checkDesktop(browser) {
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
+    trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? ""
   }));
@@ -101,6 +102,7 @@ async function checkDesktop(browser) {
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
+  assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.sessionTrack === "Northstar Ring", `desktop session track missing: ${state.sessionTrack}`);
   assert(state.sessionWeather === "Wet Storm", `desktop session weather missing: ${state.sessionWeather}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");
@@ -110,7 +112,7 @@ async function checkDesktop(browser) {
   assert(/Catch|Hold/.test(state.objective), `desktop objective missing: ${state.objective}`);
   assert(state.section.length > 0, "desktop circuit section was missing");
   assert(state.cue.length > 0, "desktop driving cue was missing");
-  assert(/\d\/7/.test(state.checkpoint), `desktop checkpoint readout missing: ${state.checkpoint}`);
+  assert(/\d\/[67]/.test(state.checkpoint), `desktop checkpoint readout missing: ${state.checkpoint}`);
   assert(state.penalty.length > 0, "desktop penalty readout was missing");
   assert(state.lapTime !== "0.00", "desktop lap timer did not advance");
   assert(state.hintVisible, "desktop keyboard hint was not visible");

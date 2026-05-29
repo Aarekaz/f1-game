@@ -1,4 +1,4 @@
-import { TRACK_LOOP_LENGTH } from "./trackPath";
+import { TRACK_LOOP_LENGTH, getTrackCheckpoints, getTrackSectorEnds } from "./trackPath";
 
 export type Checkpoint = {
   id: string;
@@ -50,7 +50,19 @@ export class RaceDirector {
   private penaltySeconds = 0;
   private finished = false;
 
-  constructor(private readonly laps: number) {}
+  constructor(
+    private readonly laps: number,
+    private checkpoints: readonly Checkpoint[] = getTrackCheckpoints(),
+    private sectorEnds: readonly [number, number, number] = getTrackSectorEnds(),
+    private loopLength = TRACK_LOOP_LENGTH
+  ) {}
+
+  configure(checkpoints = getTrackCheckpoints(), sectorEnds = getTrackSectorEnds(), loopLength = TRACK_LOOP_LENGTH) {
+    this.checkpoints = checkpoints;
+    this.sectorEnds = sectorEnds;
+    this.loopLength = loopLength;
+    this.reset();
+  }
 
   reset() {
     this.lap = 1;
@@ -77,13 +89,13 @@ export class RaceDirector {
     if (this.finished) return [];
 
     const events: RaceDirectorEvent[] = [];
-    while (this.nextCheckpointIndex < RACE_CHECKPOINTS.length && this.crossed(this.nextCheckpointDistance(), distance)) {
-      const checkpoint = RACE_CHECKPOINTS[this.nextCheckpointIndex];
+    while (this.nextCheckpointIndex < this.checkpoints.length && this.crossed(this.nextCheckpointDistance(), distance)) {
+      const checkpoint = this.checkpoints[this.nextCheckpointIndex];
       events.push({ type: "checkpoint", checkpoint, checkpointIndex: this.nextCheckpointIndex });
       this.nextCheckpointIndex += 1;
     }
 
-    while (this.nextSectorIndex < SECTOR_ENDS.length && this.crossed(this.nextSectorDistance(), distance)) {
+    while (this.nextSectorIndex < this.sectorEnds.length && this.crossed(this.nextSectorDistance(), distance)) {
       const sector = (this.nextSectorIndex + 1) as 1 | 2 | 3;
       const time = totalTime - this.currentLapStartTime;
       this.sectorSplits[this.nextSectorIndex] = time;
@@ -91,9 +103,9 @@ export class RaceDirector {
       this.nextSectorIndex += 1;
     }
 
-    while (this.crossed(this.lap * TRACK_LOOP_LENGTH, distance)) {
+    while (this.crossed(this.lap * this.loopLength, distance)) {
       const time = totalTime - this.currentLapStartTime;
-      const valid = this.validLap && this.nextCheckpointIndex >= RACE_CHECKPOINTS.length;
+      const valid = this.validLap && this.nextCheckpointIndex >= this.checkpoints.length;
       events.push({ type: "lap", lap: this.lap, time, valid });
       this.lap += 1;
       this.currentLapStartTime = totalTime;
@@ -114,28 +126,28 @@ export class RaceDirector {
   }
 
   snapshot(distance: number): RaceDirectorSnapshot {
-    const lapDistance = this.finished ? TRACK_LOOP_LENGTH : distance % TRACK_LOOP_LENGTH;
+    const lapDistance = this.finished ? this.loopLength : distance % this.loopLength;
     return {
       lap: Math.min(this.lap, this.laps),
       laps: this.laps,
-      nextCheckpoint: RACE_CHECKPOINTS[this.nextCheckpointIndex] ?? RACE_CHECKPOINTS[0],
+      nextCheckpoint: this.checkpoints[this.nextCheckpointIndex] ?? this.checkpoints[0],
       checkpointIndex: this.nextCheckpointIndex,
-      checkpointCount: RACE_CHECKPOINTS.length,
+      checkpointCount: this.checkpoints.length,
       sectorSplits: [...this.sectorSplits],
       lapValid: this.validLap,
       penaltySeconds: this.penaltySeconds,
-      raceProgress: this.finished ? 1 : Math.min(1, (this.lap - 1 + lapDistance / TRACK_LOOP_LENGTH) / this.laps),
-      lapProgress: Math.min(1, lapDistance / TRACK_LOOP_LENGTH),
+      raceProgress: this.finished ? 1 : Math.min(1, (this.lap - 1 + lapDistance / this.loopLength) / this.laps),
+      lapProgress: Math.min(1, lapDistance / this.loopLength),
       finished: this.finished
     };
   }
 
   private nextCheckpointDistance() {
-    return (this.lap - 1) * TRACK_LOOP_LENGTH + (RACE_CHECKPOINTS[this.nextCheckpointIndex]?.distance ?? TRACK_LOOP_LENGTH + 1);
+    return (this.lap - 1) * this.loopLength + (this.checkpoints[this.nextCheckpointIndex]?.distance ?? this.loopLength + 1);
   }
 
   private nextSectorDistance() {
-    return (this.lap - 1) * TRACK_LOOP_LENGTH + (SECTOR_ENDS[this.nextSectorIndex] ?? TRACK_LOOP_LENGTH + 1);
+    return (this.lap - 1) * this.loopLength + (this.sectorEnds[this.nextSectorIndex] ?? this.loopLength + 1);
   }
 
   private crossed(target: number, distance: number) {
