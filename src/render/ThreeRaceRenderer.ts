@@ -422,6 +422,7 @@ export class ThreeRaceRenderer {
           catchFences: number;
           pitWallModules: number;
           marshalPosts: number;
+          checkpointGates: number;
           venueHero: string;
         }
       | undefined;
@@ -441,6 +442,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.circuitCatchFences = String(stats.catchFences);
       this.renderer.domElement.dataset.circuitPitWallModules = String(stats.pitWallModules);
       this.renderer.domElement.dataset.circuitMarshalPosts = String(stats.marshalPosts);
+      this.renderer.domElement.dataset.circuitCheckpointGates = String(stats.checkpointGates);
       this.renderer.domElement.dataset.circuitVenueHero = stats.venueHero;
     }
 

@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import {
   getActiveTrackLayout,
+  getTrackCheckpoints,
+  getTrackSectorEnds,
   sampleTrack,
   terrainHeightAt,
   trackCurveAt,
@@ -348,6 +350,30 @@ function makePitWallModule(name: string, material: THREE.Material, accentMateria
   return module;
 }
 
+function makeCheckpointGate(name: string, label: string, panelMaterial: THREE.Material, frameMaterial: THREE.Material, accentMaterial: THREE.Material) {
+  const gate = new THREE.Group();
+  gate.name = name;
+
+  gate.add(makeBox(`${name}-left-upright`, [0.18, 4.5, 0.18], [-7.35, 2.25, 0], frameMaterial));
+  gate.add(makeBox(`${name}-right-upright`, [0.18, 4.5, 0.18], [7.35, 2.25, 0], frameMaterial));
+  gate.add(makeBox(`${name}-crossbar`, [15.1, 0.28, 0.22], [0, 4.42, 0], frameMaterial));
+  gate.add(makeBox(`${name}-timing-loop`, [12.9, 0.026, 0.42], [0, 0.052, 0], accentMaterial));
+
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.82), panelMaterial);
+  panel.name = `${name}-panel-${label.toLowerCase()}`;
+  panel.position.set(0, 4.78, -0.13);
+  gate.add(panel);
+
+  for (const side of [-1, 1]) {
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.16, 0.16), accentMaterial);
+    lamp.name = `${name}-sector-lamp`;
+    lamp.position.set(side * 2.08, 4.78, -0.18);
+    gate.add(lamp);
+  }
+
+  return gate;
+}
+
 function makeFictionalPaddock(name: string, material: THREE.Material, accentMaterial: THREE.Material, glassMaterial: THREE.Material) {
   const paddock = new THREE.Group();
   paddock.name = name;
@@ -497,6 +523,20 @@ export function buildGpCircuit() {
   const board150 = makeBoardMaterial("150");
   const board100 = makeBoardMaterial("100");
   const board50 = makeBoardMaterial("50");
+  const checkpointMaterials = [
+    makeBoardMaterial("G1", "#171f24", "#d7eb8f"),
+    makeBoardMaterial("G2", "#171f24", "#d7eb8f"),
+    makeBoardMaterial("G3", "#171f24", "#d7eb8f"),
+    makeBoardMaterial("G4", "#171f24", "#d7eb8f"),
+    makeBoardMaterial("G5", "#171f24", "#d7eb8f"),
+    makeBoardMaterial("G6", "#171f24", "#d7eb8f"),
+    makeBoardMaterial("G7", "#171f24", "#d7eb8f")
+  ];
+  const sectorMaterials = [
+    makeBoardMaterial("S1", "#f3d348", "#17211b"),
+    makeBoardMaterial("S2", "#20b7ff", "#071115"),
+    makeBoardMaterial("S3", "#e20e3b", "#ffffff")
+  ];
 
   circuit.add(makeTrackStrip("terrain-following-grass", grass, -88, 88, -0.18, 0, RENDERED_TRACK_LENGTH, 26));
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
@@ -692,6 +732,30 @@ export function buildGpCircuit() {
     }
   }
 
+  let checkpointGateCount = 0;
+  getTrackCheckpoints().forEach((checkpoint, index) => {
+    const gate = makeCheckpointGate(
+      "race-checkpoint-gate",
+      `G${index + 1}`,
+      checkpointMaterials[index % checkpointMaterials.length],
+      bridgeMaterial,
+      accentMaterial
+    );
+    dynamicPieces.push({ object: gate, ahead: checkpoint.distance, lateral: 0, curveScale: 0.7 });
+    circuit.add(gate);
+    checkpointGateCount += 1;
+  });
+
+  getTrackSectorEnds().forEach((distance, index) => {
+    if (distance >= TRACK_LOOP_LENGTH) return;
+
+    const gate = makeCheckpointGate("sector-timing-gate", `S${index + 1}`, sectorMaterials[index], bridgeMaterial, accentMaterial);
+    gate.scale.set(1.04, 1.04, 1.04);
+    dynamicPieces.push({ object: gate, ahead: distance, lateral: 0, curveScale: 0.7 });
+    circuit.add(gate);
+    checkpointGateCount += 1;
+  });
+
   const startElevation = trackElevationAt(18);
   const startBridgePoint = trackWorldPointAt(38, 0);
   const timingBridge = new THREE.Group();
@@ -731,7 +795,9 @@ export function buildGpCircuit() {
     brakeMaterial,
     board150,
     board100,
-    board50
+    board50,
+    ...checkpointMaterials,
+    ...sectorMaterials
   ];
   circuit.userData.dynamicPieces = dynamicPieces;
   circuit.userData.weatherMaterials = {
@@ -753,6 +819,7 @@ export function buildGpCircuit() {
     catchFences: dynamicPieces.filter((piece) => piece.object.name === "catch-fence").length,
     pitWallModules: dynamicPieces.filter((piece) => piece.object.name === "fictional-pit-wall").length,
     marshalPosts: dynamicPieces.filter((piece) => piece.object.name === "marshal-post").length,
+    checkpointGates: checkpointGateCount,
     venueHero: venueHero.name
   };
   circuit.userData.surfaceStats = {
