@@ -50,6 +50,17 @@ async function checkDesktop(browser) {
 
   await page.keyboard.down("ArrowUp");
   await page.keyboard.down("ArrowRight");
+  await page.waitForTimeout(1200);
+  const launch = await page.evaluate(() => ({
+    objective: document.querySelector("#objective")?.textContent ?? "",
+    cue: document.querySelector("#track-cue")?.textContent ?? "",
+    paceTarget: document.querySelector("#pace-target")?.textContent ?? "",
+    launchCharge: Number(document.querySelector("#game canvas")?.dataset.launchCharge ?? 0)
+  }));
+  assert(/Launch/i.test(launch.objective), `desktop launch objective was not visible: ${launch.objective}`);
+  assert(/revs|throttle|sweet/i.test(launch.cue), `desktop launch cue was not visible: ${launch.cue}`);
+  assert(/launch/i.test(launch.paceTarget), `desktop launch quality was not visible: ${launch.paceTarget}`);
+  assert(launch.launchCharge > 0.2, `desktop launch charge did not build during countdown, charge=${launch.launchCharge}`);
   await page.waitForTimeout(3900);
   await page.keyboard.up("ArrowRight");
   await page.keyboard.up("ArrowUp");
@@ -86,6 +97,8 @@ async function checkDesktop(browser) {
     dirtyAir: Number(document.querySelector("#game canvas")?.dataset.dirtyAir ?? 0),
     rainIntensity: Number(document.querySelector("#game canvas")?.dataset.rainIntensity ?? 0),
     roadWetness: Number(document.querySelector("#game canvas")?.dataset.roadWetness ?? 0),
+    launchCharge: Number(document.querySelector("#game canvas")?.dataset.launchCharge ?? 0),
+    launchQuality: Number(document.querySelector("#game canvas")?.dataset.launchQuality ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
@@ -114,6 +127,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
+  assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
+  assert(Number.isFinite(state.launchQuality), "desktop launch quality telemetry was missing");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "apex-procedural", `desktop fictional formula car did not load, asset=${state.assetCar}`);

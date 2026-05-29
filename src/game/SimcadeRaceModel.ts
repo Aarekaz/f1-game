@@ -26,6 +26,8 @@ export type RaceTelemetry = {
   surfaceGrip: number;
   roadWetness: number;
   rainIntensity: number;
+  launchCharge: number;
+  launchQuality: number;
   skyColor: string;
   fogColor: string;
   grassColor: string;
@@ -143,6 +145,8 @@ export class SimcadeRaceModel {
   private wheelspin = 0;
   private understeer = 0;
   private lockup = 0;
+  private launchCharge = 0;
+  private launchQuality = 0;
   private draft = 0;
   private dirtyAir = 0;
   private grip = 1;
@@ -191,11 +195,11 @@ export class SimcadeRaceModel {
     }
 
     if (this.phase === "countdown") {
+      this.updateLaunchCharge(dt, actions.throttle);
       this.countdown = Math.max(0, this.countdown - dt);
       if (this.countdown === 0) {
         this.phase = "racing";
-        this.speed = 64;
-        this.message = "Lights out";
+        this.applyLaunch();
         this.messageTimer = 1.2;
       }
     }
@@ -227,6 +231,8 @@ export class SimcadeRaceModel {
       surfaceGrip: this.session.weather.gripMultiplier,
       roadWetness: this.session.weather.roadWetness,
       rainIntensity: this.session.weather.rainIntensity,
+      launchCharge: this.launchCharge,
+      launchQuality: this.launchQuality,
       skyColor: this.session.weather.skyColor,
       fogColor: this.session.weather.fogColor,
       grassColor: this.session.weather.grassColor,
@@ -313,6 +319,8 @@ export class SimcadeRaceModel {
     this.wheelspin = 0;
     this.understeer = 0;
     this.lockup = 0;
+    this.launchCharge = 0;
+    this.launchQuality = 0;
     this.draft = 0;
     this.dirtyAir = 0;
     this.grip = 1;
@@ -331,6 +339,42 @@ export class SimcadeRaceModel {
     this.lastThrottle = 0;
     this.rivals = createRivals();
     this.director.reset();
+  }
+
+  private updateLaunchCharge(dt: number, throttle: number) {
+    const target = clamp(throttle, 0, 1);
+    const response = target > this.launchCharge ? 2.4 : 4.6;
+    this.launchCharge = approach(this.launchCharge, target, dt * response);
+    const ideal = this.idealLaunchCharge();
+    this.launchQuality = clamp(1 - Math.abs(this.launchCharge - ideal) / 0.42, 0, 1);
+  }
+
+  private applyLaunch() {
+    const ideal = this.idealLaunchCharge();
+    const underCharge = clamp((ideal - this.launchCharge) / ideal, 0, 1);
+    const overCharge = clamp((this.launchCharge - ideal) / Math.max(0.2, 1 - ideal), 0, 1);
+    const quality = clamp(1 - underCharge * 0.86 - overCharge * (0.42 + this.session.weather.roadWetness * 0.5), 0.12, 1);
+    const wetSpin = overCharge * (0.18 + this.session.weather.roadWetness * 0.82);
+
+    this.launchQuality = quality;
+    this.wheelspin = Math.max(this.wheelspin, wetSpin);
+    this.slip = Math.max(this.slip, wetSpin * 0.58);
+    this.grip = clamp(this.grip - wetSpin * 0.18, 0.52, 1);
+    this.speed = 42 + quality * 54 - wetSpin * 16;
+
+    if (quality > 0.86) {
+      this.message = "Perfect launch";
+    } else if (overCharge > 0.34) {
+      this.message = "Wheelspin off the line";
+    } else if (underCharge > 0.36) {
+      this.message = "Bogged launch";
+    } else {
+      this.message = "Lights out";
+    }
+  }
+
+  private idealLaunchCharge() {
+    return 0.74 - this.session.weather.roadWetness * 0.14;
   }
 
   private updateDriving(dt: number, actions: RaceActions) {

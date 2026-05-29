@@ -46,6 +46,26 @@ describe("SimcadeRaceModel", () => {
     expect(slowed.ers).toBeGreaterThan(fast.ers);
   });
 
+  it("turns the countdown into a throttle-controlled launch", () => {
+    const disciplined = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm")
+    });
+    disciplined.update(1 / 60, { ...idle, launch: true });
+    const controlled = run(disciplined, 3.2, { throttle: 0.6 });
+
+    const overRevved = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm")
+    });
+    overRevved.update(1 / 60, { ...idle, launch: true });
+    const messy = run(overRevved, 3.2, { throttle: 1 });
+
+    expect(controlled.launchQuality).toBeGreaterThan(messy.launchQuality);
+    expect(controlled.speedKph).toBeGreaterThan(messy.speedKph);
+    expect(messy.car.wheelspin).toBeGreaterThan(controlled.car.wheelspin);
+  });
+
   it("configures fictional GP tracks and weather as session state", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
@@ -92,6 +112,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceGrip).toBe(1);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
+    expect(telemetry.launchCharge).toBe(0);
+    expect(telemetry.launchQuality).toBe(0);
     expect(telemetry.draft).toBe(0);
     expect(telemetry.dirtyAir).toBe(0);
     expect(telemetry.airState).toBe("Clean air");

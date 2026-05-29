@@ -90,7 +90,8 @@ export class HudController {
     this.delta.textContent = telemetry.bestLap === null ? "+0.00" : formatDelta(telemetry.delta);
     this.speed.textContent = String(telemetry.speedKph);
     this.updatePowertrain(telemetry);
-    this.objective.textContent = telemetry.objective;
+    this.objective.textContent =
+      telemetry.phase === "countdown" ? `Launch ${(telemetry.launchCharge * 100).toFixed(0)}%` : telemetry.objective;
     this.updateSessionReadout(telemetry);
     this.updateTrackReadout(telemetry);
     this.updateMiniMap(telemetry);
@@ -180,18 +181,29 @@ export class HudController {
     }
 
     if (this.trackCue) {
-      this.trackCue.textContent = telemetry.trackCue;
-      this.trackCue.classList.toggle("brake", telemetry.brakingZone);
+      this.trackCue.textContent =
+        telemetry.phase === "countdown"
+          ? telemetry.launchQuality > 0.78
+            ? "Launch sweet spot"
+            : telemetry.launchCharge > 0.82
+              ? "Ease throttle"
+              : "Build revs"
+          : telemetry.trackCue;
+      this.trackCue.classList.toggle("brake", telemetry.brakingZone || (telemetry.phase === "countdown" && telemetry.launchCharge > 0.82));
     }
 
     if (this.trackInstruction) {
-      this.trackInstruction.textContent = telemetry.trackInstruction;
+      this.trackInstruction.textContent =
+        telemetry.phase === "countdown" ? "Hold near the sweet spot for a cleaner getaway" : telemetry.trackInstruction;
     }
 
     if (this.paceTarget) {
       const signedDelta = telemetry.paceDeltaKph > 0 ? `+${telemetry.paceDeltaKph}` : String(telemetry.paceDeltaKph);
-      this.paceTarget.textContent = `${telemetry.cornerPhase.toUpperCase()} / ${telemetry.targetSpeedKph} kph / ${signedDelta}`;
-      this.paceTarget.classList.toggle("too-hot", telemetry.paceDeltaKph > 22);
+      this.paceTarget.textContent =
+        telemetry.phase === "countdown"
+          ? `LAUNCH / ${(telemetry.launchQuality * 100).toFixed(0)}% quality`
+          : `${telemetry.cornerPhase.toUpperCase()} / ${telemetry.targetSpeedKph} kph / ${signedDelta}`;
+      this.paceTarget.classList.toggle("too-hot", telemetry.phase === "countdown" ? telemetry.launchCharge > 0.82 : telemetry.paceDeltaKph > 22);
     }
 
     if (this.checkpoint) {
@@ -214,7 +226,9 @@ export class HudController {
     }
 
     if (this.messageBody) {
-      this.messageBody.textContent = showCountdown ? Math.ceil(telemetry.countdown).toString() : telemetry.message || " ";
+      this.messageBody.textContent = showCountdown
+        ? `${Math.ceil(telemetry.countdown)} | launch ${(telemetry.launchCharge * 100).toFixed(0)}%`
+        : telemetry.message || " ";
     }
 
     this.updateStartLights(telemetry);

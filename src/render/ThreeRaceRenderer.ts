@@ -145,6 +145,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
     this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
+    this.renderer.domElement.dataset.launchCharge = telemetry.launchCharge.toFixed(2);
+    this.renderer.domElement.dataset.launchQuality = telemetry.launchQuality.toFixed(2);
     this.renderer.domElement.dataset.weather = telemetry.weatherName;
     this.renderer.domElement.dataset.trackName = telemetry.trackName;
     this.applyAtmosphere(telemetry);
