@@ -14,6 +14,8 @@ import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
 import { RacingAssetLibrary } from "./RacingAssetLibrary";
 
+type CameraMode = "chase" | "pod";
+
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
   const textures = new Set<{ dispose: () => void }>();
@@ -91,6 +93,8 @@ export class ThreeRaceRenderer {
   private readonly carScreenPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly handleResize = () => this.resize();
+  private cameraMode: CameraMode = "chase";
+  private cameraModeSnap = false;
 
   constructor(private readonly parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -99,6 +103,7 @@ export class ThreeRaceRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.domElement.className = "race-canvas";
     this.renderer.domElement.dataset.assetCar = "apex-procedural-f25";
+    this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.parent.appendChild(this.renderer.domElement);
 
     this.scene.fog = new THREE.Fog("#c7d8df", 180, 920);
@@ -144,6 +149,12 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.trackLayout = session.track.id;
     this.renderer.domElement.dataset.horizonTrack = session.track.id;
     this.syncCircuitDressingTelemetry();
+  }
+
+  toggleCameraMode() {
+    this.cameraMode = this.cameraMode === "chase" ? "pod" : "chase";
+    this.cameraModeSnap = true;
+    this.renderer.domElement.dataset.cameraMode = this.cameraMode;
   }
 
   update(telemetry: RaceTelemetry) {
@@ -212,12 +223,13 @@ export class ThreeRaceRenderer {
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateTireSmoke(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
     this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
-    this.camera.fov = 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
+    const podMode = this.cameraMode === "pod";
+    this.camera.fov = podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
 
-    const lookAhead = 14 + speedRatio * 24;
-    const cameraLag = 8.8 + speedRatio * 5.8 + telemetry.car.throttle * 1.0 - telemetry.car.braking * 1.5;
-    const lateralShoulder = carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
-    const targetLateral = carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85;
+    const lookAhead = podMode ? 28 + speedRatio * 36 : 14 + speedRatio * 24;
+    const cameraLag = podMode ? 9.8 + speedRatio * 2.3 - telemetry.car.braking * 0.75 : 8.8 + speedRatio * 5.8 + telemetry.car.throttle * 1.0 - telemetry.car.braking * 1.5;
+    const lateralShoulder = podMode ? carLateral * 0.12 - telemetry.car.yawRate * 0.28 : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
+    const targetLateral = podMode ? carLateral * 0.13 + telemetry.car.yawRate * 0.78 - telemetry.curve * 0.72 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85;
     const cameraPoint = {
       x: carX - trackTangent.x * cameraLag + trackNormal.x * lateralShoulder,
       z: carZ - trackTangent.z * cameraLag + trackNormal.z * lateralShoulder
@@ -239,16 +251,22 @@ export class ThreeRaceRenderer {
     } else {
       this.desiredCameraPosition.set(
         cameraPoint.x,
-        carY + 2.74 - telemetry.car.braking * 0.18 + telemetry.car.slip * 0.18 + speedRatio * 0.16 + telemetry.surfaceRumble * 0.08,
+        carY +
+          (podMode ? 2.1 : 2.74) -
+          telemetry.car.braking * (podMode ? 0.06 : 0.18) +
+          telemetry.car.slip * (podMode ? 0.08 : 0.18) +
+          speedRatio * (podMode ? 0.12 : 0.16) +
+          telemetry.surfaceRumble * 0.08,
         cameraPoint.z
       );
-      this.desiredCameraTarget.set(targetPoint.x, carY + 0.68 + telemetry.car.slip * 0.18, targetPoint.z);
-      if (telemetry.cameraSnap) {
+      this.desiredCameraTarget.set(targetPoint.x, carY + (podMode ? 0.98 : 0.68) + telemetry.car.slip * 0.18, targetPoint.z);
+      if (telemetry.cameraSnap || this.cameraModeSnap) {
         this.cameraPosition.copy(this.desiredCameraPosition);
         this.cameraTarget.copy(this.desiredCameraTarget);
+        this.cameraModeSnap = false;
       } else {
-        const positionFollow = 0.12 + speedRatio * 0.06 + telemetry.car.braking * 0.02;
-        const targetFollow = 0.16 + speedRatio * 0.06;
+        const positionFollow = (podMode ? 0.24 : 0.12) + speedRatio * (podMode ? 0.08 : 0.06) + telemetry.car.braking * 0.02;
+        const targetFollow = (podMode ? 0.28 : 0.16) + speedRatio * (podMode ? 0.08 : 0.06);
         this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
         this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
       }
@@ -262,6 +280,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraWorldX = this.camera.position.x.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldY = this.camera.position.y.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
+    this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
     this.horizon.position.x = this.camera.position.x;

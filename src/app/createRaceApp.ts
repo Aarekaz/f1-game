@@ -1,6 +1,6 @@
 import { RaceAudioController } from "../audio/RaceAudioController";
 import { summarizeApexSeries, type ApexSeriesEventSummary } from "../game/ApexSeries";
-import { InputState } from "../game/InputState";
+import { InputState, type InputActions } from "../game/InputState";
 import {
   mergePersonalBest,
   readPersonalBest,
@@ -8,7 +8,7 @@ import {
   savePersonalBest,
   type PersonalBest
 } from "../game/PersonalBestStore";
-import { SimcadeRaceModel, type RaceActions } from "../game/SimcadeRaceModel";
+import { SimcadeRaceModel } from "../game/SimcadeRaceModel";
 import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
 import { DEFAULT_SESSION, findAssist, findTrack, findWeather, type SessionConfig } from "../world/FictionalGpWorld";
@@ -141,7 +141,7 @@ function createTouchBridge() {
   });
 
   return {
-    merge(actions: RaceActions): RaceActions {
+    merge(actions: InputActions): InputActions {
       const touchSteer = (activeControls.has("right") ? 1 : 0) - (activeControls.has("left") ? 1 : 0);
       const merged = {
         ...actions,
@@ -150,7 +150,8 @@ function createTouchBridge() {
         brake: activeControls.has("brake") ? 1 : actions.brake,
         ers: actions.ers || activeControls.has("boost"),
         launch: actions.launch || launchPulse || activeControls.has("throttle"),
-        recover: actions.recover || recoverPulse
+        recover: actions.recover || recoverPulse,
+        cameraToggle: actions.cameraToggle
       };
       launchPulse = false;
       recoverPulse = false;
@@ -215,6 +216,9 @@ export function createRaceApp() {
     last = now;
 
     const actions = touch.merge(input.update(dt));
+    if (actions.cameraToggle) {
+      renderer.toggleCameraMode();
+    }
     const telemetry = model.update(dt, actions);
     if (telemetry.phase === "finished" && lastPhase !== "finished") {
       const update = mergePersonalBest(readPersonalBest(session), resultFromTelemetry(telemetry));

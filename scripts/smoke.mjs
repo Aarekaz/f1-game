@@ -135,12 +135,14 @@ async function checkDesktop(browser) {
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0),
+    carWorldX: Number(document.querySelector("#game canvas")?.dataset.carWorldX ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
     cameraWorldX: Number(document.querySelector("#game canvas")?.dataset.cameraWorldX ?? 0),
     cameraWorldY: Number(document.querySelector("#game canvas")?.dataset.cameraWorldY ?? 0),
     cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
+    cameraMode: document.querySelector("#game canvas")?.dataset.cameraMode ?? "",
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     carSlip: Number(document.querySelector("#game canvas")?.dataset.carSlip ?? 0),
@@ -194,6 +196,18 @@ async function checkDesktop(browser) {
     streak: document.querySelector("#streak")?.textContent ?? ""
   }));
 
+  await page.keyboard.press("KeyC");
+  await page.waitForTimeout(250);
+  const podCamera = await page.evaluate(() => ({
+    mode: document.querySelector("#game canvas")?.dataset.cameraMode ?? "",
+    cameraWorldX: Number(document.querySelector("#game canvas")?.dataset.cameraWorldX ?? 0),
+    cameraWorldY: Number(document.querySelector("#game canvas")?.dataset.cameraWorldY ?? 0),
+    cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
+    carWorldX: Number(document.querySelector("#game canvas")?.dataset.carWorldX ?? 0),
+    carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
+    carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0)
+  }));
+
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assertCanvasBox(state.canvasBox, "desktop");
@@ -203,8 +217,15 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carWorldY) && state.carWorldY > 0.5, "desktop car did not receive elevated track height");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
   assert(Number.isFinite(state.cameraWorldX), "desktop chase camera X telemetry was missing");
+  assert(state.cameraMode === "chase", `desktop default camera mode was wrong: ${state.cameraMode}`);
   assert(Number.isFinite(state.cameraWorldY) && state.cameraWorldY > state.carWorldY, "desktop chase camera did not sit above the car");
   assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
+  assert(podCamera.mode === "pod", `desktop camera toggle did not enter pod mode: ${podCamera.mode}`);
+  assert(
+    Math.hypot(podCamera.cameraWorldX - podCamera.carWorldX, podCamera.cameraWorldZ - podCamera.carWorldZ) <
+      Math.hypot(state.cameraWorldX - state.carWorldX, state.cameraWorldZ - state.carWorldZ),
+    "desktop pod camera did not move closer to the car"
+  );
   assert(
     Math.hypot(state.carScreenX - ready.carScreenX, state.carScreenY - ready.carScreenY) > 0.025,
     "desktop car stayed visually pinned to the same screen position"
