@@ -435,10 +435,10 @@ function makeAsphaltMaterial() {
       seed = (seed * 1664525 + 1013904223) % 4294967296;
       return seed / 4294967296;
     };
-    ctx.fillStyle = "#30363a";
+    ctx.fillStyle = "#41494a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     for (let index = 0; index < 900; index += 1) {
-      const shade = 42 + Math.floor(random() * 36);
+      const shade = 58 + Math.floor(random() * 44);
       ctx.fillStyle = `rgba(${shade}, ${shade + 4}, ${shade + 8}, ${0.12 + random() * 0.16})`;
       ctx.fillRect(random() * canvas.width, random() * canvas.height, 1 + random() * 2.5, 1);
     }
@@ -455,8 +455,10 @@ function makeAsphaltMaterial() {
   texture.colorSpace = THREE.SRGBColorSpace;
 
   return new THREE.MeshStandardMaterial({
-    color: "#30363a",
+    color: "#d6dedc",
     map: texture,
+    emissive: "#222b2c",
+    emissiveIntensity: 0.12,
     roughness: 0.86,
     metalness: 0.02
   });
@@ -469,8 +471,11 @@ export function buildGpCircuit() {
   const dynamicPieces: DynamicPiece[] = [];
 
   const asphalt = makeAsphaltMaterial();
-  const grass = new THREE.MeshStandardMaterial({ color: layout.terrainColor, roughness: 0.9 });
-  const runoff = new THREE.MeshStandardMaterial({ color: layout.runoffColor, roughness: 0.86 });
+  const grass = new THREE.MeshBasicMaterial({
+    color: layout.id === "northstar" ? "#5f7466" : layout.terrainColor,
+    side: THREE.DoubleSide
+  });
+  const runoff = new THREE.MeshBasicMaterial({ color: layout.runoffColor, side: THREE.DoubleSide });
   const gravel = new THREE.MeshStandardMaterial({ color: "#9a8a70", roughness: 0.96 });
   const kerbRed = new THREE.MeshStandardMaterial({ color: "#d62b3a", roughness: 0.54 });
   const kerbWhite = new THREE.MeshStandardMaterial({ color: "#f5f7f4", roughness: 0.5 });
@@ -569,8 +574,11 @@ export function buildGpCircuit() {
     const distance = 80 + index * 58;
     const side = index % 2 === 0 ? -1 : 1;
     const stagger = ((index * 37) % 19) - 9;
-    const lateral = side * (26 + (index % 5) * 2.8) + stagger * 0.2;
-    const tree = makeTree("trackside-cypress", 3.6 + (index % 4) * 0.55, index % 3 === 0 ? layout.treeColor : layout.terrainColor);
+    const treeBaseLateral = layout.id === "northstar" ? 44 : 26;
+    const treeSpacing = layout.id === "northstar" ? 3.6 : 2.8;
+    const lateral = side * (treeBaseLateral + (index % 5) * treeSpacing) + stagger * 0.2;
+    const treeHeight = layout.id === "northstar" ? 2.6 + (index % 4) * 0.38 : 3.6 + (index % 4) * 0.55;
+    const tree = makeTree("trackside-cypress", treeHeight, index % 3 === 0 ? layout.treeColor : layout.terrainColor);
     const point = trackWorldPointAt(distance, lateral);
     tree.position.set(point.x, terrainHeightAt(distance, lateral), point.z);
     tree.rotation.y = trackWorldHeadingAt(distance) + (index % 7) * 0.4;
@@ -615,12 +623,12 @@ export function buildGpCircuit() {
   }
 
   for (const placement of [
-    { distance: 108, lateral: -50 },
-    { distance: 142, lateral: -50 },
-    { distance: 176, lateral: -50 }
+    { distance: 112, lateral: -74 },
+    { distance: 148, lateral: -74 },
+    { distance: 184, lateral: -74 }
   ]) {
     const paddock = makeFictionalPaddock("fictional-team-garages", paddockMaterial, accentMaterial, glassMaterial);
-    paddock.scale.setScalar(0.46);
+    paddock.scale.setScalar(layout.id === "northstar" ? 0.34 : 0.4);
     dynamicPieces.push({ object: paddock, ahead: placement.distance, lateral: placement.lateral, curveScale: 0.2 });
     circuit.add(paddock);
   }
@@ -728,6 +736,7 @@ export function buildGpCircuit() {
   circuit.userData.dynamicPieces = dynamicPieces;
   circuit.userData.weatherMaterials = {
     asphalt,
+    grass,
     runoff,
     racingLine: racingLine.material,
     fence: fenceMaterial,

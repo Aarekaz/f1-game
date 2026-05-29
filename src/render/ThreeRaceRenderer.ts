@@ -243,10 +243,15 @@ export class ThreeRaceRenderer {
         cameraPoint.z
       );
       this.desiredCameraTarget.set(targetPoint.x, carY + 0.68 + telemetry.car.slip * 0.18, targetPoint.z);
-      const positionFollow = 0.12 + speedRatio * 0.06 + telemetry.car.braking * 0.02;
-      const targetFollow = 0.16 + speedRatio * 0.06;
-      this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
-      this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
+      if (telemetry.cameraSnap) {
+        this.cameraPosition.copy(this.desiredCameraPosition);
+        this.cameraTarget.copy(this.desiredCameraTarget);
+      } else {
+        const positionFollow = 0.12 + speedRatio * 0.06 + telemetry.car.braking * 0.02;
+        const targetFollow = 0.16 + speedRatio * 0.06;
+        this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
+        this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
+      }
     }
     this.camera.position.copy(this.cameraPosition);
     this.camera.lookAt(this.cameraTarget);
@@ -261,6 +266,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
     this.horizon.position.x = this.camera.position.x;
     this.horizon.position.z = this.camera.position.z;
+    this.horizon.rotation.y = this.camera.rotation.y;
 
     for (const rival of telemetry.rivals) {
       const existing = this.rivals.get(rival.id);
@@ -431,12 +437,13 @@ export class ThreeRaceRenderer {
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
     const horizonMaterials = this.horizon.userData.materials as
-      | { sky: THREE.MeshBasicMaterial; treeline: THREE.MeshBasicMaterial }
+      | { sky: THREE.MeshBasicMaterial; treeline: THREE.MeshBasicMaterial; relief?: THREE.MeshBasicMaterial }
       | undefined;
     const weatherMaterials = this.circuit.userData.weatherMaterials as
       | {
           asphalt: THREE.MeshStandardMaterial;
-          runoff: THREE.MeshStandardMaterial;
+          grass: THREE.MeshBasicMaterial;
+          runoff: THREE.MeshBasicMaterial;
           racingLine: THREE.MeshBasicMaterial;
           fence: THREE.MeshBasicMaterial;
           glass: THREE.MeshStandardMaterial;
@@ -456,12 +463,18 @@ export class ThreeRaceRenderer {
     this.sun.intensity = telemetry.lightIntensity;
     horizonMaterials?.sky.color.set(telemetry.skyColor);
     horizonMaterials?.treeline.color.set(telemetry.grassColor);
+    if (horizonMaterials?.relief) {
+      horizonMaterials.relief.opacity = telemetry.roadWetness > 0.7 ? 0.22 : 0.34;
+    }
 
     if (weatherMaterials) {
-      weatherMaterials.asphalt.color.set(telemetry.roadWetness > 0.4 ? "#283134" : "#30363a");
+      weatherMaterials.asphalt.color.set(telemetry.roadWetness > 0.4 ? "#d7e2df" : "#d6dedc");
+      weatherMaterials.asphalt.emissive.set(telemetry.roadWetness > 0.7 ? "#303b3d" : "#222b2c");
+      weatherMaterials.asphalt.emissiveIntensity = telemetry.roadWetness > 0.7 ? 0.34 : 0.12;
       weatherMaterials.asphalt.roughness = 0.86 - telemetry.roadWetness * 0.46;
       weatherMaterials.asphalt.metalness = 0.02 + telemetry.roadWetness * 0.16;
-      weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#64736b" : getActiveTrackLayout().runoffColor);
+      weatherMaterials.grass.color.set(telemetry.roadWetness > 0.7 ? "#5c7065" : telemetry.grassColor);
+      weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#8a978f" : getActiveTrackLayout().runoffColor);
       weatherMaterials.racingLine.opacity = 0.3 - telemetry.roadWetness * 0.08;
       weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
       weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
@@ -490,6 +503,9 @@ export class ThreeRaceRenderer {
     const treelineMaterial = new THREE.MeshBasicMaterial({
       color: layout.treeColor,
       fog: false,
+      transparent: true,
+      opacity: layout.id === "northstar" ? 0.12 : 0.48,
+      depthWrite: false,
       side: THREE.DoubleSide
     });
     const reliefMaterial = new THREE.MeshBasicMaterial({
@@ -505,11 +521,15 @@ export class ThreeRaceRenderer {
     sky.position.set(0, 250, -760);
     horizon.add(sky);
 
-    const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, 54), treelineMaterial);
-    treeline.position.set(0, 22, -750);
-    horizon.add(treeline);
+    const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, layout.id === "northstar" ? 10 : 54), treelineMaterial);
+    treeline.position.set(0, layout.id === "northstar" ? 3 : 22, layout.id === "northstar" ? -930 : -780);
+    if (layout.id !== "northstar") {
+      horizon.add(treeline);
+    }
 
-    this.addVenueSilhouette(horizon, layout.id, reliefMaterial);
+    if (layout.id !== "northstar") {
+      this.addVenueSilhouette(horizon, layout.id, reliefMaterial);
+    }
     horizon.userData.materials = { sky: skyMaterial, treeline: treelineMaterial, relief: reliefMaterial };
 
     return horizon;
