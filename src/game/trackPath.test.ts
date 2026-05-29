@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getTrackCheckpoints, sampleTrack, setActiveTrackLayout, trackBankAt, trackCenterAt, trackElevationAt } from "./trackPath";
+import {
+  getTrackCheckpoints,
+  sampleTrack,
+  setActiveTrackLayout,
+  trackBankAt,
+  trackCenterAt,
+  trackElevationAt,
+  trackWorldHeadingAt,
+  trackWorldPointAt
+} from "./trackPath";
 
 describe("trackPath layouts", () => {
   it("switches the sampled circuit identity by fictional venue", () => {
@@ -47,6 +56,21 @@ describe("trackPath layouts", () => {
     expect(Math.abs(trackBankAt(560))).toBeGreaterThan(0.1);
     expect(alpineSample.elevation).toBeGreaterThan(4);
     expect(typeof alpineSample.bank).toBe("number");
+    setActiveTrackLayout("aurelia");
+  });
+
+  it("projects each venue onto a closed world-space circuit", () => {
+    setActiveTrackLayout("aurelia");
+    const start = trackWorldPointAt(0);
+    const hairpin = trackWorldPointAt(520);
+    const final = trackWorldPointAt(2198);
+    const leftEdge = trackWorldPointAt(760, -5);
+    const rightEdge = trackWorldPointAt(760, 5);
+
+    expect(Math.hypot(hairpin.x - start.x, hairpin.z - start.z)).toBeGreaterThan(180);
+    expect(Math.hypot(final.x - start.x, final.z - start.z)).toBeLessThan(4);
+    expect(Math.hypot(rightEdge.x - leftEdge.x, rightEdge.z - leftEdge.z)).toBeGreaterThan(9);
+    expect(Number.isFinite(trackWorldHeadingAt(760))).toBe(true);
     setActiveTrackLayout("aurelia");
   });
 });

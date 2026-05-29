@@ -3,9 +3,10 @@ import {
   getActiveTrackLayout,
   sampleTrack,
   terrainHeightAt,
-  trackCenterAt,
   trackCurveAt,
   trackElevationAt,
+  trackWorldHeadingAt,
+  trackWorldPointAt,
   TRACK_LOOP_LENGTH,
   type TrackSample
 } from "../game/trackPath";
@@ -18,11 +19,17 @@ type DynamicPiece = {
   baseY?: number;
 };
 
-const RENDERED_TRACK_LENGTH = TRACK_LOOP_LENGTH * 4;
+const RENDERED_TRACK_LENGTH = TRACK_LOOP_LENGTH;
 
 function surfaceY(sample: TrackSample, lateral: number, offset = 0) {
   const normalized = Math.max(-1.35, Math.min(1.35, lateral / Math.max(1, sample.halfWidth)));
   return sample.elevation + sample.bank * normalized + offset;
+}
+
+function worldPosition(distance: number, lateral: number, offset = 0): [number, number, number] {
+  const sample = sampleTrack(distance);
+  const point = trackWorldPointAt(distance, lateral);
+  return [point.x, surfaceY(sample, lateral, offset), point.z];
 }
 
 function makeBox(
@@ -71,12 +78,11 @@ function makeTrackStrip(
   for (let ahead = startAhead; ahead <= endAhead; ahead += step) {
     const sample = sampleTrack(ahead);
     const curve = sample.curve;
-    const leftX = sample.center + lateralStart;
-    const rightX = sample.center + lateralEnd;
+    const left = trackWorldPointAt(ahead, lateralStart);
+    const right = trackWorldPointAt(ahead, lateralEnd);
     const leftY = surfaceY(sample, lateralStart, y);
     const rightY = surfaceY(sample, lateralEnd, y);
-    const z = -ahead;
-    vertices.push(leftX, leftY, z, rightX, rightY, z);
+    vertices.push(left.x, leftY, left.z, right.x, rightY, right.z);
     uvs.push(0, row, 1, row);
     if (row > 0) {
       const base = row * 2;
@@ -87,13 +93,15 @@ function makeTrackStrip(
     if (Math.abs(curve) > 0.035) {
       const midAhead = ahead + step * 0.5;
       const mid = sampleTrack(midAhead);
+      const midLeft = trackWorldPointAt(midAhead, lateralStart);
+      const midRight = trackWorldPointAt(midAhead, lateralEnd);
       vertices.push(
-        mid.center + lateralStart,
+        midLeft.x,
         surfaceY(mid, lateralStart, y),
-        -midAhead,
-        mid.center + lateralEnd,
+        midLeft.z,
+        midRight.x,
         surfaceY(mid, lateralEnd, y),
-        -midAhead
+        midRight.z
       );
       uvs.push(0, row, 1, row);
       const base = row * 2;
@@ -124,14 +132,16 @@ function makeRacingLine() {
     const sample = sampleTrack(ahead);
     const racingOffset = sample.racingLineOffset;
     const width = sample.brakingZone ? 0.34 : 0.22;
-    const center = sample.center + Math.max(-2.8, Math.min(2.8, racingOffset));
+    const centerOffset = Math.max(-2.8, Math.min(2.8, racingOffset));
+    const left = trackWorldPointAt(ahead, centerOffset - width);
+    const right = trackWorldPointAt(ahead, centerOffset + width);
     vertices.push(
-      center - width,
-      surfaceY(sample, racingOffset - width, 0.041),
-      -ahead,
-      center + width,
-      surfaceY(sample, racingOffset + width, 0.041),
-      -ahead
+      left.x,
+      surfaceY(sample, centerOffset - width, 0.041),
+      left.z,
+      right.x,
+      surfaceY(sample, centerOffset + width, 0.041),
+      right.z
     );
     uvs.push(0, row, 1, row);
 
@@ -219,14 +229,13 @@ function makeTree(name: string, height: number, color: string) {
 }
 
 function makeSkidMark(distance: number, lateral: number, length: number, material: THREE.Material) {
-  const sample = sampleTrack(distance);
   const mark = makePlane(
     "rubbered-braking-mark",
     [0.2, length],
-    [sample.center + lateral, surfaceY(sample, lateral, 0.052), -distance],
+    worldPosition(distance, lateral, 0.052),
     material
   );
-  mark.rotation.y = -trackCurveAt(distance) * 1.4;
+  mark.rotation.y = trackWorldHeadingAt(distance);
   return mark;
 }
 
@@ -289,7 +298,7 @@ export function buildGpCircuit() {
   const board100 = makeBoardMaterial("100");
   const board50 = makeBoardMaterial("50");
 
-  circuit.add(makeTrackStrip("terrain-following-grass", grass, -88, 88, -0.18, -190, RENDERED_TRACK_LENGTH, 26));
+  circuit.add(makeTrackStrip("terrain-following-grass", grass, -88, 88, -0.18, 0, RENDERED_TRACK_LENGTH, 26));
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
   const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
   const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
@@ -302,7 +311,7 @@ export function buildGpCircuit() {
     { name: "final-chicane-gravel", x: -20, z: 1220, w: 18, d: 150 }
   ];
 
-  for (let lap = 0; lap < 4; lap += 1) {
+  for (let lap = 0; lap < 1; lap += 1) {
     const lapStart = lap * TRACK_LOOP_LENGTH;
     for (const section of technicalSections) {
       const marker = makePlane(
@@ -316,7 +325,7 @@ export function buildGpCircuit() {
     }
   }
 
-  for (let lap = 0; lap < 4; lap += 1) {
+  for (let lap = 0; lap < 1; lap += 1) {
     const lapStart = lap * TRACK_LOOP_LENGTH;
     for (const brakingStart of [230, 770, 1280]) {
       for (const lateral of [-1.7, 0.2, 1.6]) {
@@ -331,8 +340,9 @@ export function buildGpCircuit() {
     const stagger = ((index * 37) % 19) - 9;
     const lateral = side * (26 + (index % 5) * 2.8) + stagger * 0.2;
     const tree = makeTree("trackside-cypress", 3.6 + (index % 4) * 0.55, index % 3 === 0 ? layout.treeColor : layout.terrainColor);
-    tree.position.set(trackCenterAt(distance) + lateral, terrainHeightAt(distance, lateral), -distance);
-    tree.rotation.y = (index % 7) * 0.4;
+    const point = trackWorldPointAt(distance, lateral);
+    tree.position.set(point.x, terrainHeightAt(distance, lateral), point.z);
+    tree.rotation.y = trackWorldHeadingAt(distance) + (index % 7) * 0.4;
     circuit.add(tree);
   }
 
@@ -355,7 +365,7 @@ export function buildGpCircuit() {
     }
   }
 
-  for (let lap = 0; lap < 4; lap += 1) {
+  for (let lap = 0; lap < 1; lap += 1) {
     const lapStart = lap * TRACK_LOOP_LENGTH;
     for (const ahead of [160, 520, 900, 1320]) {
       const apexMarker = makeBox("apex-reference-board", [0.12, 1.3, 2.4], [-12.2, 0.75, -(lapStart + ahead)], bridgeMaterial);
@@ -364,7 +374,7 @@ export function buildGpCircuit() {
     }
   }
 
-  for (let lap = 0; lap < 4; lap += 1) {
+  for (let lap = 0; lap < 1; lap += 1) {
     const lapStart = lap * TRACK_LOOP_LENGTH;
     for (const brakingStart of [230, 770, 1280]) {
       const refs = [
@@ -381,7 +391,7 @@ export function buildGpCircuit() {
     }
   }
 
-  for (let lap = 0; lap < 4; lap += 1) {
+  for (let lap = 0; lap < 1; lap += 1) {
     const lapStart = lap * TRACK_LOOP_LENGTH;
     for (const apex of [322, 870, 910, 1390]) {
       for (const side of [-1, 1]) {
@@ -394,12 +404,19 @@ export function buildGpCircuit() {
   }
 
   const startElevation = trackElevationAt(18);
-  const timingBridge = makeBox("timing-bridge-crossbar", [18.4, 0.72, 0.5], [0, startElevation + 5.2, -38], bridgeMaterial);
-  timingBridge.castShadow = true;
+  const startBridgePoint = trackWorldPointAt(38, 0);
+  const timingBridge = new THREE.Group();
+  timingBridge.name = "timing-bridge";
+  timingBridge.position.set(startBridgePoint.x, 0, startBridgePoint.z);
+  timingBridge.rotation.y = trackWorldHeadingAt(38);
+  timingBridge.add(makeBox("timing-bridge-crossbar", [18.4, 0.72, 0.5], [0, startElevation + 5.2, 0], bridgeMaterial));
+  timingBridge.add(makeBox("timing-bridge-left-upright", [0.5, 5.2, 0.5], [-8.9, startElevation + 2.6, 0], bridgeMaterial));
+  timingBridge.add(makeBox("timing-bridge-right-upright", [0.5, 5.2, 0.5], [8.9, startElevation + 2.6, 0], bridgeMaterial));
   circuit.add(timingBridge);
-  circuit.add(makeBox("timing-bridge-left-upright", [0.5, 5.2, 0.5], [-8.9, startElevation + 2.6, -38], bridgeMaterial));
-  circuit.add(makeBox("timing-bridge-right-upright", [0.5, 5.2, 0.5], [8.9, startElevation + 2.6, -38], bridgeMaterial));
-  circuit.add(makeBox("start-line", [12.2, 0.025, 0.42], [0, startElevation + 0.055, -18], kerbWhite));
+  const startLinePoint = trackWorldPointAt(18, 0);
+  const startLine = makeBox("start-line", [12.2, 0.025, 0.42], [startLinePoint.x, startElevation + 0.055, startLinePoint.z], kerbWhite);
+  startLine.rotation.y = trackWorldHeadingAt(18);
+  circuit.add(startLine);
 
   circuit.userData.disposableMaterials = [
     asphalt,
@@ -431,10 +448,11 @@ function positionTracksidePieces(circuit: THREE.Group) {
     const curve = trackCurveAt(piece.ahead);
     const sample = sampleTrack(piece.ahead);
     const baseY = piece.baseY ?? piece.object.position.y;
+    const point = trackWorldPointAt(piece.ahead, piece.lateral);
     piece.baseY = baseY;
-    piece.object.position.x = sample.center + piece.lateral;
+    piece.object.position.x = point.x;
     piece.object.position.y = surfaceY(sample, piece.lateral, baseY);
-    piece.object.position.z = -piece.ahead;
-    piece.object.rotation.y = -curve * piece.curveScale;
+    piece.object.position.z = point.z;
+    piece.object.rotation.y = trackWorldHeadingAt(piece.ahead) - curve * piece.curveScale * 0.25;
   }
 }

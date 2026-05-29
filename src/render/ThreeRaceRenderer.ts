@@ -1,6 +1,13 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { getActiveTrackLayout, sampleTrack, setActiveTrackLayout, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import {
+  getActiveTrackLayout,
+  sampleTrack,
+  setActiveTrackLayout,
+  trackWorldHeadingAt,
+  trackWorldPointAt,
+  TRACK_LOOP_LENGTH
+} from "../game/trackPath";
 import type { SessionConfig } from "../world/FictionalGpWorld";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
@@ -136,8 +143,7 @@ export class ThreeRaceRenderer {
   update(telemetry: RaceTelemetry) {
     const visualProgress = telemetry.car.z % TRACK_LOOP_LENGTH;
     this.renderer.domElement.dataset.trackOffset = visualProgress.toFixed(2);
-    this.renderer.domElement.dataset.carWorldZ = telemetry.car.z.toFixed(2);
-    this.renderer.domElement.dataset.carWorldY = telemetry.car.y.toFixed(2);
+    this.renderer.domElement.dataset.carDistance = telemetry.car.z.toFixed(2);
     this.renderer.domElement.dataset.circuitWorldZ = this.circuit.position.z.toFixed(2);
     this.renderer.domElement.dataset.carSlip = telemetry.car.slip.toFixed(3);
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
@@ -163,33 +169,42 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.weather = telemetry.weatherName;
     this.renderer.domElement.dataset.trackName = telemetry.trackName;
     this.applyAtmosphere(telemetry);
-    const carX = telemetry.car.x;
+    const carLateral = telemetry.carX;
+    const carPoint = trackWorldPointAt(telemetry.car.z, carLateral);
+    const trackYaw = trackWorldHeadingAt(telemetry.car.z);
+    const carX = carPoint.x;
     const carY = telemetry.car.y;
-    const carZ = -telemetry.car.z;
+    const carZ = carPoint.z;
+    this.renderer.domElement.dataset.carWorldX = carX.toFixed(2);
+    this.renderer.domElement.dataset.carWorldY = carY.toFixed(2);
+    this.renderer.domElement.dataset.carWorldZ = carZ.toFixed(2);
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
     this.car.position.set(carX, carY, carZ);
     const rumblePulse = Math.sin(performance.now() * 0.052) * telemetry.surfaceRumble;
     this.car.position.y += Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026 + rumblePulse * 0.032;
-    this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
+    this.car.rotation.y = trackYaw - telemetry.car.heading - telemetry.curve * 0.5;
     this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018 + rumblePulse * 0.018;
     this.car.rotation.z =
       -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
 
-    this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
-    this.updateTireSmoke(carX, carY, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
-    this.updateProximityMarkers(carX, carY, carZ, telemetry.car.heading, telemetry.sideBySide, telemetry.contactRisk);
+    const carWorldYaw = trackYaw - telemetry.car.heading;
+    this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
+    this.updateTireSmoke(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
+    this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
     this.camera.fov = 44 + speedRatio * 8 + telemetry.car.braking * 2;
 
     const lookAhead = 10 + speedRatio * 22;
     const cameraLag = 12.6 + speedRatio * 8.6 + telemetry.car.throttle * 2 - telemetry.car.braking * 2.5;
-    const lateralShoulder = carX * (0.3 + speedRatio * 0.1) - telemetry.car.yawRate * 1.6;
-    const targetX = carX * 0.36 + telemetry.car.yawRate * 3.2 - telemetry.curve * 2.1;
+    const lateralShoulder = carLateral * (0.3 + speedRatio * 0.1) - telemetry.car.yawRate * 1.6;
+    const targetLateral = carLateral * 0.36 + telemetry.car.yawRate * 3.2 - telemetry.curve * 2.1;
+    const cameraPoint = trackWorldPointAt(telemetry.car.z - cameraLag, lateralShoulder);
+    const targetPoint = trackWorldPointAt(telemetry.car.z + lookAhead, targetLateral);
     this.desiredCameraPosition.set(
-      lateralShoulder,
+      cameraPoint.x,
       carY + 3.35 - telemetry.car.braking * 0.24 + telemetry.car.slip * 0.26 + speedRatio * 0.22 + telemetry.surfaceRumble * 0.08,
-      carZ + cameraLag
+      cameraPoint.z
     );
-    this.desiredCameraTarget.set(targetX, carY + 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);
+    this.desiredCameraTarget.set(targetPoint.x, carY + 0.68 + telemetry.car.slip * 0.18, targetPoint.z);
     const positionFollow = 0.075 + speedRatio * 0.045 + telemetry.car.braking * 0.02;
     const targetFollow = 0.1 + speedRatio * 0.05;
     this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
@@ -198,12 +213,13 @@ export class ThreeRaceRenderer {
     this.camera.lookAt(this.cameraTarget);
     this.camera.updateProjectionMatrix();
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
-    this.updateWaterSpray(carX, carY, carZ, telemetry.car.heading, telemetry.roadWetness, speedRatio, telemetry.car.slip);
+    this.updateWaterSpray(carX, carY, carZ, carWorldYaw, telemetry.roadWetness, speedRatio, telemetry.car.slip);
     this.carScreenPosition.copy(this.car.position).project(this.camera);
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
-    this.horizon.position.z = this.camera.position.z - 15.4;
+    this.horizon.position.x = this.camera.position.x;
+    this.horizon.position.z = this.camera.position.z;
 
     for (const rival of telemetry.rivals) {
       const existing = this.rivals.get(rival.id);
@@ -214,9 +230,11 @@ export class ThreeRaceRenderer {
       }
 
       const mesh = existing ?? this.addRival(rival.id, rival.color);
+      const rivalLateral = rival.x - sampleTrack(rival.z).center;
+      const rivalPoint = trackWorldPointAt(rival.z, rivalLateral);
       mesh.visible = true;
-      mesh.position.set(rival.x, rival.y, -rival.z);
-      mesh.rotation.y = -rival.heading;
+      mesh.position.set(rivalPoint.x, rival.y, rivalPoint.z);
+      mesh.rotation.y = trackWorldHeadingAt(rival.z) - rival.heading;
       mesh.rotation.z = -rival.bank * 0.12;
     }
 
@@ -284,8 +302,9 @@ export class ThreeRaceRenderer {
       if (!placement) continue;
 
       const track = sampleTrack(placement.distance);
-      object.position.set(track.center + placement.lateral, track.elevation, -placement.distance);
-      object.rotation.y = placement.rotation;
+      const point = trackWorldPointAt(placement.distance, placement.lateral);
+      object.position.set(point.x, track.elevation, point.z);
+      object.rotation.y = trackWorldHeadingAt(placement.distance) + placement.rotation;
     }
   }
 
@@ -421,6 +440,7 @@ export class ThreeRaceRenderer {
     carX: number,
     carY: number,
     carZ: number,
+    worldYaw: number,
     speedRatio: number,
     slip: number,
     braking: number,
@@ -434,8 +454,9 @@ export class ThreeRaceRenderer {
     }
 
     this.speedStreaks.position.z = carZ + (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
-    this.speedStreaks.position.x = carX * 0.2;
+    this.speedStreaks.position.x = carX;
     this.speedStreaks.position.y = carY;
+    this.speedStreaks.rotation.y = worldYaw;
     this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
   }
 
@@ -483,7 +504,7 @@ export class ThreeRaceRenderer {
 
     this.tireSmoke.visible = smokeStrength > 0.025;
     this.tireSmoke.position.set(carX, carY, carZ);
-    this.tireSmoke.rotation.y = -heading;
+    this.tireSmoke.rotation.y = heading;
     const pulse = 1 + Math.sin(performance.now() * 0.018) * 0.08;
     this.tireSmoke.scale.setScalar((0.65 + speedRatio * 0.75 + smokeStrength * 0.55) * pulse);
   }
@@ -530,7 +551,7 @@ export class ThreeRaceRenderer {
     }
 
     this.proximityMarkers.position.set(carX, carY + 0.01, carZ);
-    this.proximityMarkers.rotation.y = -heading;
+    this.proximityMarkers.rotation.y = heading;
     this.proximityMarkers.scale.setScalar(0.9 + strength * 0.28);
   }
 
@@ -621,7 +642,7 @@ export class ThreeRaceRenderer {
     }
 
     this.waterSpray.position.set(carX, carY + 0.02, carZ + 0.25);
-    this.waterSpray.rotation.y = -heading;
+    this.waterSpray.rotation.y = heading;
     this.waterSpray.scale.set(0.8 + sprayStrength * 0.9, 0.8 + sprayStrength * 0.8, 0.9 + speedRatio * 1.4);
   }
 }

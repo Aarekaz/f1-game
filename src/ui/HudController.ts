@@ -1,6 +1,6 @@
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
 import type { PersonalBest, PersonalBestUpdate } from "../game/PersonalBestStore";
-import { trackCenterAt, TRACK_LOOP_LENGTH, wrapDistance } from "../game/trackPath";
+import { TRACK_LOOP_LENGTH, trackWorldPointAt, wrapDistance } from "../game/trackPath";
 
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -73,6 +73,7 @@ export class HudController {
   private renderedTrackName = "";
   private latestBest: PersonalBest | null = null;
   private latestUpdate: PersonalBestUpdate | null = null;
+  private mapBounds = { minX: -1, maxX: 1, minZ: -1, maxZ: 1 };
 
   constructor() {
     this.buildMiniMap();
@@ -125,7 +126,17 @@ export class HudController {
   private buildMiniMap() {
     if (!this.mapPath) return;
 
-    const points = this.mapPoints();
+    const rawPoints = this.rawMapPoints();
+    this.mapBounds = rawPoints.reduce(
+      (bounds, point) => ({
+        minX: Math.min(bounds.minX, point.x),
+        maxX: Math.max(bounds.maxX, point.x),
+        minZ: Math.min(bounds.minZ, point.z),
+        maxZ: Math.max(bounds.maxZ, point.z)
+      }),
+      { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }
+    );
+    const points = rawPoints.map((point) => this.projectMapPoint(point));
     this.mapPath.setAttribute(
       "d",
       points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ") +
@@ -141,15 +152,22 @@ export class HudController {
     this.mapCar.setAttribute("cy", point.y.toFixed(1));
   }
 
-  private mapPoints() {
-    return Array.from({ length: 96 }, (_, index) => this.mapPointAt((index / 96) * TRACK_LOOP_LENGTH));
+  private rawMapPoints() {
+    return Array.from({ length: 128 }, (_, index) => trackWorldPointAt((index / 128) * TRACK_LOOP_LENGTH));
   }
 
   private mapPointAt(distance: number) {
-    const progress = wrapDistance(distance) / TRACK_LOOP_LENGTH;
-    const x = 90 + trackCenterAt(distance) * 2.4;
-    const y = 10 + progress * 96;
-    return { x, y };
+    return this.projectMapPoint(trackWorldPointAt(wrapDistance(distance)));
+  }
+
+  private projectMapPoint(point: { x: number; z: number }) {
+    const width = Math.max(1, this.mapBounds.maxX - this.mapBounds.minX);
+    const height = Math.max(1, this.mapBounds.maxZ - this.mapBounds.minZ);
+    const scale = Math.min(148 / width, 84 / height);
+    return {
+      x: 90 + (point.x - (this.mapBounds.minX + width / 2)) * scale,
+      y: 58 + (point.z - (this.mapBounds.minZ + height / 2)) * scale
+    };
   }
 
   private updatePowertrain(telemetry: RaceTelemetry) {

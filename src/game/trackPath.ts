@@ -47,6 +47,17 @@ type ProfileAnchor = {
   value: number;
 };
 
+type PlanAnchor = {
+  distance: number;
+  x: number;
+  z: number;
+};
+
+export type TrackWorldPoint = {
+  x: number;
+  z: number;
+};
+
 export type TrackCheckpoint = {
   id: string;
   name: string;
@@ -60,6 +71,7 @@ export type TrackLayout = {
   loopLength: number;
   sections: TrackSection[];
   centerAnchors: CenterAnchor[];
+  planAnchors: PlanAnchor[];
   elevationAnchors: ProfileAnchor[];
   bankAnchors: ProfileAnchor[];
   terrainColor: string;
@@ -409,6 +421,17 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
       { distance: 2020, center: -7 },
       { distance: TRACK_LOOP_LENGTH, center: 0 }
     ],
+    planAnchors: [
+      { distance: 0, x: 0, z: 0 },
+      { distance: 310, x: 4, z: -184 },
+      { distance: 535, x: -132, z: -236 },
+      { distance: 760, x: -260, z: -112 },
+      { distance: 1030, x: -216, z: 92 },
+      { distance: 1260, x: -46, z: 174 },
+      { distance: 1580, x: 162, z: 114 },
+      { distance: 1820, x: 232, z: -54 },
+      { distance: TRACK_LOOP_LENGTH, x: 0, z: 0 }
+    ],
     elevationAnchors: [
       { distance: 0, value: 0.4 },
       { distance: 240, value: 0.9 },
@@ -458,6 +481,16 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
       { distance: 1980, center: -18 },
       { distance: TRACK_LOOP_LENGTH, center: 0 }
     ],
+    planAnchors: [
+      { distance: 0, x: 0, z: 0 },
+      { distance: 390, x: 96, z: -266 },
+      { distance: 610, x: 292, z: -216 },
+      { distance: 920, x: 304, z: 42 },
+      { distance: 1190, x: 124, z: 202 },
+      { distance: 1510, x: -156, z: 144 },
+      { distance: 1780, x: -268, z: -42 },
+      { distance: TRACK_LOOP_LENGTH, x: 0, z: 0 }
+    ],
     elevationAnchors: [
       { distance: 0, value: 0.15 },
       { distance: 390, value: 0.28 },
@@ -504,6 +537,16 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
       { distance: 1900, center: 10 },
       { distance: 2080, center: -16 },
       { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ],
+    planAnchors: [
+      { distance: 0, x: 0, z: 0 },
+      { distance: 270, x: -76, z: -196 },
+      { distance: 560, x: -280, z: -158 },
+      { distance: 810, x: -248, z: 72 },
+      { distance: 1110, x: -62, z: 246 },
+      { distance: 1430, x: 174, z: 188 },
+      { distance: 1660, x: 292, z: 8 },
+      { distance: TRACK_LOOP_LENGTH, x: 0, z: 0 }
     ],
     elevationAnchors: [
       { distance: 0, value: 5.8 },
@@ -591,6 +634,31 @@ export function trackCurveAt(distance: number) {
   return (trackCenterAt(distance + sample) - trackCenterAt(distance - sample)) / (sample * 2);
 }
 
+export function trackWorldPointAt(distance: number, lateral = 0): TrackWorldPoint {
+  const center = planPointAt(distance);
+  const tangent = trackWorldTangentAt(distance);
+  const normal = { x: -tangent.z, z: tangent.x };
+  return {
+    x: center.x + normal.x * lateral,
+    z: center.z + normal.z * lateral
+  };
+}
+
+export function trackWorldHeadingAt(distance: number) {
+  const tangent = trackWorldTangentAt(distance);
+  return Math.atan2(-tangent.x, -tangent.z);
+}
+
+export function trackWorldTangentAt(distance: number) {
+  const sample = 8;
+  const before = planPointAt(distance - sample);
+  const after = planPointAt(distance + sample);
+  const x = after.x - before.x;
+  const z = after.z - before.z;
+  const length = Math.hypot(x, z) || 1;
+  return { x: x / length, z: z / length };
+}
+
 export function trackElevationAt(distance: number) {
   return profileAt(activeLayout.elevationAnchors, distance);
 }
@@ -656,6 +724,20 @@ function profileAt(anchors: ProfileAnchor[], distance: number) {
   const right = anchors[rightIndex];
   const t = smoothstep((d - left.distance) / (right.distance - left.distance));
   return left.value + (right.value - left.value) * t;
+}
+
+function planPointAt(distance: number): TrackWorldPoint {
+  const d = wrapDistance(distance);
+  const anchors = activeLayout.planAnchors;
+  const nextIndex = anchors.findIndex((anchor) => anchor.distance >= d);
+  const rightIndex = nextIndex <= 0 ? 1 : nextIndex;
+  const left = anchors[rightIndex - 1];
+  const right = anchors[rightIndex];
+  const t = smoothstep((d - left.distance) / (right.distance - left.distance));
+  return {
+    x: left.x + (right.x - left.x) * t,
+    z: left.z + (right.z - left.z) * t
+  };
 }
 
 function smoothstep(value: number) {

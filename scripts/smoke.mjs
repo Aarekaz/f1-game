@@ -53,6 +53,7 @@ async function checkDesktop(browser) {
     sessionBest: document.querySelector("#session-best")?.textContent ?? "",
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
+    carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
@@ -101,6 +102,7 @@ async function checkDesktop(browser) {
     hintVisible: getComputedStyle(document.querySelector(".control-hint")).display !== "none",
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
+    carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
@@ -144,7 +146,8 @@ async function checkDesktop(browser) {
   assert(state.canvas, "desktop canvas did not render");
   assertCanvasBox(state.canvasBox, "desktop");
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
-  assert(state.carWorldZ > ready.carWorldZ + 10, "desktop car did not move through world space");
+  assert(state.carDistance > ready.carDistance + 10, "desktop car distance did not advance after launch");
+  assert(Math.abs(state.carWorldZ - ready.carWorldZ) > 10, "desktop car did not move through world-space circuit coordinates");
   assert(Number.isFinite(state.carWorldY) && state.carWorldY > 0.5, "desktop car did not receive elevated track height");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
   assert(state.cameraWorldZ < 0, "desktop chase camera did not move into world space");
