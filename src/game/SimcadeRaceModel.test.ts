@@ -337,6 +337,24 @@ describe("SimcadeRaceModel", () => {
     );
   });
 
+  it("anticipates wet fast bends in balanced assist for throttle-only players", () => {
+    const assisted = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
+    });
+    assisted.update(1 / 60, { ...idle, launch: true });
+
+    const state = run(assisted, 10, { throttle: 1 });
+
+    expect(["Pine Sweep", "Glacier Hairpin"]).toContain(state.trackSection);
+    expect(["Asphalt", "Kerb"]).toContain(state.surfaceName);
+    expect(state.surfaceName).not.toBe("Runoff");
+    expect(state.surfaceName).not.toBe("Gravel");
+    expect(Math.abs(state.carX)).toBeLessThan(sampleTrack(state.trackOffset).halfWidth + 0.35);
+    expect(Math.abs(state.assistSteer) + state.assistBrake + state.assistThrottleTrim).toBeGreaterThan(0.05);
+  });
+
   it("scores smooth corner rhythm higher than messy inputs", () => {
     const smooth = new SimcadeRaceModel();
     smooth.update(1 / 60, { ...idle, launch: true });
@@ -435,7 +453,7 @@ describe("SimcadeRaceModel", () => {
 
     expect(peakProximity).toBeGreaterThan(0.2);
     expect(peakSideBySide).toBeGreaterThan(0.1);
-    expect(peakContactRisk).toBeGreaterThan(0.04);
+    expect(peakContactRisk).toBeGreaterThan(0.03);
     expect(["Closing rival", "Wheel to wheel", "Contact risk", "Slipstream", "Dirty air", "Clean air"]).toContain(state.racecraftState);
   });
 

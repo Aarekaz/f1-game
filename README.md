@@ -14,6 +14,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
+- Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
 - Local personal bests per fictional track and weather pairing.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.

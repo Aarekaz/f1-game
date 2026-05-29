@@ -593,19 +593,43 @@ export class SimcadeRaceModel {
     }
 
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
+    const lookaheadDistance = 34 + speedRatio * 86 + this.session.weather.roadWetness * 18;
+    const futureTrack = sampleTrack(this.z + lookaheadDistance);
     const lineError = this.x - track.center - track.racingLineOffset;
-    const lineCorrection = clamp(-lineError / Math.max(3.8, track.halfWidth * 0.78), -1, 1);
+    const futureLineError = this.x - futureTrack.center - futureTrack.racingLineOffset;
+    const blendedLineError = lineError * 0.42 + futureLineError * 0.58;
+    const lineCorrection = clamp(-blendedLineError / Math.max(3.4, track.halfWidth * 0.72), -1, 1);
     const driverOverride = clamp(Math.abs(steer) * 1.25 + brake * 0.75, 0, 1);
-    const cornerNeed = track.section.kind === "straight" ? 0.12 : clamp(track.section.difficulty, 0.32, 1);
-    const steeringAssist = lineCorrection * assist.steeringHelp * cornerNeed * (1 - driverOverride * 0.78);
-    const paceOvershoot = clamp((this.speed - track.targetSpeedKph) / 95, 0, 1);
+    const handsOffTrust = 1 - driverOverride;
+    const upcomingNeed = futureTrack.section.kind === "straight" ? 0.12 : clamp(futureTrack.section.difficulty, 0.32, 1);
+    const cornerNeed = Math.max(track.section.kind === "straight" ? 0.12 : clamp(track.section.difficulty, 0.32, 1), upcomingNeed * (0.72 + speedRatio * 0.28));
+    const stabilityBoost = 1 + handsOffTrust * (0.36 + this.session.weather.roadWetness * 0.26);
+    const steeringAssist = lineCorrection * assist.steeringHelp * cornerNeed * stabilityBoost * (1 - driverOverride * 0.72);
+    const targetSpeed = Math.min(track.targetSpeedKph, futureTrack.targetSpeedKph);
+    const paceOvershoot = clamp((this.speed - targetSpeed) / 86, 0, 1);
     const brakingWindow = track.brakingZone ? 1 : track.cornerPhase === "turn-in" ? 0.42 : 0;
-    const brakeAssist = assist.brakeHelp * paceOvershoot * brakingWindow * (1 - brake) * (0.35 + throttle * 0.65);
+    const upcomingBrakeWindow = futureTrack.brakingZone || futureTrack.cornerPhase === "turn-in" ? 0.82 : futureTrack.section.kind === "straight" ? 0 : 0.42;
+    const weatherSafety = 0.35 + this.session.weather.roadWetness * 0.65;
+    const brakeAssist = clamp(
+      assist.brakeHelp *
+        paceOvershoot *
+        Math.max(brakingWindow, upcomingBrakeWindow * handsOffTrust * weatherSafety) *
+        (1 - brake) *
+        (0.35 + throttle * 0.65) *
+        (1 + handsOffTrust * (0.25 + this.session.weather.roadWetness * 0.5)),
+      0,
+      assist.brakeHelp * (1.25 + this.session.weather.roadWetness * 0.75)
+    );
     const throttleTrim =
-      assist.throttleHelp * paceOvershoot * cornerNeed * clamp(speedRatio + 0.12, 0, 1) * (track.section.kind === "straight" ? 0.16 : 1);
+      assist.throttleHelp *
+      paceOvershoot *
+      cornerNeed *
+      clamp(speedRatio + 0.12, 0, 1) *
+      (track.section.kind === "straight" && futureTrack.section.kind === "straight" ? 0.16 : 1) *
+      (0.78 + handsOffTrust * (0.3 + this.session.weather.roadWetness * 0.38));
 
     this.latestAssist = {
-      steer: Math.abs(steeringAssist) < 0.01 ? 0 : steeringAssist,
+      steer: Math.abs(steeringAssist) < 0.01 ? 0 : clamp(steeringAssist, -0.72, 0.72),
       brake: brakeAssist < 0.01 ? 0 : brakeAssist,
       throttleTrim: throttleTrim < 0.01 ? 0 : throttleTrim
     };
