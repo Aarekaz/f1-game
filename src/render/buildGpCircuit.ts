@@ -418,6 +418,7 @@ export function buildGpCircuit() {
     board50
   ];
   circuit.userData.dynamicPieces = dynamicPieces;
+  circuit.userData.weatherMaterials = { asphalt, runoff, racingLine: racingLine.material };
   positionTracksidePieces(circuit);
   return circuit;
 }

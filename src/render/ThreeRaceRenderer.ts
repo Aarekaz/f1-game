@@ -8,6 +8,7 @@ import { RacingAssetLibrary } from "./RacingAssetLibrary";
 
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
+  const textures = new Set<{ dispose: () => void }>();
 
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
@@ -26,8 +27,33 @@ function disposeObject3D(root: { traverse: (callback: (object: unknown) => void)
   });
 
   for (const material of materials) {
+    const mapped = material as { map?: { dispose: () => void } | null };
+    if (mapped.map) textures.add(mapped.map);
     material.dispose();
   }
+
+  for (const texture of textures) {
+    texture.dispose();
+  }
+}
+
+function makeSoftMistTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const gradient = ctx.createRadialGradient(64, 76, 4, 64, 72, 62);
+    gradient.addColorStop(0, "rgba(235, 243, 240, 0.46)");
+    gradient.addColorStop(0.42, "rgba(225, 236, 234, 0.22)");
+    gradient.addColorStop(1, "rgba(225, 236, 234, 0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 export class ThreeRaceRenderer {
@@ -43,6 +69,8 @@ export class ThreeRaceRenderer {
   private horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly tireSmoke = this.buildTireSmoke();
+  private readonly rainStreaks = this.buildRainStreaks();
+  private readonly waterSpray = this.buildWaterSpray();
   private readonly cameraPosition = new THREE.Vector3(0, 4.8, 15.4);
   private readonly cameraTarget = new THREE.Vector3(0, 0.72, -13.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
@@ -72,6 +100,8 @@ export class ThreeRaceRenderer {
     this.scene.add(this.horizon);
     this.scene.add(this.speedStreaks);
     this.scene.add(this.tireSmoke);
+    this.scene.add(this.rainStreaks);
+    this.scene.add(this.waterSpray);
     this.scene.add(this.car);
     void this.loadRaceAssets();
     this.resize();
@@ -111,6 +141,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
     this.renderer.domElement.dataset.carUndersteer = telemetry.car.understeer.toFixed(3);
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
+    this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
+    this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
     this.renderer.domElement.dataset.weather = telemetry.weatherName;
     this.renderer.domElement.dataset.trackName = telemetry.trackName;
     this.applyAtmosphere(telemetry);
@@ -145,6 +177,8 @@ export class ThreeRaceRenderer {
     this.camera.position.copy(this.cameraPosition);
     this.camera.lookAt(this.cameraTarget);
     this.camera.updateProjectionMatrix();
+    this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
+    this.updateWaterSpray(carX, carY, carZ, telemetry.car.heading, telemetry.roadWetness, speedRatio, telemetry.car.slip);
     this.carScreenPosition.copy(this.car.position).project(this.camera);
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
@@ -239,6 +273,13 @@ export class ThreeRaceRenderer {
     const horizonMaterials = this.horizon.userData.materials as
       | { sky: THREE.MeshBasicMaterial; treeline: THREE.MeshBasicMaterial }
       | undefined;
+    const weatherMaterials = this.circuit.userData.weatherMaterials as
+      | {
+          asphalt: THREE.MeshStandardMaterial;
+          runoff: THREE.MeshStandardMaterial;
+          racingLine: THREE.MeshBasicMaterial;
+        }
+      | undefined;
     this.renderer.setClearColor(telemetry.skyColor);
     this.scene.fog = new THREE.Fog(telemetry.fogColor, 150 - telemetry.roadWetness * 35, 880 - telemetry.rainIntensity * 250);
     this.hemi.color.set(telemetry.skyColor);
@@ -247,6 +288,14 @@ export class ThreeRaceRenderer {
     this.sun.intensity = telemetry.lightIntensity;
     horizonMaterials?.sky.color.set(telemetry.skyColor);
     horizonMaterials?.treeline.color.set(telemetry.grassColor);
+
+    if (weatherMaterials) {
+      weatherMaterials.asphalt.color.set(telemetry.roadWetness > 0.4 ? "#1f272b" : "#30363a");
+      weatherMaterials.asphalt.roughness = 0.86 - telemetry.roadWetness * 0.46;
+      weatherMaterials.asphalt.metalness = 0.02 + telemetry.roadWetness * 0.16;
+      weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#59645f" : getActiveTrackLayout().runoffColor);
+      weatherMaterials.racingLine.opacity = 0.32 - telemetry.roadWetness * 0.11;
+    }
   }
 
   private buildHorizon() {
@@ -408,5 +457,96 @@ export class ThreeRaceRenderer {
     this.tireSmoke.rotation.y = -heading;
     const pulse = 1 + Math.sin(performance.now() * 0.018) * 0.08;
     this.tireSmoke.scale.setScalar((0.65 + speedRatio * 0.75 + smokeStrength * 0.55) * pulse);
+  }
+
+  private buildRainStreaks() {
+    const group = new THREE.Group();
+    group.name = "weather-rain-streaks";
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#dce7ef",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (let index = 0; index < 90; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.035, 2.8 + (index % 4) * 0.55), material);
+      mesh.name = "rain-streak";
+      mesh.position.set(((index * 37) % 80) - 40, 3 + ((index * 17) % 24), -18 - ((index * 23) % 86));
+      mesh.rotation.z = -0.24;
+      mesh.rotation.y = ((index % 5) - 2) * 0.08;
+      group.add(mesh);
+    }
+
+    group.userData.material = material;
+    return group;
+  }
+
+  private updateRainStreaks(carX: number, carY: number, carZ: number, rainIntensity: number, speedRatio: number) {
+    const material = this.rainStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
+    this.rainStreaks.visible = rainIntensity > 0.02;
+    if (!material) return;
+
+    material.opacity = rainIntensity * (0.2 + speedRatio * 0.18);
+    this.rainStreaks.position.set(carX * 0.18, carY + 3.2, carZ - 10 - speedRatio * 10);
+    const time = performance.now() * 0.001;
+    for (let index = 0; index < this.rainStreaks.children.length; index += 1) {
+      const streak = this.rainStreaks.children[index];
+      const phase = (time * (18 + speedRatio * 36) + index * 5.7) % 110;
+      streak.position.z = -18 - phase;
+      streak.position.y = 3 + ((index * 17 + phase * 0.45) % 24);
+    }
+  }
+
+  private buildWaterSpray() {
+    const group = new THREE.Group();
+    group.name = "wet-weather-spray";
+    const texture = makeSoftMistTexture();
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#dce4e2",
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (let index = 0; index < 14; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.55 + index * 0.09, 1.1 + index * 0.16), material);
+      mesh.name = "water-spray-plume";
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(index % 2 === 0 ? -0.85 : 0.85, 0.08, 1.2 + index * 0.48);
+      group.add(mesh);
+    }
+
+    group.userData.material = material;
+    group.userData.texture = texture;
+    return group;
+  }
+
+  private updateWaterSpray(
+    carX: number,
+    carY: number,
+    carZ: number,
+    heading: number,
+    roadWetness: number,
+    speedRatio: number,
+    slip: number
+  ) {
+    const material = this.waterSpray.userData.material as THREE.MeshBasicMaterial | undefined;
+    const sprayStrength = Math.min(1, roadWetness * (speedRatio * 0.92 + slip * 0.36));
+    this.waterSpray.visible = sprayStrength > 0.03;
+    if (material) {
+      material.opacity = sprayStrength * 0.3;
+    }
+
+    this.waterSpray.position.set(carX, carY + 0.02, carZ + 0.25);
+    this.waterSpray.rotation.y = -heading;
+    this.waterSpray.scale.set(0.8 + sprayStrength * 0.9, 0.8 + sprayStrength * 0.8, 0.9 + speedRatio * 1.4);
   }
 }

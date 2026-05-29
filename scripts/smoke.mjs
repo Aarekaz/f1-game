@@ -82,6 +82,8 @@ async function checkDesktop(browser) {
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
+    rainIntensity: Number(document.querySelector("#game canvas")?.dataset.rainIntensity ?? 0),
+    roadWetness: Number(document.querySelector("#game canvas")?.dataset.roadWetness ?? 0),
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
@@ -106,6 +108,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
+  assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
+  assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.assetCar === "apex-procedural", `desktop fictional formula car did not load, asset=${state.assetCar}`);
