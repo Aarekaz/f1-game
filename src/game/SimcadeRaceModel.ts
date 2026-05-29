@@ -40,6 +40,10 @@ export type RaceTelemetry = {
   draft: number;
   dirtyAir: number;
   airState: string;
+  racecraftState: string;
+  rivalProximity: number;
+  sideBySide: number;
+  contactRisk: number;
   onTrack: boolean;
   lapTime: number;
   bestLap: number | null;
@@ -149,6 +153,10 @@ export class SimcadeRaceModel {
   private launchQuality = 0;
   private draft = 0;
   private dirtyAir = 0;
+  private rivalProximity = 0;
+  private sideBySide = 0;
+  private contactRisk = 0;
+  private racecraftCooldown = 0;
   private grip = 1;
   private ers = 1;
   private lapTime = 0;
@@ -245,6 +253,10 @@ export class SimcadeRaceModel {
       draft: this.draft,
       dirtyAir: this.dirtyAir,
       airState: this.airState(),
+      racecraftState: this.racecraftState(),
+      rivalProximity: this.rivalProximity,
+      sideBySide: this.sideBySide,
+      contactRisk: this.contactRisk,
       onTrack: Math.abs(this.x - track.center) <= track.halfWidth,
       lapTime: this.lapTime,
       bestLap: this.bestLap,
@@ -323,6 +335,10 @@ export class SimcadeRaceModel {
     this.launchQuality = 0;
     this.draft = 0;
     this.dirtyAir = 0;
+    this.rivalProximity = 0;
+    this.sideBySide = 0;
+    this.contactRisk = 0;
+    this.racecraftCooldown = 0;
     this.grip = 1;
     this.ers = 1;
     this.lapTime = 0;
@@ -392,6 +408,17 @@ export class SimcadeRaceModel {
     const air = this.raceAirEffect(track);
     this.draft = approach(this.draft, air.draft, dt * 4.2);
     this.dirtyAir = approach(this.dirtyAir, air.dirtyAir, dt * 5.4);
+    const racecraft = this.racecraftPressure();
+    this.rivalProximity = approach(this.rivalProximity, racecraft.proximity, dt * 7.2);
+    this.sideBySide = approach(this.sideBySide, racecraft.sideBySide, dt * 8.2);
+    this.contactRisk = approach(this.contactRisk, racecraft.contactRisk, dt * 9.5);
+    this.racecraftCooldown = Math.max(0, this.racecraftCooldown - dt);
+    if (this.contactRisk > 0.7 && this.racecraftCooldown === 0) {
+      this.message = this.contactRisk > 0.88 ? "Avoid contact" : "Wheel to wheel";
+      this.messageTimer = 0.85;
+      this.racecraftCooldown = 2.1;
+    }
+
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const wheelspinTarget = onTrack
@@ -418,9 +445,10 @@ export class SimcadeRaceModel {
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
+    const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6;
     const offTrackDrag = onTrack ? 0 : 82;
 
-    this.speed += (acceleration + boostPower + draftPower + gradeForce - braking - drag - instabilityDrag - offTrackDrag) * dt;
+    this.speed += (acceleration + boostPower + draftPower + gradeForce - braking - drag - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
@@ -445,7 +473,7 @@ export class SimcadeRaceModel {
     const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35);
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
-    this.heading += this.yawRate * dt;
+    this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
     this.slip = clamp(
       Math.max(
         Math.abs(this.yawRate) * speedRatio * (1.25 - this.grip),
@@ -459,7 +487,11 @@ export class SimcadeRaceModel {
 
     const metersPerSecond = this.speed * (1000 / 3600);
     this.z += metersPerSecond * dt * 1.55;
-    this.x += Math.sin(this.heading) * metersPerSecond * dt * 0.28 + steer * speedRatio * dt * 2.3 + track.curve * metersPerSecond * dt * 0.95;
+    this.x +=
+      Math.sin(this.heading) * metersPerSecond * dt * 0.28 +
+      steer * speedRatio * dt * 2.3 +
+      track.curve * metersPerSecond * dt * 0.95 +
+      racecraft.squeeze * this.contactRisk * dt * 0.7;
     this.x = clamp(this.x, track.center - 9, track.center + 9);
     this.lapTime += dt;
     this.totalTime += dt;
@@ -539,10 +571,48 @@ export class SimcadeRaceModel {
     return { draft: clamp(draft, 0, 1), dirtyAir: clamp(dirtyAir, 0, 1) };
   }
 
+  private racecraftPressure() {
+    let proximity = 0;
+    let sideBySide = 0;
+    let contactRisk = 0;
+    let squeeze = 0;
+
+    for (const rival of this.rivals) {
+      const gap = rival.distance - this.z;
+      if (gap < -24 || gap > 72) continue;
+
+      const rivalTrack = sampleTrack(rival.distance);
+      const rivalX = rivalTrack.center + rival.lane;
+      const lateralGap = Math.abs(rivalX - this.x);
+      const longitudinalPressure = clamp(1 - Math.abs(gap) / 72, 0, 1);
+      const lateralPressure = clamp(1 - lateralGap / 8.2, 0, 1);
+      const alongsidePressure = clamp(1 - Math.abs(gap) / 18, 0, 1) * clamp(1 - lateralGap / 6.2, 0, 1);
+      const contactPressure = clamp(1 - Math.abs(gap) / 8, 0, 1) * clamp(1 - lateralGap / 3.1, 0, 1);
+
+      proximity = Math.max(proximity, longitudinalPressure * lateralPressure);
+      sideBySide = Math.max(sideBySide, alongsidePressure);
+      contactRisk = Math.max(contactRisk, contactPressure);
+
+      if (contactPressure > 0.2) {
+        const directionAwayFromRival = this.x >= rivalX ? 1 : -1;
+        squeeze += directionAwayFromRival * contactPressure;
+      }
+    }
+
+    return { proximity: clamp(proximity, 0, 1), sideBySide: clamp(sideBySide, 0, 1), contactRisk: clamp(contactRisk, 0, 1), squeeze: clamp(squeeze, -1, 1) };
+  }
+
   private airState() {
     if (this.dirtyAir > 0.16) return "Dirty air";
     if (this.draft > 0.03) return "Slipstream";
     return "Clean air";
+  }
+
+  private racecraftState() {
+    if (this.contactRisk > 0.64) return "Contact risk";
+    if (this.sideBySide > 0.32) return "Wheel to wheel";
+    if (this.rivalProximity > 0.24) return "Closing rival";
+    return this.airState();
   }
 
   private trackCue(track: ReturnType<typeof sampleTrack>) {

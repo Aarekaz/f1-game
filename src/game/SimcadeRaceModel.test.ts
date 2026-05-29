@@ -117,6 +117,10 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.draft).toBe(0);
     expect(telemetry.dirtyAir).toBe(0);
     expect(telemetry.airState).toBe("Clean air");
+    expect(telemetry.racecraftState).toBe("Clean air");
+    expect(telemetry.rivalProximity).toBe(0);
+    expect(telemetry.sideBySide).toBe(0);
+    expect(telemetry.contactRisk).toBe(0);
     expect(telemetry.skyColor).toBe("#c7d8df");
     expect(typeof telemetry.cornerPhase).toBe("string");
     expect(telemetry.cleanLap).toBe(true);
@@ -270,6 +274,28 @@ describe("SimcadeRaceModel", () => {
 
     expect(tuckedIn.draft + tuckedIn.dirtyAir).toBeGreaterThan(0);
     expect(tuckedIn.car.slip).toBeGreaterThanOrEqual(0);
+  });
+
+  it("turns nearby rivals into readable racecraft pressure", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+
+    let peakProximity = 0;
+    let peakSideBySide = 0;
+    let peakContactRisk = 0;
+    let state = model.telemetry();
+
+    for (let elapsed = 0; elapsed < 8.5; elapsed += 1 / 60) {
+      state = model.update(1 / 60, { ...idle, throttle: 1, steer: -0.12, ers: true });
+      peakProximity = Math.max(peakProximity, state.rivalProximity);
+      peakSideBySide = Math.max(peakSideBySide, state.sideBySide);
+      peakContactRisk = Math.max(peakContactRisk, state.contactRisk);
+    }
+
+    expect(peakProximity).toBeGreaterThan(0.2);
+    expect(peakSideBySide).toBeGreaterThan(0.1);
+    expect(peakContactRisk).toBeGreaterThan(0.04);
+    expect(["Closing rival", "Wheel to wheel", "Contact risk", "Slipstream", "Dirty air", "Clean air"]).toContain(state.racecraftState);
   });
 
   it("invalidates the clean lap after sustained track limits abuse", () => {

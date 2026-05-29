@@ -95,6 +95,10 @@ async function checkDesktop(browser) {
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
     draft: Number(document.querySelector("#game canvas")?.dataset.draft ?? 0),
     dirtyAir: Number(document.querySelector("#game canvas")?.dataset.dirtyAir ?? 0),
+    rivalProximity: Number(document.querySelector("#game canvas")?.dataset.rivalProximity ?? 0),
+    sideBySide: Number(document.querySelector("#game canvas")?.dataset.sideBySide ?? 0),
+    contactRisk: Number(document.querySelector("#game canvas")?.dataset.contactRisk ?? 0),
+    racecraftState: document.querySelector("#game canvas")?.dataset.racecraftState ?? "",
     rainIntensity: Number(document.querySelector("#game canvas")?.dataset.rainIntensity ?? 0),
     roadWetness: Number(document.querySelector("#game canvas")?.dataset.roadWetness ?? 0),
     launchCharge: Number(document.querySelector("#game canvas")?.dataset.launchCharge ?? 0),
@@ -106,7 +110,8 @@ async function checkDesktop(browser) {
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
-    sessionWeather: document.querySelector("#session-weather")?.textContent ?? ""
+    sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
+    streak: document.querySelector("#streak")?.textContent ?? ""
   }));
 
   await page.close();
@@ -125,6 +130,11 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
   assert(Number.isFinite(state.draft), "desktop draft telemetry was missing");
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
+  assert(Number.isFinite(state.rivalProximity), "desktop rival proximity telemetry was missing");
+  assert(Number.isFinite(state.sideBySide), "desktop side-by-side telemetry was missing");
+  assert(Number.isFinite(state.contactRisk), "desktop contact-risk telemetry was missing");
+  assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
+  assert(/air|rival|wheel|contact|overtakes|slipstream/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);

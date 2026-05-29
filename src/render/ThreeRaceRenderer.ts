@@ -71,8 +71,9 @@ export class ThreeRaceRenderer {
   private readonly tireSmoke = this.buildTireSmoke();
   private readonly rainStreaks = this.buildRainStreaks();
   private readonly waterSpray = this.buildWaterSpray();
-  private readonly cameraPosition = new THREE.Vector3(0, 4.8, 15.4);
-  private readonly cameraTarget = new THREE.Vector3(0, 0.72, -13.5);
+  private readonly proximityMarkers = this.buildProximityMarkers();
+  private readonly cameraPosition = new THREE.Vector3(0, 5.8, 22.5);
+  private readonly cameraTarget = new THREE.Vector3(0, 0.72, -16.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
   private readonly desiredCameraTarget = new THREE.Vector3();
   private readonly carScreenPosition = new THREE.Vector3();
@@ -102,6 +103,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.tireSmoke);
     this.scene.add(this.rainStreaks);
     this.scene.add(this.waterSpray);
+    this.scene.add(this.proximityMarkers);
     this.scene.add(this.car);
     void this.loadRaceAssets();
     this.resize();
@@ -143,6 +145,10 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
     this.renderer.domElement.dataset.draft = telemetry.draft.toFixed(3);
     this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
+    this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);
+    this.renderer.domElement.dataset.sideBySide = telemetry.sideBySide.toFixed(3);
+    this.renderer.domElement.dataset.contactRisk = telemetry.contactRisk.toFixed(3);
+    this.renderer.domElement.dataset.racecraftState = telemetry.racecraftState;
     this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
     this.renderer.domElement.dataset.launchCharge = telemetry.launchCharge.toFixed(2);
@@ -162,15 +168,16 @@ export class ThreeRaceRenderer {
 
     this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateTireSmoke(carX, carY, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
+    this.updateProximityMarkers(carX, carY, carZ, telemetry.car.heading, telemetry.sideBySide, telemetry.contactRisk);
     this.camera.fov = 44 + speedRatio * 8 + telemetry.car.braking * 2;
 
-    const lookAhead = 8 + speedRatio * 19;
-    const cameraLag = 5.8 + speedRatio * 4.4 + telemetry.car.throttle * 1.3 - telemetry.car.braking * 2.2;
-    const lateralShoulder = carX * (0.48 + speedRatio * 0.16) - telemetry.car.yawRate * 2.6;
-    const targetX = carX + telemetry.car.yawRate * 4.8 - telemetry.curve * 2.6;
+    const lookAhead = 10 + speedRatio * 22;
+    const cameraLag = 12.6 + speedRatio * 8.6 + telemetry.car.throttle * 2 - telemetry.car.braking * 2.5;
+    const lateralShoulder = carX * (0.3 + speedRatio * 0.1) - telemetry.car.yawRate * 1.6;
+    const targetX = carX * 0.36 + telemetry.car.yawRate * 3.2 - telemetry.curve * 2.1;
     this.desiredCameraPosition.set(
       lateralShoulder,
-      carY + 2.85 - telemetry.car.braking * 0.28 + telemetry.car.slip * 0.28 + speedRatio * 0.16,
+      carY + 3.35 - telemetry.car.braking * 0.24 + telemetry.car.slip * 0.26 + speedRatio * 0.22,
       carZ + cameraLag
     );
     this.desiredCameraTarget.set(targetX, carY + 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);
@@ -470,6 +477,52 @@ export class ThreeRaceRenderer {
     this.tireSmoke.rotation.y = -heading;
     const pulse = 1 + Math.sin(performance.now() * 0.018) * 0.08;
     this.tireSmoke.scale.setScalar((0.65 + speedRatio * 0.75 + smokeStrength * 0.55) * pulse);
+  }
+
+  private buildProximityMarkers() {
+    const group = new THREE.Group();
+    group.name = "wheel-to-wheel-proximity-markers";
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#f3d348",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (const side of [-1, 1]) {
+      const marker = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 3.1), material);
+      marker.name = side < 0 ? "left-proximity-marker" : "right-proximity-marker";
+      marker.rotation.x = -Math.PI / 2;
+      marker.position.set(side * 1.36, 0.065, 0.12);
+      group.add(marker);
+    }
+
+    group.userData.material = material;
+    return group;
+  }
+
+  private updateProximityMarkers(
+    carX: number,
+    carY: number,
+    carZ: number,
+    heading: number,
+    sideBySide: number,
+    contactRisk: number
+  ) {
+    const material = this.proximityMarkers.userData.material as THREE.MeshBasicMaterial | undefined;
+    const strength = Math.max(sideBySide * 0.72, contactRisk);
+    this.proximityMarkers.visible = strength > 0.04;
+    if (material) {
+      material.opacity = 0.12 + strength * 0.34;
+      material.color.set(contactRisk > 0.52 ? "#ff5d57" : "#f3d348");
+    }
+
+    this.proximityMarkers.position.set(carX, carY + 0.01, carZ);
+    this.proximityMarkers.rotation.y = -heading;
+    this.proximityMarkers.scale.setScalar(0.9 + strength * 0.28);
   }
 
   private buildRainStreaks() {

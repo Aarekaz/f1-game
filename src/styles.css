@@ -252,6 +252,8 @@ body {
 }
 
 .hud[data-phase="racing"] .status-panel {
+  align-self: end;
+  justify-self: end;
   width: min(304px, 29vw);
   padding: 10px;
   background: rgba(18, 27, 26, 0.38);
@@ -809,6 +811,14 @@ body {
   }
 
   .status-panel {
+    align-self: start;
+    justify-self: end;
+    width: min(184px, 44vw);
+    margin-top: 10px;
+    padding: 9px;
+  }
+
+  .hud[data-phase="racing"] .status-panel {
     align-self: start;
     justify-self: end;
     width: min(184px, 44vw);
