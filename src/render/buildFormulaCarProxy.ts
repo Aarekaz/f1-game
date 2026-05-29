@@ -15,6 +15,8 @@ type MaterialSet = {
   brake: THREE.MeshStandardMaterial;
   brakeGlow: THREE.MeshStandardMaterial;
   wheelBlur: THREE.MeshBasicMaterial;
+  sensor: THREE.MeshStandardMaterial;
+  rainLight: THREE.MeshStandardMaterial;
 };
 
 function makeBox(
@@ -109,6 +111,12 @@ function makeWing(
   const upper = makeBox(`${name}-upper-plane`, [width * 0.86, 0.045, depth * 0.42], [0, 0.14, depth * 0.08], material);
   upper.rotation.x = -0.12;
   group.add(upper);
+  const slotGap = makeBox(`${name}-slot-gap-shadow`, [width * 0.82, 0.028, depth * 0.08], [0, 0.055, -depth * 0.08], material);
+  slotGap.rotation.x = -0.08;
+  group.add(slotGap);
+  const gurney = makeBox(`${name}-gurney-lip`, [width * 0.78, 0.08, 0.04], [0, 0.22, depth * 0.31], material);
+  gurney.rotation.x = -0.18;
+  group.add(gurney);
 
   for (const side of [-1, 1]) {
     const endplate = makeBox(`${name}-endplate`, [0.08, 0.42, depth * 1.15], [side * width * 0.52, 0.11, 0], material);
@@ -118,6 +126,10 @@ function makeWing(
     divePlane.rotation.z = side * 0.28;
     divePlane.rotation.x = -0.22;
     group.add(divePlane);
+    const cascade = makeBox(`${name}-cascade-winglet`, [0.05, 0.035, depth * 0.5], [side * width * 0.37, 0.28, depth * 0.02], material);
+    cascade.rotation.z = side * 0.24;
+    cascade.rotation.x = -0.16;
+    group.add(cascade);
   }
 
   group.position.set(...position);
@@ -158,6 +170,17 @@ function makeWheel(name: string, x: number, z: number, materials: MaterialSet) {
     sidewall.position.x = side * 0.18;
     sidewall.rotation.y = Math.PI / 2;
     wheel.add(sidewall);
+
+    for (let marker = 0; marker < 3; marker += 1) {
+      const label = makeBox(
+        `${name}-sidewall-letter-block`,
+        [0.014, 0.032, 0.15],
+        [side * 0.197, 0.12 - marker * 0.12, marker === 1 ? -0.19 : 0.19],
+        materials.tireSidewall
+      );
+      label.rotation.x = marker * 0.55;
+      wheel.add(label);
+    }
   }
 
   const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.36, 18), materials.rim);
@@ -193,6 +216,10 @@ function makeWheel(name: string, x: number, z: number, materials: MaterialSet) {
     wheel.add(spoke);
   }
 
+  const duct = makeBox(`${name}-brake-duct`, [0.2, 0.11, 0.16], [0, 0.03, -0.24], materials.carbon);
+  duct.rotation.x = -0.1;
+  wheel.add(duct);
+
   return wheel;
 }
 
@@ -227,29 +254,58 @@ export function buildFormulaCarProxy(color = "#e72436") {
       transparent: true,
       opacity: 0,
       depthWrite: false
+    }),
+    sensor: new THREE.MeshStandardMaterial({ color: "#28c7ff", emissive: "#0b4760", emissiveIntensity: 0.55, roughness: 0.34, metalness: 0.18 }),
+    rainLight: new THREE.MeshStandardMaterial({
+      color: "#ff2648",
+      emissive: "#ff1436",
+      emissiveIntensity: 1.8,
+      roughness: 0.18,
+      metalness: 0.08
     })
   };
 
   car.add(makeWedge("survival-cell", [1.02, 0.42, 2.08], [0, 0.38, -0.05], materials.body, 0.68));
   car.add(makeEllipsoid("sculpted-monocoque-shoulder", [0.56, 0.18, 0.98], [0, 0.58, -0.14], materials.body));
+  car.add(makeEllipsoid("upper-chassis-coke-bottle", [0.42, 0.13, 0.68], [0, 0.51, 0.48], materials.body, 22, 10));
   car.add(makeWedge("engine-cover", [0.68, 0.62, 1.24], [0, 0.58, 0.72], materials.body, 0.44));
   car.add(makeEllipsoid("airbox-intake", [0.22, 0.18, 0.2], [0, 0.98, 0.2], materials.trim, 18, 8));
   car.add(makeWedge("shark-fin", [0.16, 0.76, 0.98], [0, 1.0, 0.88], materials.body, 0.25));
   car.add(makeWedge("nose-cone", [0.38, 0.2, 1.76], [0, 0.3, -1.88], materials.body, 0.38));
+  car.add(makeWedge("needle-nose-tip", [0.24, 0.13, 0.78], [0, 0.25, -2.54], materials.body, 0.24));
   car.add(makeBox("nose-accent-stripe", [0.14, 0.035, 2.52], [0, 0.54, -0.92], materials.accent));
+  car.add(makeBox("nose-number-panel", [0.34, 0.032, 0.42], [0, 0.49, -1.65], materials.livery));
   car.add(makeBox("livery-spine-stripe", [0.22, 0.04, 1.9], [0, 0.77, 0.36], materials.livery));
   car.add(makeBox("floor", [1.98, 0.06, 3.18], [0, 0.15, -0.08], materials.carbon));
   car.add(makeBox("floor-edge-left", [0.05, 0.08, 2.38], [-1.02, 0.21, -0.05], materials.carbon));
   car.add(makeBox("floor-edge-right", [0.05, 0.08, 2.38], [1.02, 0.21, -0.05], materials.carbon));
   car.add(makeBox("diffuser", [1.32, 0.18, 0.46], [0, 0.24, 1.62], materials.carbon));
+  for (const side of [-1, 0, 1]) {
+    const strake = makeBox(`diffuser-strake-${side + 1}`, [0.045, 0.22, 0.66], [side * 0.36, 0.29, 1.68], materials.carbon);
+    strake.rotation.x = 0.16;
+    car.add(strake);
+  }
 
   for (const side of [-1, 1]) {
     car.add(makeWedge(`sidepod-${side < 0 ? "left" : "right"}`, [0.48, 0.34, 1.18], [side * 0.72, 0.34, 0.12], materials.body, 0.5));
     car.add(makeBox(`sidepod-inlet-${side < 0 ? "left" : "right"}`, [0.08, 0.22, 0.36], [side * 0.49, 0.46, -0.32], materials.trim));
+    car.add(makeWedge(`sidepod-undercut-${side < 0 ? "left" : "right"}`, [0.22, 0.2, 0.84], [side * 0.62, 0.25, 0.28], materials.carbon, 0.38));
     car.add(makeBox(`sidepod-livery-slash-${side < 0 ? "left" : "right"}`, [0.05, 0.19, 0.82], [side * 0.96, 0.45, 0.1], materials.accent));
     car.add(makeBox(`bargeboard-${side < 0 ? "left" : "right"}`, [0.06, 0.38, 0.64], [side * 1.0, 0.36, -0.48], materials.carbon));
     car.add(makeBox(`turning-vane-${side < 0 ? "left" : "right"}`, [0.045, 0.34, 0.52], [side * 0.84, 0.34, -0.82], materials.carbon));
     car.add(makeBox(`mirror-${side < 0 ? "left" : "right"}`, [0.18, 0.08, 0.08], [side * 0.66, 0.79, -0.55], materials.trim));
+    car.add(makeBox(`floor-vortex-rail-${side < 0 ? "left" : "right"}`, [0.045, 0.12, 1.42], [side * 1.16, 0.22, 0.2], materials.carbon));
+    for (let gill = 0; gill < 3; gill += 1) {
+      const coolingGill = makeBox(
+        `cooling-gill-${side < 0 ? "left" : "right"}-${gill + 1}`,
+        [0.045, 0.028, 0.28],
+        [side * 0.79, 0.64 - gill * 0.04, 0.38 + gill * 0.16],
+        materials.trim
+      );
+      coolingGill.rotation.z = side * 0.18;
+      coolingGill.rotation.x = -0.14;
+      car.add(coolingGill);
+    }
   }
 
   const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.33, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.54), materials.cockpit);
@@ -274,11 +330,14 @@ export function buildFormulaCarProxy(color = "#e72436") {
   halo.add(makeBox("halo-center-crown", [0.44, 0.06, 0.08], [0, 0.46, -0.48], materials.trim));
   halo.position.set(0, 0.73, -0.34);
   car.add(halo);
+  car.add(makeBox("race-control-t-camera", [0.16, 0.12, 0.12], [0, 1.2, -0.06], materials.sensor));
 
   car.add(makeWing("front-wing", 2.7, 0.46, [0, 0.16, -2.78], materials.carbon));
   car.add(makeWing("rear-wing", 2.1, 0.42, [0, 0.78, 1.62], materials.carbon));
   car.add(makeBox("beam-wing", [1.72, 0.055, 0.22], [0, 0.44, 1.72], materials.carbon));
   car.add(makeBox("rear-wing-pylon", [0.16, 0.56, 0.16], [0, 0.54, 1.36], materials.carbon));
+  car.add(makeBox("rear-crash-structure", [0.36, 0.2, 0.52], [0, 0.35, 1.94], materials.carbon));
+  car.add(makeBox("rear-rain-light", [0.16, 0.08, 0.045], [0, 0.48, 2.21], materials.rainLight));
 
   for (const x of [-0.96, 0.96]) {
     car.add(makeWheel(x < 0 ? "front-left-wheel" : "front-right-wheel", x, -1.5, materials));
