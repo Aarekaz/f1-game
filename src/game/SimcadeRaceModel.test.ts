@@ -104,9 +104,13 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rpm).toBeGreaterThan(0);
     expect(typeof telemetry.brakingZone).toBe("boolean");
     expect(telemetry.car.throttle).toBe(0);
+    expect(Number.isFinite(telemetry.car.y)).toBe(true);
+    expect(Number.isFinite(telemetry.car.bank)).toBe(true);
     expect(telemetry.car.wheelspin).toBe(0);
     expect(telemetry.car.understeer).toBe(0);
     expect(telemetry.car.lockup).toBe(0);
+    expect(Number.isFinite(telemetry.rivals[0].y)).toBe(true);
+    expect(Number.isFinite(telemetry.rivals[0].bank)).toBe(true);
     expect(telemetry.rivals[0].speedKph).toBeGreaterThan(0);
   });
 

@@ -26,6 +26,8 @@ export type TrackSample = {
   distance: number;
   center: number;
   curve: number;
+  elevation: number;
+  bank: number;
   halfWidth: number;
   section: TrackSection;
   sectionProgress: number;
@@ -38,6 +40,11 @@ export type TrackSample = {
 type CenterAnchor = {
   distance: number;
   center: number;
+};
+
+type ProfileAnchor = {
+  distance: number;
+  value: number;
 };
 
 export type TrackCheckpoint = {
@@ -53,6 +60,11 @@ export type TrackLayout = {
   loopLength: number;
   sections: TrackSection[];
   centerAnchors: CenterAnchor[];
+  elevationAnchors: ProfileAnchor[];
+  bankAnchors: ProfileAnchor[];
+  terrainColor: string;
+  runoffColor: string;
+  treeColor: string;
   checkpoints: TrackCheckpoint[];
   sectorEnds: readonly [number, number, number];
 };
@@ -377,6 +389,9 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
     sections: AURELIA_SECTIONS,
     sectorEnds: [760, 1580, TRACK_LOOP_LENGTH],
     checkpoints: checkpointsFromSections(AURELIA_SECTIONS),
+    terrainColor: "#496f45",
+    runoffColor: "#7d8e78",
+    treeColor: "#385f38",
     centerAnchors: [
       { distance: 0, center: 0 },
       { distance: 240, center: 0 },
@@ -393,6 +408,28 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
       { distance: 1820, center: -22 },
       { distance: 2020, center: -7 },
       { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ],
+    elevationAnchors: [
+      { distance: 0, value: 0.4 },
+      { distance: 240, value: 0.9 },
+      { distance: 535, value: 2.6 },
+      { distance: 760, value: 1.3 },
+      { distance: 1030, value: 3.2 },
+      { distance: 1260, value: 2.1 },
+      { distance: 1580, value: 4.2 },
+      { distance: 1820, value: 1.6 },
+      { distance: TRACK_LOOP_LENGTH, value: 0.4 }
+    ],
+    bankAnchors: [
+      { distance: 0, value: 0 },
+      { distance: 310, value: -0.18 },
+      { distance: 535, value: -0.05 },
+      { distance: 880, value: 0.16 },
+      { distance: 1150, value: -0.22 },
+      { distance: 1400, value: 0.2 },
+      { distance: 1700, value: -0.24 },
+      { distance: 2020, value: 0.12 },
+      { distance: TRACK_LOOP_LENGTH, value: 0 }
     ]
   },
   mirage: {
@@ -402,6 +439,9 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
     sections: MIRAGE_SECTIONS,
     sectorEnds: [920, 1510, TRACK_LOOP_LENGTH],
     checkpoints: checkpointsFromSections(MIRAGE_SECTIONS),
+    terrainColor: "#637b67",
+    runoffColor: "#8d9588",
+    treeColor: "#4d7352",
     centerAnchors: [
       { distance: 0, center: 0 },
       { distance: 320, center: 2 },
@@ -417,6 +457,25 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
       { distance: 1780, center: 6 },
       { distance: 1980, center: -18 },
       { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ],
+    elevationAnchors: [
+      { distance: 0, value: 0.15 },
+      { distance: 390, value: 0.28 },
+      { distance: 610, value: 0.55 },
+      { distance: 920, value: 0.32 },
+      { distance: 1190, value: 0.88 },
+      { distance: 1510, value: 0.5 },
+      { distance: 1780, value: 0.22 },
+      { distance: TRACK_LOOP_LENGTH, value: 0.15 }
+    ],
+    bankAnchors: [
+      { distance: 0, value: 0 },
+      { distance: 470, value: 0.06 },
+      { distance: 920, value: -0.08 },
+      { distance: 1190, value: 0.1 },
+      { distance: 1640, value: -0.1 },
+      { distance: 1980, value: 0.06 },
+      { distance: TRACK_LOOP_LENGTH, value: 0 }
     ]
   },
   northstar: {
@@ -426,6 +485,9 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
     sections: NORTHSTAR_SECTIONS,
     sectorEnds: [810, 1660, TRACK_LOOP_LENGTH],
     checkpoints: checkpointsFromSections(NORTHSTAR_SECTIONS),
+    terrainColor: "#415f4d",
+    runoffColor: "#748178",
+    treeColor: "#2f4f3f",
     centerAnchors: [
       { distance: 0, center: 0 },
       { distance: 200, center: 0 },
@@ -442,6 +504,29 @@ const TRACK_LAYOUTS: Record<FictionalTrackId, TrackLayout> = {
       { distance: 1900, center: 10 },
       { distance: 2080, center: -16 },
       { distance: TRACK_LOOP_LENGTH, center: 0 }
+    ],
+    elevationAnchors: [
+      { distance: 0, value: 5.8 },
+      { distance: 200, value: 10.2 },
+      { distance: 360, value: 13.4 },
+      { distance: 560, value: 5.1 },
+      { distance: 810, value: 1.4 },
+      { distance: 1110, value: 7.6 },
+      { distance: 1430, value: 12.8 },
+      { distance: 1660, value: 6.2 },
+      { distance: 1900, value: 3.4 },
+      { distance: TRACK_LOOP_LENGTH, value: 5.8 }
+    ],
+    bankAnchors: [
+      { distance: 0, value: 0 },
+      { distance: 270, value: -0.18 },
+      { distance: 560, value: -0.3 },
+      { distance: 810, value: 0.1 },
+      { distance: 1110, value: 0.22 },
+      { distance: 1430, value: -0.26 },
+      { distance: 1660, value: 0.25 },
+      { distance: 2080, value: -0.12 },
+      { distance: TRACK_LOOP_LENGTH, value: 0 }
     ]
   }
 };
@@ -471,11 +556,15 @@ export function sampleTrack(distance: number): TrackSample {
   const section = trackSectionAt(d);
   const sectionProgress = (d - section.start) / (section.end - section.start);
   const curve = trackCurveAt(d);
+  const elevation = trackElevationAt(d);
+  const bank = trackBankAt(d);
 
   return {
     distance: d,
     center: trackCenterAt(d),
     curve,
+    elevation,
+    bank,
     halfWidth: section.halfWidth,
     section,
     sectionProgress,
@@ -500,6 +589,21 @@ export function trackCenterAt(distance: number) {
 export function trackCurveAt(distance: number) {
   const sample = 10;
   return (trackCenterAt(distance + sample) - trackCenterAt(distance - sample)) / (sample * 2);
+}
+
+export function trackElevationAt(distance: number) {
+  return profileAt(activeLayout.elevationAnchors, distance);
+}
+
+export function trackBankAt(distance: number) {
+  return profileAt(activeLayout.bankAnchors, distance);
+}
+
+export function terrainHeightAt(distance: number, lateral: number) {
+  const base = trackElevationAt(distance);
+  const shoulder = Math.max(0, Math.abs(lateral) - 8);
+  const falloff = Math.min(5.2, shoulder * 0.055);
+  return base - falloff;
 }
 
 export function trackSectionAt(distance: number) {
@@ -542,6 +646,16 @@ function racingLineOffset(section: TrackSection, sectionProgress: number, curve:
   if (sectionProgress < 0.34) return outside;
   if (sectionProgress < 0.68) return inside;
   return exit;
+}
+
+function profileAt(anchors: ProfileAnchor[], distance: number) {
+  const d = wrapDistance(distance);
+  const nextIndex = anchors.findIndex((anchor) => anchor.distance >= d);
+  const rightIndex = nextIndex <= 0 ? 1 : nextIndex;
+  const left = anchors[rightIndex - 1];
+  const right = anchors[rightIndex];
+  const t = smoothstep((d - left.distance) / (right.distance - left.distance));
+  return left.value + (right.value - left.value) * t;
 }
 
 function smoothstep(value: number) {

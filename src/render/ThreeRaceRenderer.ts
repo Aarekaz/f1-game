@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { setActiveTrackLayout, trackCenterAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import { sampleTrack, setActiveTrackLayout, TRACK_LOOP_LENGTH } from "../game/trackPath";
 import type { SessionConfig } from "../world/FictionalGpWorld";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
@@ -39,6 +39,7 @@ export class ThreeRaceRenderer {
   private readonly sun = new THREE.DirectionalLight("#ffffff", 2.7);
   private readonly car = buildFormulaCarProxy();
   private circuit = buildGpCircuit();
+  private readonly tracksideAssets = new THREE.Group();
   private readonly horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly tireSmoke = this.buildTireSmoke();
@@ -65,6 +66,8 @@ export class ThreeRaceRenderer {
     this.scene.add(this.sun);
 
     this.scene.add(this.circuit);
+    this.tracksideAssets.name = "loaded-trackside-assets";
+    this.scene.add(this.tracksideAssets);
     this.scene.add(this.horizon);
     this.scene.add(this.speedStreaks);
     this.scene.add(this.tireSmoke);
@@ -88,6 +91,7 @@ export class ThreeRaceRenderer {
     disposeObject3D(this.circuit);
     this.circuit = buildGpCircuit();
     this.scene.add(this.circuit);
+    this.positionLoadedTracksideAssets();
     this.renderer.domElement.dataset.trackLayout = session.track.id;
   }
 
@@ -95,6 +99,7 @@ export class ThreeRaceRenderer {
     const visualProgress = telemetry.car.z % TRACK_LOOP_LENGTH;
     this.renderer.domElement.dataset.trackOffset = visualProgress.toFixed(2);
     this.renderer.domElement.dataset.carWorldZ = telemetry.car.z.toFixed(2);
+    this.renderer.domElement.dataset.carWorldY = telemetry.car.y.toFixed(2);
     this.renderer.domElement.dataset.circuitWorldZ = this.circuit.position.z.toFixed(2);
     this.renderer.domElement.dataset.carSlip = telemetry.car.slip.toFixed(3);
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
@@ -104,16 +109,17 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.trackName = telemetry.trackName;
     this.applyAtmosphere(telemetry);
     const carX = telemetry.car.x;
+    const carY = telemetry.car.y;
     const carZ = -telemetry.car.z;
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
-    this.car.position.set(carX, 0, carZ);
-    this.car.position.y = Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026;
+    this.car.position.set(carX, carY, carZ);
+    this.car.position.y += Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026;
     this.car.rotation.y = -telemetry.car.heading - telemetry.curve * 0.5;
     this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018;
-    this.car.rotation.z = -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024;
+    this.car.rotation.z = -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16;
 
-    this.updateSpeedStreaks(carX, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
-    this.updateTireSmoke(carX, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
+    this.updateSpeedStreaks(carX, carY, carZ, speedRatio, telemetry.car.slip, telemetry.car.braking);
+    this.updateTireSmoke(carX, carY, carZ, telemetry.car.heading, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
     this.camera.fov = 54 + speedRatio * 13 + telemetry.car.braking * 2;
 
     const lookAhead = 12 + speedRatio * 24;
@@ -122,10 +128,10 @@ export class ThreeRaceRenderer {
     const targetX = carX + telemetry.car.yawRate * 4.8 - telemetry.curve * 2.6;
     this.desiredCameraPosition.set(
       lateralShoulder,
-      4.7 - telemetry.car.braking * 0.45 + telemetry.car.slip * 0.36 + speedRatio * 0.24,
+      carY + 4.7 - telemetry.car.braking * 0.45 + telemetry.car.slip * 0.36 + speedRatio * 0.24,
       carZ + cameraLag
     );
-    this.desiredCameraTarget.set(targetX, 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);
+    this.desiredCameraTarget.set(targetX, carY + 0.68 + telemetry.car.slip * 0.18, carZ - lookAhead);
     const positionFollow = 0.032 + speedRatio * 0.026 + telemetry.car.braking * 0.025;
     const targetFollow = 0.07 + speedRatio * 0.04;
     this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
@@ -149,8 +155,9 @@ export class ThreeRaceRenderer {
 
       const mesh = existing ?? this.addRival(rival.id, rival.color);
       mesh.visible = true;
-      mesh.position.set(rival.x, 0, -rival.z);
+      mesh.position.set(rival.x, rival.y, -rival.z);
       mesh.rotation.y = -rival.heading;
+      mesh.rotation.z = -rival.bank * 0.12;
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -203,17 +210,28 @@ export class ThreeRaceRenderer {
 
     stands.forEach((stand, index) => {
       const placement = standPlacements[index];
-      stand.position.set(trackCenterAt(placement.distance) + placement.lateral, 0, -placement.distance);
-      stand.rotation.y = placement.rotation;
-      this.scene.add(stand);
+      stand.userData.tracksidePlacement = placement;
+      this.tracksideAssets.add(stand);
     });
 
     lights.forEach((light, index) => {
       const placement = lightPlacements[index];
-      light.position.set(trackCenterAt(placement.distance) + placement.lateral, 0, -placement.distance);
-      light.rotation.y = placement.lateral > 0 ? -0.4 : 0.4;
-      this.scene.add(light);
+      light.userData.tracksidePlacement = { ...placement, rotation: placement.lateral > 0 ? -0.4 : 0.4 };
+      this.tracksideAssets.add(light);
     });
+
+    this.positionLoadedTracksideAssets();
+  }
+
+  private positionLoadedTracksideAssets() {
+    for (const object of this.tracksideAssets.children) {
+      const placement = object.userData.tracksidePlacement as { distance: number; lateral: number; rotation: number } | undefined;
+      if (!placement) continue;
+
+      const track = sampleTrack(placement.distance);
+      object.position.set(track.center + placement.lateral, track.elevation, -placement.distance);
+      object.rotation.y = placement.rotation;
+    }
   }
 
   private replaceModel(target: THREE.Group, asset: THREE.Object3D) {
@@ -288,7 +306,7 @@ export class ThreeRaceRenderer {
     return group;
   }
 
-  private updateSpeedStreaks(carX: number, carZ: number, speedRatio: number, slip: number, braking: number) {
+  private updateSpeedStreaks(carX: number, carY: number, carZ: number, speedRatio: number, slip: number, braking: number) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
     if (material) {
       material.opacity = Math.max(0, speedRatio - 0.46) * 0.34 + slip * 0.08 + braking * 0.04;
@@ -297,6 +315,7 @@ export class ThreeRaceRenderer {
 
     this.speedStreaks.position.z = carZ + (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
     this.speedStreaks.position.x = carX * 0.2;
+    this.speedStreaks.position.y = carY;
     this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
   }
 
@@ -327,6 +346,7 @@ export class ThreeRaceRenderer {
 
   private updateTireSmoke(
     carX: number,
+    carY: number,
     carZ: number,
     heading: number,
     speedRatio: number,
@@ -342,7 +362,7 @@ export class ThreeRaceRenderer {
     }
 
     this.tireSmoke.visible = smokeStrength > 0.025;
-    this.tireSmoke.position.set(carX, 0, carZ);
+    this.tireSmoke.position.set(carX, carY, carZ);
     this.tireSmoke.rotation.y = -heading;
     const pulse = 1 + Math.sin(performance.now() * 0.018) * 0.08;
     this.tireSmoke.scale.setScalar((0.65 + speedRatio * 0.75 + smokeStrength * 0.55) * pulse);

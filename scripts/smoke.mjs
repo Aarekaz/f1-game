@@ -36,6 +36,7 @@ async function checkDesktop(browser) {
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
+    carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0)
   }));
@@ -70,6 +71,7 @@ async function checkDesktop(browser) {
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
+    carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
     cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
@@ -90,6 +92,7 @@ async function checkDesktop(browser) {
   assertCanvasBox(state.canvasBox, "desktop");
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
   assert(state.carWorldZ > ready.carWorldZ + 10, "desktop car did not move through world space");
+  assert(Number.isFinite(state.carWorldY) && state.carWorldY > 0.5, "desktop car did not receive elevated track height");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
   assert(state.cameraWorldZ < 0, "desktop chase camera did not move into world space");
   assert(Math.abs(state.carScreenY - ready.carScreenY) > 0.01, "desktop car stayed visually pinned to the same screen position");

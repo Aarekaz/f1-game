@@ -66,7 +66,9 @@ export type RaceTelemetry = {
   message: string;
   car: {
     x: number;
+    y: number;
     z: number;
+    bank: number;
     heading: number;
     yawRate: number;
     slip: number;
@@ -79,7 +81,9 @@ export type RaceTelemetry = {
   rivals: Array<{
     id: number;
     x: number;
+    y: number;
     z: number;
+    bank: number;
     heading: number;
     color: string;
     gap: number;
@@ -258,7 +262,9 @@ export class SimcadeRaceModel {
       message: this.messageTimer > 0 ? this.message : "",
       car: {
         x: this.x,
+        y: track.elevation + 0.065,
         z: this.z,
+        bank: track.bank,
         heading: this.heading,
         yawRate: this.yawRate,
         slip: this.slip,
@@ -268,15 +274,20 @@ export class SimcadeRaceModel {
         understeer: this.understeer,
         lockup: this.lockup
       },
-      rivals: this.rivals.map((rival) => ({
-        id: rival.id,
-        x: sampleTrack(rival.distance).center + rival.lane,
-        z: rival.distance,
-        heading: -trackCurveAt(rival.distance) * 0.8,
-        color: rival.color,
-        gap: (rival.distance - this.z) / 42,
-        speedKph: Math.round(rival.speed)
-      }))
+      rivals: this.rivals.map((rival) => {
+        const rivalTrack = sampleTrack(rival.distance);
+        return {
+          id: rival.id,
+          x: rivalTrack.center + rival.lane,
+          y: rivalTrack.elevation + 0.055,
+          z: rival.distance,
+          bank: rivalTrack.bank,
+          heading: -trackCurveAt(rival.distance) * 0.8,
+          color: rival.color,
+          gap: (rival.distance - this.z) / 42,
+          speedKph: Math.round(rival.speed)
+        };
+      })
     };
   }
 
@@ -346,18 +357,28 @@ export class SimcadeRaceModel {
     const braking = brake * 248 * (1 - this.lockup * 0.22);
     const boostPower = boost * 72;
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
+    const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
+    const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
     const offTrackDrag = onTrack ? 0 : 82;
 
-    this.speed += (acceleration + boostPower - braking - drag - instabilityDrag - offTrackDrag) * dt;
+    this.speed += (acceleration + boostPower + gradeForce - braking - drag - instabilityDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const weatherGrip = this.session.weather.gripMultiplier;
     const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
+    const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const gripTarget = onTrack
-      ? clamp((1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32) * weatherGrip - wetPenalty, 0.34, 1)
+      ? clamp(
+          (1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32) *
+            weatherGrip *
+            bankingSupport -
+            wetPenalty,
+          0.34,
+          1
+        )
       : 0.42 * weatherGrip;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 

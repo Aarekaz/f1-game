@@ -1,14 +1,29 @@
 import * as THREE from "three";
-import { sampleTrack, trackCenterAt, trackCurveAt, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import {
+  getActiveTrackLayout,
+  sampleTrack,
+  terrainHeightAt,
+  trackCenterAt,
+  trackCurveAt,
+  trackElevationAt,
+  TRACK_LOOP_LENGTH,
+  type TrackSample
+} from "../game/trackPath";
 
 type DynamicPiece = {
   object: THREE.Object3D;
   ahead: number;
   lateral: number;
   curveScale: number;
+  baseY?: number;
 };
 
 const RENDERED_TRACK_LENGTH = TRACK_LOOP_LENGTH * 4;
+
+function surfaceY(sample: TrackSample, lateral: number, offset = 0) {
+  const normalized = Math.max(-1.35, Math.min(1.35, lateral / Math.max(1, sample.halfWidth)));
+  return sample.elevation + sample.bank * normalized + offset;
+}
 
 function makeBox(
   name: string,
@@ -58,8 +73,10 @@ function makeTrackStrip(
     const curve = sample.curve;
     const leftX = sample.center + lateralStart;
     const rightX = sample.center + lateralEnd;
+    const leftY = surfaceY(sample, lateralStart, y);
+    const rightY = surfaceY(sample, lateralEnd, y);
     const z = -ahead;
-    vertices.push(leftX, y, z, rightX, y, z);
+    vertices.push(leftX, leftY, z, rightX, rightY, z);
     uvs.push(0, row, 1, row);
     if (row > 0) {
       const base = row * 2;
@@ -70,7 +87,14 @@ function makeTrackStrip(
     if (Math.abs(curve) > 0.035) {
       const midAhead = ahead + step * 0.5;
       const mid = sampleTrack(midAhead);
-      vertices.push(mid.center + lateralStart, y, -midAhead, mid.center + lateralEnd, y, -midAhead);
+      vertices.push(
+        mid.center + lateralStart,
+        surfaceY(mid, lateralStart, y),
+        -midAhead,
+        mid.center + lateralEnd,
+        surfaceY(mid, lateralEnd, y),
+        -midAhead
+      );
       uvs.push(0, row, 1, row);
       const base = row * 2;
       indices.push(base - 2, base - 1, base, base - 1, base + 1, base);
@@ -101,7 +125,14 @@ function makeRacingLine() {
     const racingOffset = sample.racingLineOffset;
     const width = sample.brakingZone ? 0.34 : 0.22;
     const center = sample.center + Math.max(-2.8, Math.min(2.8, racingOffset));
-    vertices.push(center - width, 0.041, -ahead, center + width, 0.041, -ahead);
+    vertices.push(
+      center - width,
+      surfaceY(sample, racingOffset - width, 0.041),
+      -ahead,
+      center + width,
+      surfaceY(sample, racingOffset + width, 0.041),
+      -ahead
+    );
     uvs.push(0, row, 1, row);
 
     if (row > 0) {
@@ -188,7 +219,13 @@ function makeTree(name: string, height: number, color: string) {
 }
 
 function makeSkidMark(distance: number, lateral: number, length: number, material: THREE.Material) {
-  const mark = makePlane("rubbered-braking-mark", [0.2, length], [trackCenterAt(distance) + lateral, 0.052, -distance], material);
+  const sample = sampleTrack(distance);
+  const mark = makePlane(
+    "rubbered-braking-mark",
+    [0.2, length],
+    [sample.center + lateral, surfaceY(sample, lateral, 0.052), -distance],
+    material
+  );
   mark.rotation.y = -trackCurveAt(distance) * 1.4;
   return mark;
 }
@@ -233,12 +270,13 @@ function makeAsphaltMaterial() {
 
 export function buildGpCircuit() {
   const circuit = new THREE.Group();
-  circuit.name = "fictional-european-technical-gp-circuit";
+  const layout = getActiveTrackLayout();
+  circuit.name = `${layout.id}-fictional-gp-circuit`;
   const dynamicPieces: DynamicPiece[] = [];
 
   const asphalt = makeAsphaltMaterial();
-  const grass = new THREE.MeshStandardMaterial({ color: "#496f45", roughness: 0.9 });
-  const runoff = new THREE.MeshStandardMaterial({ color: "#7d8e78", roughness: 0.86 });
+  const grass = new THREE.MeshStandardMaterial({ color: layout.terrainColor, roughness: 0.9 });
+  const runoff = new THREE.MeshStandardMaterial({ color: layout.runoffColor, roughness: 0.86 });
   const gravel = new THREE.MeshStandardMaterial({ color: "#9a8a70", roughness: 0.96 });
   const kerbRed = new THREE.MeshStandardMaterial({ color: "#d62b3a", roughness: 0.54 });
   const kerbWhite = new THREE.MeshStandardMaterial({ color: "#f5f7f4", roughness: 0.5 });
@@ -251,7 +289,7 @@ export function buildGpCircuit() {
   const board100 = makeBoardMaterial("100");
   const board50 = makeBoardMaterial("50");
 
-  circuit.add(makePlane("grass-infield-and-surround", [150, RENDERED_TRACK_LENGTH + 520], [0, -0.03, -RENDERED_TRACK_LENGTH / 2 + 90], grass));
+  circuit.add(makeTrackStrip("terrain-following-grass", grass, -88, 88, -0.18, -190, RENDERED_TRACK_LENGTH, 26));
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
   const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
   const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
@@ -292,8 +330,8 @@ export function buildGpCircuit() {
     const side = index % 2 === 0 ? -1 : 1;
     const stagger = ((index * 37) % 19) - 9;
     const lateral = side * (26 + (index % 5) * 2.8) + stagger * 0.2;
-    const tree = makeTree("trackside-cypress", 3.6 + (index % 4) * 0.55, index % 3 === 0 ? "#385f38" : "#496f45");
-    tree.position.set(trackCenterAt(distance) + lateral, 0, -distance);
+    const tree = makeTree("trackside-cypress", 3.6 + (index % 4) * 0.55, index % 3 === 0 ? layout.treeColor : layout.terrainColor);
+    tree.position.set(trackCenterAt(distance) + lateral, terrainHeightAt(distance, lateral), -distance);
     tree.rotation.y = (index % 7) * 0.4;
     circuit.add(tree);
   }
@@ -355,12 +393,13 @@ export function buildGpCircuit() {
     }
   }
 
-  const timingBridge = makeBox("timing-bridge-crossbar", [18.4, 0.72, 0.5], [0, 5.2, -38], bridgeMaterial);
+  const startElevation = trackElevationAt(18);
+  const timingBridge = makeBox("timing-bridge-crossbar", [18.4, 0.72, 0.5], [0, startElevation + 5.2, -38], bridgeMaterial);
   timingBridge.castShadow = true;
   circuit.add(timingBridge);
-  circuit.add(makeBox("timing-bridge-left-upright", [0.5, 5.2, 0.5], [-8.9, 2.6, -38], bridgeMaterial));
-  circuit.add(makeBox("timing-bridge-right-upright", [0.5, 5.2, 0.5], [8.9, 2.6, -38], bridgeMaterial));
-  circuit.add(makeBox("start-line", [12.2, 0.025, 0.42], [0, 0.055, -18], kerbWhite));
+  circuit.add(makeBox("timing-bridge-left-upright", [0.5, 5.2, 0.5], [-8.9, startElevation + 2.6, -38], bridgeMaterial));
+  circuit.add(makeBox("timing-bridge-right-upright", [0.5, 5.2, 0.5], [8.9, startElevation + 2.6, -38], bridgeMaterial));
+  circuit.add(makeBox("start-line", [12.2, 0.025, 0.42], [0, startElevation + 0.055, -18], kerbWhite));
 
   circuit.userData.disposableMaterials = [
     asphalt,
@@ -389,7 +428,11 @@ function positionTracksidePieces(circuit: THREE.Group) {
 
   for (const piece of dynamicPieces) {
     const curve = trackCurveAt(piece.ahead);
-    piece.object.position.x = trackCenterAt(piece.ahead) + piece.lateral;
+    const sample = sampleTrack(piece.ahead);
+    const baseY = piece.baseY ?? piece.object.position.y;
+    piece.baseY = baseY;
+    piece.object.position.x = sample.center + piece.lateral;
+    piece.object.position.y = surfaceY(sample, piece.lateral, baseY);
     piece.object.position.z = -piece.ahead;
     piece.object.rotation.y = -curve * piece.curveScale;
   }
