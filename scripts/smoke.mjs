@@ -32,6 +32,7 @@ async function checkDesktop(browser) {
     startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
     trackSelect: document.querySelector("#track-select")?.value ?? "",
     weatherSelect: document.querySelector("#weather-select")?.value ?? "",
+    hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionBrief: document.querySelector("#session-brief")?.textContent ?? "",
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
@@ -43,6 +44,7 @@ async function checkDesktop(browser) {
   assert(ready.startVisible, "desktop start panel was not visible");
   assert(ready.trackSelect === "northstar", "desktop fictional track selector did not update");
   assert(ready.weatherSelect === "storm", "desktop fictional weather selector did not update");
+  assert(ready.hudPhase === "ready", `desktop HUD did not expose ready phase: ${ready.hudPhase}`);
   assert(/alpine|wet|spray/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
   assert(ready.speed === 0, "desktop race moved before start");
 
@@ -83,6 +85,8 @@ async function checkDesktop(browser) {
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
+    horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
+    hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? ""
   }));
@@ -106,6 +110,8 @@ async function checkDesktop(browser) {
   assert(state.assetCar === "kenney", `desktop external car asset did not load, asset=${state.assetCar}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
+  assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);
+  assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
   assert(state.sessionTrack === "Northstar Ring", `desktop session track missing: ${state.sessionTrack}`);
   assert(state.sessionWeather === "Wet Storm", `desktop session weather missing: ${state.sessionWeather}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");

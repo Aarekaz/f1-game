@@ -29,6 +29,7 @@ function setMeter(element: HTMLElement, value: number) {
 }
 
 export class HudController {
+  private hud = document.querySelector<HTMLElement>(".hud");
   private startPanel = requireElement("start-panel");
   private resultsPanel = requireElement("results-panel");
   private position = requireElement("position");
@@ -71,6 +72,10 @@ export class HudController {
   }
 
   update(telemetry: RaceTelemetry) {
+    if (this.hud) {
+      this.hud.dataset.phase = telemetry.phase;
+    }
+
     if (this.renderedTrackName !== telemetry.trackName) {
       this.renderedTrackName = telemetry.trackName;
       this.buildMiniMap();

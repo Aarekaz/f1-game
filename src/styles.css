@@ -46,6 +46,10 @@ body {
   padding: clamp(14px, 2.5vw, 24px);
 }
 
+.hud[data-phase="racing"] {
+  padding: clamp(12px, 1.8vw, 18px);
+}
+
 .hud button,
 .touch-controls,
 .touch-controls * {
@@ -58,6 +62,9 @@ body {
   gap: 8px;
   max-width: 720px;
   width: min(100%, 720px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .topbar div,
@@ -189,6 +196,10 @@ body {
   min-height: 58px;
   padding: 9px 11px;
   border-radius: 7px;
+  transition:
+    min-height 180ms ease,
+    padding 180ms ease,
+    background 180ms ease;
 }
 
 .label,
@@ -217,6 +228,76 @@ body {
   width: min(360px, 52vw);
   padding: 14px;
   border-radius: 8px;
+  transition:
+    width 180ms ease,
+    padding 180ms ease,
+    background 180ms ease,
+    opacity 180ms ease;
+}
+
+.hud[data-phase="racing"] .topbar {
+  width: min(460px, 42vw);
+  opacity: 0.78;
+}
+
+.hud[data-phase="racing"] .topbar div {
+  min-height: 42px;
+  padding: 6px 8px;
+  background: rgba(18, 27, 26, 0.34);
+  box-shadow: 0 10px 32px rgba(20, 30, 28, 0.12);
+}
+
+.hud[data-phase="racing"] .topbar strong {
+  font-size: clamp(16px, 1.8vw, 21px);
+}
+
+.hud[data-phase="racing"] .status-panel {
+  width: min(304px, 29vw);
+  padding: 10px;
+  background: rgba(18, 27, 26, 0.38);
+  box-shadow: 0 14px 38px rgba(20, 30, 28, 0.14);
+}
+
+.hud[data-phase="racing"] .speed-readout span {
+  font-size: clamp(38px, 5vw, 58px);
+}
+
+.hud[data-phase="racing"] .powertrain-readout {
+  grid-template-columns: 44px 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hud[data-phase="racing"] .powertrain-readout strong {
+  width: 44px;
+  height: 36px;
+  font-size: 24px;
+}
+
+.hud[data-phase="racing"] .objective-chip,
+.hud[data-phase="racing"] .session-chip,
+.hud[data-phase="racing"] .track-readout,
+.hud[data-phase="racing"] .pace-readout,
+.hud[data-phase="racing"] .mini-map,
+.hud[data-phase="racing"] .race-strip,
+.hud[data-phase="racing"] .bars,
+.hud[data-phase="racing"] .streak,
+.hud[data-phase="racing"] .lap-clock {
+  margin-top: 7px;
+}
+
+.hud[data-phase="racing"] .session-chip,
+.hud[data-phase="racing"] .mini-map,
+.hud[data-phase="racing"] .lap-clock {
+  opacity: 0.76;
+}
+
+.hud[data-phase="racing"] .mini-map svg {
+  height: 76px;
+}
+
+.hud[data-phase="racing"] .lap-clock {
+  display: none;
 }
 
 .speed-readout {
@@ -537,6 +618,33 @@ body {
 .race-message.hidden {
   opacity: 0;
   transform: translateY(8px);
+}
+
+.hud[data-phase="racing"] .race-message {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  width: min(320px, calc(100vw - 32px));
+  min-height: 0;
+  padding: 8px 12px;
+  transform: translateX(-50%);
+}
+
+.hud[data-phase="racing"] .race-message.hidden {
+  transform: translate(-50%, -8px);
+}
+
+.hud[data-phase="racing"] .start-lights {
+  display: none;
+}
+
+.hud[data-phase="racing"] .race-message strong {
+  font-size: 13px;
+}
+
+.hud[data-phase="racing"] .race-message span {
+  margin-top: 3px;
+  font-size: 11px;
 }
 
 .race-message strong,

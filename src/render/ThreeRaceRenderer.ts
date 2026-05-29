@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
-import { sampleTrack, setActiveTrackLayout, TRACK_LOOP_LENGTH } from "../game/trackPath";
+import { getActiveTrackLayout, sampleTrack, setActiveTrackLayout, TRACK_LOOP_LENGTH } from "../game/trackPath";
 import type { SessionConfig } from "../world/FictionalGpWorld";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
@@ -40,7 +40,7 @@ export class ThreeRaceRenderer {
   private readonly car = buildFormulaCarProxy();
   private circuit = buildGpCircuit();
   private readonly tracksideAssets = new THREE.Group();
-  private readonly horizon = this.buildHorizon();
+  private horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly tireSmoke = this.buildTireSmoke();
   private readonly cameraPosition = new THREE.Vector3(0, 4.8, 15.4);
@@ -91,8 +91,13 @@ export class ThreeRaceRenderer {
     disposeObject3D(this.circuit);
     this.circuit = buildGpCircuit();
     this.scene.add(this.circuit);
+    this.scene.remove(this.horizon);
+    disposeObject3D(this.horizon);
+    this.horizon = this.buildHorizon();
+    this.scene.add(this.horizon);
     this.positionLoadedTracksideAssets();
     this.renderer.domElement.dataset.trackLayout = session.track.id;
+    this.renderer.domElement.dataset.horizonTrack = session.track.id;
   }
 
   update(telemetry: RaceTelemetry) {
@@ -256,7 +261,8 @@ export class ThreeRaceRenderer {
 
   private buildHorizon() {
     const horizon = new THREE.Group();
-    horizon.name = "soft-gp-horizon";
+    const layout = getActiveTrackLayout();
+    horizon.name = `${layout.id}-venue-horizon`;
 
     const skyMaterial = new THREE.MeshBasicMaterial({
       color: "#bfd4dc",
@@ -264,7 +270,12 @@ export class ThreeRaceRenderer {
       side: THREE.DoubleSide
     });
     const treelineMaterial = new THREE.MeshBasicMaterial({
-      color: "#5d7b63",
+      color: layout.treeColor,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+    const reliefMaterial = new THREE.MeshBasicMaterial({
+      color: layout.id === "mirage" ? "#77878d" : layout.id === "northstar" ? "#3f5a51" : "#667b58",
       fog: false,
       side: THREE.DoubleSide
     });
@@ -274,11 +285,52 @@ export class ThreeRaceRenderer {
     horizon.add(sky);
 
     const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, 54), treelineMaterial);
-    treeline.position.set(0, 22, -755);
+    treeline.position.set(0, 22, -750);
     horizon.add(treeline);
-    horizon.userData.materials = { sky: skyMaterial, treeline: treelineMaterial };
+
+    this.addVenueSilhouette(horizon, layout.id, reliefMaterial);
+    horizon.userData.materials = { sky: skyMaterial, treeline: treelineMaterial, relief: reliefMaterial };
 
     return horizon;
+  }
+
+  private addVenueSilhouette(horizon: THREE.Group, layoutId: string, material: THREE.Material) {
+    if (layoutId === "mirage") {
+      const sea = new THREE.Mesh(new THREE.PlaneGeometry(2200, 26), material);
+      sea.name = "mirage-bay-sea-line";
+      sea.position.set(0, 18, -746);
+      horizon.add(sea);
+
+      for (let index = 0; index < 18; index += 1) {
+        const width = 18 + (index % 5) * 7;
+        const height = 24 + ((index * 13) % 42);
+        const tower = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+        tower.name = "mirage-bay-skyline";
+        tower.position.set(-420 + index * 52, 28 + height * 0.5, -744);
+        horizon.add(tower);
+      }
+      return;
+    }
+
+    const peaks = layoutId === "northstar" ? 12 : 10;
+    const baseY = layoutId === "northstar" ? 18 : 16;
+    const spacing = layoutId === "northstar" ? 92 : 96;
+    const heightBase = layoutId === "northstar" ? 32 : 28;
+
+    for (let index = 0; index < peaks; index += 1) {
+      const width = spacing * (1.25 + (index % 3) * 0.18);
+      const height = heightBase + ((index * 19) % (layoutId === "northstar" ? 28 : 22));
+      const shape = new THREE.Shape();
+      shape.moveTo(-width * 0.5, 0);
+      shape.lineTo(-width * 0.12, height * 0.72);
+      shape.lineTo(width * 0.08, height);
+      shape.lineTo(width * 0.5, 0);
+      shape.lineTo(-width * 0.5, 0);
+      const peak = new THREE.Mesh(new THREE.ShapeGeometry(shape), material);
+      peak.name = layoutId === "northstar" ? "northstar-alpine-ridge" : "aurelia-foothill-ridge";
+      peak.position.set(-520 + index * spacing, baseY, -746);
+      horizon.add(peak);
+    }
   }
 
   private buildSpeedStreaks() {
