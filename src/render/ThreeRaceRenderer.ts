@@ -226,8 +226,8 @@ export class ThreeRaceRenderer {
     const podMode = this.cameraMode === "pod";
     this.camera.fov = podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
 
-    const lookAhead = podMode ? 28 + speedRatio * 36 : 14 + speedRatio * 24;
-    const cameraLag = podMode ? 9.8 + speedRatio * 2.3 - telemetry.car.braking * 0.75 : 8.8 + speedRatio * 5.8 + telemetry.car.throttle * 1.0 - telemetry.car.braking * 1.5;
+    const lookAhead = podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18;
+    const cameraLag = podMode ? 5.4 + speedRatio * 1.4 - telemetry.car.braking * 0.45 : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2;
     const lateralShoulder = podMode ? carLateral * 0.12 - telemetry.car.yawRate * 0.28 : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
     const targetLateral = podMode ? carLateral * 0.13 + telemetry.car.yawRate * 0.78 - telemetry.curve * 0.72 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85;
     const cameraPoint = {
@@ -265,8 +265,8 @@ export class ThreeRaceRenderer {
         this.cameraTarget.copy(this.desiredCameraTarget);
         this.cameraModeSnap = false;
       } else {
-        const positionFollow = (podMode ? 0.24 : 0.12) + speedRatio * (podMode ? 0.08 : 0.06) + telemetry.car.braking * 0.02;
-        const targetFollow = (podMode ? 0.28 : 0.16) + speedRatio * (podMode ? 0.08 : 0.06);
+        const positionFollow = (podMode ? 0.24 : 0.2) + speedRatio * (podMode ? 0.08 : 0.08) + telemetry.car.braking * 0.02;
+        const targetFollow = (podMode ? 0.28 : 0.22) + speedRatio * (podMode ? 0.08 : 0.07);
         this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
         this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
       }
@@ -283,6 +283,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
+    this.renderer.domElement.dataset.carScreenZ = this.carScreenPosition.z.toFixed(3);
     this.horizon.position.x = this.camera.position.x;
     this.horizon.position.z = this.camera.position.z;
     this.horizon.rotation.y = this.camera.rotation.y;

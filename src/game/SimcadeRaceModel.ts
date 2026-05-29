@@ -455,6 +455,7 @@ export class SimcadeRaceModel {
     this.slip = Math.max(this.slip, wetSpin * 0.58);
     this.grip = clamp(this.grip - wetSpin * 0.18, 0.52, 1);
     this.speed = 42 + quality * 54 - wetSpin * 16;
+    this.cameraSnapTimer = 0.35;
 
     if (quality > 0.86) {
       this.message = "Perfect launch";

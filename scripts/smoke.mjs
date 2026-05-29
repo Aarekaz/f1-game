@@ -83,6 +83,7 @@ async function checkDesktop(browser) {
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
+    carScreenZ: Number(document.querySelector("#game canvas")?.dataset.carScreenZ ?? 0),
     seriesActive: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? "",
     seriesRows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? "")
   }));
@@ -145,6 +146,7 @@ async function checkDesktop(browser) {
     cameraMode: document.querySelector("#game canvas")?.dataset.cameraMode ?? "",
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
+    carScreenZ: Number(document.querySelector("#game canvas")?.dataset.carScreenZ ?? 0),
     carSlip: Number(document.querySelector("#game canvas")?.dataset.carSlip ?? 0),
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
@@ -194,7 +196,22 @@ async function checkDesktop(browser) {
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
-    streak: document.querySelector("#streak")?.textContent ?? ""
+    streak: document.querySelector("#streak")?.textContent ?? "",
+    hudCoverage: (() => {
+      const viewportArea = Math.max(1, window.innerWidth * window.innerHeight);
+      const selectors = [".topbar", "#timing-tower", ".status-panel", "#message:not(.hidden)"];
+      const covered = selectors.reduce((total, selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return total;
+        const style = getComputedStyle(element);
+        if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return total;
+        const rect = element.getBoundingClientRect();
+        return total + rect.width * rect.height;
+      }, 0);
+      return covered / viewportArea;
+    })(),
+    racingStatusWidth: document.querySelector(".status-panel")?.getBoundingClientRect().width ?? 0,
+    racingTimingWidth: document.querySelector("#timing-tower")?.getBoundingClientRect().width ?? 0
   }));
 
   await page.keyboard.press("KeyC");
@@ -232,6 +249,9 @@ async function checkDesktop(browser) {
     "desktop car stayed visually pinned to the same screen position"
   );
   assert(Number.isFinite(state.carScreenX), "desktop car screen-space X telemetry was missing");
+  assert(Math.abs(state.carScreenX) < 0.72, `desktop car drifted too far horizontally in frame: ${state.carScreenX}`);
+  assert(state.carScreenY > -0.55 && state.carScreenY < 0.72, `desktop car drifted too far vertically in frame: ${state.carScreenY}`);
+  assert(state.carScreenZ > -1 && state.carScreenZ < 1, `desktop car was outside camera depth range: ${state.carScreenZ}`);
   assert(Number.isFinite(state.carSlip), "desktop slip telemetry was missing");
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
@@ -282,6 +302,9 @@ async function checkDesktop(browser) {
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
+  assert(state.hudCoverage < 0.16, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
+  assert(state.racingStatusWidth <= 250, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);
+  assert(state.racingTimingWidth <= 216, `desktop racing timing tower was too wide: ${state.racingTimingWidth}`);
   assert(state.sessionTrack === "Northstar Ring", `desktop session track missing: ${state.sessionTrack}`);
   assert(state.sessionWeather === "Wet Storm / Balanced", `desktop session weather and assist missing: ${state.sessionWeather}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");

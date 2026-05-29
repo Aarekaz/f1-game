@@ -438,44 +438,68 @@ body {
 }
 
 .hud[data-phase="racing"] .topbar {
-  width: min(460px, 42vw);
-  opacity: 0.78;
+  width: min(396px, 36vw);
+  opacity: 0.68;
 }
 
 .hud[data-phase="racing"] .topbar div {
-  min-height: 42px;
-  padding: 6px 8px;
-  background: rgba(18, 27, 26, 0.34);
+  min-height: 36px;
+  padding: 5px 7px;
+  background: rgba(18, 27, 26, 0.26);
   box-shadow: 0 10px 32px rgba(20, 30, 28, 0.12);
 }
 
 .hud[data-phase="racing"] .topbar strong {
-  font-size: clamp(16px, 1.8vw, 21px);
+  font-size: clamp(15px, 1.55vw, 19px);
+}
+
+.hud[data-phase="racing"] .topbar .label {
+  font-size: 9px;
+}
+
+.hud[data-phase="racing"] .timing-tower {
+  top: clamp(72px, 8.4vw, 92px);
+  width: min(206px, 17vw);
+  padding: 6px;
+  opacity: 0.64;
+  background: rgba(18, 27, 26, 0.3);
+}
+
+.hud[data-phase="racing"] .timing-tower div {
+  grid-template-columns: 30px minmax(0, 1fr) 44px;
+  min-height: 23px;
+  gap: 5px;
+  padding: 3px 5px;
+  font-size: 10px;
+}
+
+.hud[data-phase="racing"] .timing-tower em {
+  display: none;
 }
 
 .hud[data-phase="racing"] .status-panel {
   align-self: end;
   justify-self: end;
-  width: min(268px, 25vw);
-  padding: 10px;
-  background: rgba(18, 27, 26, 0.32);
-  box-shadow: 0 14px 38px rgba(20, 30, 28, 0.14);
+  width: min(238px, 21vw);
+  padding: 9px;
+  background: rgba(18, 27, 26, 0.28);
+  box-shadow: 0 12px 32px rgba(20, 30, 28, 0.12);
 }
 
 .hud[data-phase="racing"] .speed-readout span {
-  font-size: clamp(34px, 4.4vw, 52px);
+  font-size: clamp(30px, 3.8vw, 44px);
 }
 
 .hud[data-phase="racing"] .powertrain-readout {
-  grid-template-columns: 44px 1fr;
-  gap: 8px;
-  margin-top: 8px;
+  grid-template-columns: 38px 1fr;
+  gap: 7px;
+  margin-top: 6px;
 }
 
 .hud[data-phase="racing"] .powertrain-readout strong {
-  width: 44px;
-  height: 36px;
-  font-size: 24px;
+  width: 38px;
+  height: 31px;
+  font-size: 21px;
 }
 
 .hud[data-phase="racing"] .objective-chip,
@@ -487,19 +511,55 @@ body {
 .hud[data-phase="racing"] .bars,
 .hud[data-phase="racing"] .streak,
 .hud[data-phase="racing"] .lap-clock {
-  margin-top: 7px;
+  margin-top: 6px;
 }
 
 .hud[data-phase="racing"] .session-chip,
 .hud[data-phase="racing"] .mini-map,
-.hud[data-phase="racing"] .lap-clock {
+.hud[data-phase="racing"] .lap-clock,
+.hud[data-phase="racing"] .pace-readout,
+.hud[data-phase="racing"] .race-strip {
   display: none;
 }
 
-.hud[data-phase="racing"] .race-strip,
-.hud[data-phase="racing"] .bars,
+.hud[data-phase="racing"] .track-readout {
+  padding: 7px 8px;
+}
+
+.hud[data-phase="racing"] .track-readout strong {
+  max-width: 148px;
+  font-size: 12px;
+}
+
+.hud[data-phase="racing"] .track-readout b {
+  min-width: 72px;
+  padding: 5px 7px;
+  font-size: 9px;
+}
+
+.hud[data-phase="racing"] .bars {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 7px;
+  opacity: 0.68;
+}
+
+.hud[data-phase="racing"] .meter {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+.hud[data-phase="racing"] .meter span {
+  font-size: 8px;
+}
+
+.hud[data-phase="racing"] .meter i {
+  height: 7px;
+}
+
 .hud[data-phase="racing"] .streak {
-  opacity: 0.76;
+  opacity: 0.72;
+  font-size: 10px;
 }
 
 .speed-readout {

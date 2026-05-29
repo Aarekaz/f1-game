@@ -91,6 +91,19 @@ describe("SimcadeRaceModel", () => {
     expect(messy.car.wheelspin).toBeGreaterThan(controlled.car.wheelspin);
   });
 
+  it("requests a camera snap when the race launches", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+
+    let launched = model.telemetry();
+    for (let elapsed = 0; elapsed < 3.4 && launched.phase !== "racing"; elapsed += 1 / 60) {
+      launched = model.update(1 / 60, { ...idle, throttle: 0.7 });
+    }
+
+    expect(launched.phase).toBe("racing");
+    expect(launched.cameraSnap).toBe(true);
+  });
+
   it("configures fictional GP tracks and weather as session state", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
