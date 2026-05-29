@@ -150,6 +150,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);
     this.renderer.domElement.dataset.sideBySide = telemetry.sideBySide.toFixed(3);
     this.renderer.domElement.dataset.contactRisk = telemetry.contactRisk.toFixed(3);
+    this.renderer.domElement.dataset.defensiveRivals = String(telemetry.defensiveRivals);
+    this.renderer.domElement.dataset.nearestRivalGap = telemetry.nearestRivalGapMeters === null ? "" : telemetry.nearestRivalGapMeters.toFixed(1);
     this.renderer.domElement.dataset.racecraftState = telemetry.racecraftState;
     this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);

@@ -121,6 +121,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rivalProximity).toBe(0);
     expect(telemetry.sideBySide).toBe(0);
     expect(telemetry.contactRisk).toBe(0);
+    expect(telemetry.defensiveRivals).toBe(0);
+    expect(telemetry.nearestRivalGapMeters).toBeGreaterThan(0);
     expect(telemetry.skyColor).toBe("#c7d8df");
     expect(typeof telemetry.cornerPhase).toBe("string");
     expect(telemetry.cleanLap).toBe(true);
@@ -279,6 +281,27 @@ describe("SimcadeRaceModel", () => {
 
     expect(telemetry.rivals[0].speedKph).not.toBe(startingRivalSpeed);
     expect(telemetry.rivals.every((rival) => rival.speedKph >= 76 && rival.speedKph <= 292)).toBe(true);
+  });
+
+  it("makes rivals defend and leave racing room under pressure", () => {
+    const model = new SimcadeRaceModel();
+    const startingRivalX = model.telemetry().rivals[0].x;
+    model.update(1 / 60, { ...idle, launch: true });
+
+    let peakDefenders = 0;
+    let nearestGap = Infinity;
+    let largestLaneShift = 0;
+
+    for (let elapsed = 0; elapsed < 7; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: -0.08, ers: true });
+      peakDefenders = Math.max(peakDefenders, telemetry.defensiveRivals);
+      nearestGap = Math.min(nearestGap, Math.abs(telemetry.nearestRivalGapMeters ?? Infinity));
+      largestLaneShift = Math.max(largestLaneShift, Math.abs(telemetry.rivals[0].x - startingRivalX));
+    }
+
+    expect(peakDefenders).toBeGreaterThan(0);
+    expect(nearestGap).toBeLessThan(90);
+    expect(largestLaneShift).toBeGreaterThan(0.15);
   });
 
   it("models slipstream and dirty air around rivals", () => {

@@ -46,6 +46,8 @@ export type RaceTelemetry = {
   rivalProximity: number;
   sideBySide: number;
   contactRisk: number;
+  defensiveRivals: number;
+  nearestRivalGapMeters: number | null;
   onTrack: boolean;
   lapTime: number;
   bestLap: number | null;
@@ -109,6 +111,8 @@ type RivalState = {
   speed: number;
   pace: number;
   color: string;
+  desiredLane: number;
+  defending: boolean;
 };
 
 const LAP_LENGTH = TRACK_LOOP_LENGTH;
@@ -132,7 +136,9 @@ function createRivals(): RivalState[] {
     distance: 58 + index * 44,
     speed: 126 + index * 7,
     pace: 0.86 + index * 0.012,
-    color
+    color,
+    desiredLane: ((index % 3) - 1) * 2.4,
+    defending: false
   }));
 }
 
@@ -262,6 +268,8 @@ export class SimcadeRaceModel {
       rivalProximity: this.rivalProximity,
       sideBySide: this.sideBySide,
       contactRisk: this.contactRisk,
+      defensiveRivals: this.defensiveRivalCount(),
+      nearestRivalGapMeters: this.nearestRivalGapMeters(),
       onTrack: Math.abs(this.x - track.center) <= track.halfWidth,
       lapTime: this.lapTime,
       bestLap: this.bestLap,
@@ -559,16 +567,42 @@ export class SimcadeRaceModel {
       const track = sampleTrack(rival.distance);
       const targetSpeed = clamp(track.targetSpeedKph * rival.pace + 18, 76, 292);
       rival.speed = approach(rival.speed, targetSpeed, dt * (rival.speed > targetSpeed ? 2.4 : 0.65));
+      this.updateRivalLane(rival, track, dt);
       rival.distance += rival.speed * (1000 / 3600) * dt * 1.48;
       if (rival.distance < this.z - 60 && this.position > 1) {
         this.position -= 1;
         this.overtakeStreak += 1;
         rival.distance = this.z + 420;
         rival.lane = (((rival.id + this.position) % 3) - 1) * 2.4;
+        rival.desiredLane = rival.lane;
+        rival.defending = false;
         this.message = `Passed for P${this.position}`;
         this.messageTimer = 1.2;
       }
     }
+  }
+
+  private updateRivalLane(rival: RivalState, track: ReturnType<typeof sampleTrack>, dt: number) {
+    const playerGap = rival.distance - this.z;
+    const playerLane = this.x - track.center;
+    const rivalX = track.center + rival.lane;
+    const lateralGap = Math.abs(rivalX - this.x);
+    const baseLane = clamp(track.racingLineOffset + ((rival.id % 3) - 1) * 0.55, -3.1, 3.1);
+    const alongside = Math.abs(playerGap) < 20 && lateralGap < 6.2;
+    const pressured = playerGap > 0 && playerGap < 125 && lateralGap < 8.5;
+
+    rival.defending = pressured || alongside;
+    if (alongside) {
+      const spaceDirection = rivalX >= this.x ? 1 : -1;
+      rival.desiredLane = clamp(playerLane + spaceDirection * 3.1, -4.2, 4.2);
+    } else if (pressured) {
+      rival.desiredLane = clamp(baseLane * 0.58 + playerLane * 0.42, -3.8, 3.8);
+    } else {
+      rival.desiredLane = baseLane;
+    }
+
+    const laneResponse = rival.defending ? 1.9 : 0.72;
+    rival.lane = approach(rival.lane, rival.desiredLane, dt * laneResponse);
   }
 
   private raceAirEffect(track: ReturnType<typeof sampleTrack>) {
@@ -623,6 +657,23 @@ export class SimcadeRaceModel {
     return { proximity: clamp(proximity, 0, 1), sideBySide: clamp(sideBySide, 0, 1), contactRisk: clamp(contactRisk, 0, 1), squeeze: clamp(squeeze, -1, 1) };
   }
 
+  private defensiveRivalCount() {
+    return this.rivals.filter((rival) => rival.defending).length;
+  }
+
+  private nearestRivalGapMeters() {
+    let nearest: number | null = null;
+    for (const rival of this.rivals) {
+      const gap = rival.distance - this.z;
+      if (Math.abs(gap) > 260) continue;
+      if (nearest === null || Math.abs(gap) < Math.abs(nearest)) {
+        nearest = gap;
+      }
+    }
+
+    return nearest;
+  }
+
   private airState() {
     if (this.dirtyAir > 0.16) return "Dirty air";
     if (this.draft > 0.03) return "Slipstream";
@@ -644,16 +695,16 @@ export class SimcadeRaceModel {
   }
 
   private trackCue(track: ReturnType<typeof sampleTrack>) {
+    if (track.brakingZone) {
+      return this.speed > track.targetSpeedKph + 28 ? "Brake now" : "Trail to apex";
+    }
+
     if (this.dirtyAir > 0.28 && track.section.kind !== "straight") {
       return "Washout risk";
     }
 
     if (this.draft > 0.03 && track.section.kind === "straight") {
       return this.draft > 0.12 ? "Tow active" : "Tow building";
-    }
-
-    if (track.brakingZone) {
-      return this.speed > track.targetSpeedKph + 28 ? "Brake now" : "Trail to apex";
     }
 
     if (track.cornerPhase === "apex") {

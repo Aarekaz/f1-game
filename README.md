@@ -7,7 +7,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 ## What is here
 
 - A Three.js race view with a procedural GP-style circuit.
-- A lightweight simcade handling model: throttle, brake, steering, ERS, grip, slip, lap timing, close racing, and overtakes.
+- A lightweight simcade handling model: throttle, brake, steering, ERS, grip, slip, lap timing, adaptive race traffic, and overtakes.
 - Track sections, braking zones, racing-line hints, boards, chevrons, rhythm scoring, and HUD cues.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.

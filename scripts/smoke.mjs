@@ -101,6 +101,8 @@ async function checkDesktop(browser) {
     rivalProximity: Number(document.querySelector("#game canvas")?.dataset.rivalProximity ?? 0),
     sideBySide: Number(document.querySelector("#game canvas")?.dataset.sideBySide ?? 0),
     contactRisk: Number(document.querySelector("#game canvas")?.dataset.contactRisk ?? 0),
+    defensiveRivals: Number(document.querySelector("#game canvas")?.dataset.defensiveRivals ?? 0),
+    nearestRivalGap: Number(document.querySelector("#game canvas")?.dataset.nearestRivalGap ?? NaN),
     racecraftState: document.querySelector("#game canvas")?.dataset.racecraftState ?? "",
     rainIntensity: Number(document.querySelector("#game canvas")?.dataset.rainIntensity ?? 0),
     roadWetness: Number(document.querySelector("#game canvas")?.dataset.roadWetness ?? 0),
@@ -139,8 +141,10 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.rivalProximity), "desktop rival proximity telemetry was missing");
   assert(Number.isFinite(state.sideBySide), "desktop side-by-side telemetry was missing");
   assert(Number.isFinite(state.contactRisk), "desktop contact-risk telemetry was missing");
+  assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
+  assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|rival|wheel|contact|overtakes|slipstream|rhythm|zone|untidy|reset/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
