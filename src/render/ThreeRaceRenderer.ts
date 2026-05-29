@@ -64,6 +64,10 @@ function makeSoftMistTexture() {
   return texture;
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
 export class ThreeRaceRenderer {
   private readonly renderer;
   private readonly scene = new THREE.Scene();
@@ -192,6 +196,16 @@ export class ThreeRaceRenderer {
     this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018 + rumblePulse * 0.018;
     this.car.rotation.z =
       -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
+    this.animateFormulaCar(this.car, {
+      distance: telemetry.car.z,
+      speedKph: telemetry.speedKph,
+      steering: telemetry.car.yawRate * 0.9,
+      braking: telemetry.car.braking + telemetry.car.lockup * 0.65,
+      throttle: telemetry.car.throttle,
+      wheelspin: telemetry.car.wheelspin
+    });
+    this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
+    this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65, 0, 1).toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
@@ -261,6 +275,14 @@ export class ThreeRaceRenderer {
       mesh.position.set(rivalPoint.x, rival.y, rivalPoint.z);
       mesh.rotation.y = trackWorldHeadingAt(rival.z) - rival.heading;
       mesh.rotation.z = -rival.bank * 0.12;
+      this.animateFormulaCar(mesh, {
+        distance: rival.z,
+        speedKph: rival.speedKph,
+        steering: rival.heading * -0.7,
+        braking: 0,
+        throttle: 0.72,
+        wheelspin: 0
+      });
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -280,6 +302,50 @@ export class ThreeRaceRenderer {
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
     return mesh;
+  }
+
+  private animateFormulaCar(
+    root: ReturnType<typeof buildFormulaCarProxy>,
+    state: { distance: number; speedKph: number; steering: number; braking: number; throttle: number; wheelspin: number }
+  ) {
+    const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
+    const steerAngle = clamp(state.steering, -0.42, 0.42);
+    const brakeGlow = clamp(state.braking * clamp(state.speedKph / 180, 0, 1), 0, 1);
+    const wheelBlur = clamp((state.speedKph - 72) / 165 + state.wheelspin * 0.3, 0, 1);
+    const rearFlap = root.getObjectByName("rear-wing-upper-plane");
+
+    for (const wheelName of ["front-left-wheel", "front-right-wheel", "rear-left-wheel", "rear-right-wheel"]) {
+      const wheel = root.getObjectByName(wheelName);
+      if (!wheel) continue;
+
+      wheel.rotation.x = spin;
+      wheel.rotation.y = wheelName.startsWith("front") ? steerAngle : 0;
+    }
+
+    if (rearFlap) {
+      rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13;
+    }
+
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+
+      if (object.name.endsWith("brake-glow")) {
+        object.visible = brakeGlow > 0.02;
+        const material = object.material;
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.opacity = 0.22 + brakeGlow * 0.52;
+          material.emissiveIntensity = brakeGlow * 2.4;
+        }
+      }
+
+      if (object.name.endsWith("wheel-blur")) {
+        object.visible = wheelBlur > 0.02;
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = wheelBlur * 0.42;
+        }
+      }
+    });
   }
 
   private async loadRaceAssets() {

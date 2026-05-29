@@ -9,6 +9,8 @@ type MaterialSet = {
   tire: THREE.MeshStandardMaterial;
   rim: THREE.MeshStandardMaterial;
   brake: THREE.MeshStandardMaterial;
+  brakeGlow: THREE.MeshStandardMaterial;
+  wheelBlur: THREE.MeshBasicMaterial;
 };
 
 function makeBox(
@@ -117,6 +119,18 @@ function makeWheel(name: string, x: number, z: number, materials: MaterialSet) {
   brake.rotation.z = Math.PI / 2;
   wheel.add(brake);
 
+  const blur = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.012, 8, 36), materials.wheelBlur);
+  blur.name = `${name}-wheel-blur`;
+  blur.rotation.y = Math.PI / 2;
+  blur.visible = false;
+  wheel.add(blur);
+
+  const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.126, 0.126, 0.382, 18), materials.brakeGlow);
+  glow.name = `${name}-brake-glow`;
+  glow.rotation.z = Math.PI / 2;
+  glow.visible = false;
+  wheel.add(glow);
+
   for (let index = 0; index < 6; index += 1) {
     const spoke = makeBox(`${name}-spoke`, [0.035, 0.035, 0.28], [0, 0, 0], materials.rim);
     spoke.rotation.x = (index / 6) * Math.PI;
@@ -138,7 +152,22 @@ export function buildFormulaCarProxy(color = "#e72436") {
     cockpit: new THREE.MeshStandardMaterial({ color: "#05070d", roughness: 0.26, metalness: 0.46 }),
     tire: new THREE.MeshStandardMaterial({ color: "#030405", roughness: 0.9 }),
     rim: new THREE.MeshStandardMaterial({ color: "#303944", roughness: 0.45, metalness: 0.45 }),
-    brake: new THREE.MeshStandardMaterial({ color: "#9b322d", roughness: 0.44, metalness: 0.28 })
+    brake: new THREE.MeshStandardMaterial({ color: "#9b322d", roughness: 0.44, metalness: 0.28 }),
+    brakeGlow: new THREE.MeshStandardMaterial({
+      color: "#ff6b35",
+      emissive: "#ff2a12",
+      emissiveIntensity: 0,
+      transparent: true,
+      opacity: 0.66,
+      roughness: 0.28,
+      metalness: 0.18
+    }),
+    wheelBlur: new THREE.MeshBasicMaterial({
+      color: "#d9e1df",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    })
   };
 
   car.add(makeWedge("survival-cell", [1.02, 0.42, 2.08], [0, 0.38, -0.05], materials.body, 0.68));

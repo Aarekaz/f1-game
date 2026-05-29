@@ -115,6 +115,8 @@ async function checkDesktop(browser) {
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
+    wheelSpin: Number(document.querySelector("#game canvas")?.dataset.wheelSpin ?? 0),
+    brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
     flowState: document.querySelector("#game canvas")?.dataset.flowState ?? "",
     flowMeter: document.querySelector("#flow")?.style.getPropertyValue("--value") ?? "",
@@ -162,6 +164,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
+  assert(Number.isFinite(state.wheelSpin) && Math.abs(state.wheelSpin) > 10, "desktop animated wheel spin telemetry was missing");
+  assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
   assert(state.flowState.length > 0, "desktop flow state was missing");
   assert(/%/.test(state.flowMeter), `desktop flow meter did not update: ${state.flowMeter}`);

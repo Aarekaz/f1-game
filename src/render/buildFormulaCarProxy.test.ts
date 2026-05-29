@@ -11,7 +11,10 @@ describe("buildFormulaCarProxy", () => {
     expect(names.has("front-wing")).toBe(true);
     expect(names.has("rear-wing")).toBe(true);
     expect(names.has("fictional-halo")).toBe(true);
+    expect(names.has("front-left-wheel")).toBe(true);
+    expect(names.has("front-left-wheel-brake-glow")).toBe(true);
+    expect(names.has("front-left-wheel-wheel-blur")).toBe(true);
     expect(Array.from(names).filter((name) => name.includes("wheel")).length).toBeGreaterThanOrEqual(12);
-    expect(car.userData.disposableMaterials.length).toBeGreaterThanOrEqual(8);
+    expect(car.userData.disposableMaterials.length).toBeGreaterThanOrEqual(10);
   });
 });

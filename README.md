@@ -10,6 +10,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A lightweight simcade handling model: throttle, brake, steering, ERS, grip, slip, asphalt/kerb/runoff/gravel surface feel, adaptive race traffic, and overtakes.
 - Track sections, braking zones, racing-line hints, boards, chevrons, a real circuit minimap, rhythm scoring, and HUD cues.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
+- Animated formula-car details: spinning wheels, wheel-speed blur, steering fronts, brake glow, and active rear-wing movement.
 - Local personal bests per fictional track and weather pairing.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.
