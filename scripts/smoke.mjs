@@ -81,6 +81,7 @@ async function checkDesktop(browser) {
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     circuitWorldZ: Number(document.querySelector("#game canvas")?.dataset.circuitWorldZ ?? 0),
+    carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     seriesActive: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? "",
     seriesRows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? "")
@@ -178,6 +179,8 @@ async function checkDesktop(browser) {
     circuitVenueHero: document.querySelector("#game canvas")?.dataset.circuitVenueHero ?? "",
     surfaceRacingGroove: document.querySelector("#game canvas")?.dataset.surfaceRacingGroove ?? "",
     surfaceWetSheen: document.querySelector("#game canvas")?.dataset.surfaceWetSheen ?? "",
+    surfaceEdgeLines: document.querySelector("#game canvas")?.dataset.surfaceEdgeLines ?? "",
+    surfaceFlowCues: Number(document.querySelector("#game canvas")?.dataset.surfaceFlowCues ?? 0),
     surfaceGridSlots: Number(document.querySelector("#game canvas")?.dataset.surfaceGridSlots ?? 0),
     surfacePuddles: Number(document.querySelector("#game canvas")?.dataset.surfacePuddles ?? 0),
     surfaceWetSheenOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceWetSheenOpacity ?? 0),
@@ -202,7 +205,10 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraWorldX), "desktop chase camera X telemetry was missing");
   assert(Number.isFinite(state.cameraWorldY) && state.cameraWorldY > state.carWorldY, "desktop chase camera did not sit above the car");
   assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
-  assert(Math.abs(state.carScreenY - ready.carScreenY) > 0.01, "desktop car stayed visually pinned to the same screen position");
+  assert(
+    Math.hypot(state.carScreenX - ready.carScreenX, state.carScreenY - ready.carScreenY) > 0.025,
+    "desktop car stayed visually pinned to the same screen position"
+  );
   assert(Number.isFinite(state.carScreenX), "desktop car screen-space X telemetry was missing");
   assert(Number.isFinite(state.carSlip), "desktop slip telemetry was missing");
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
@@ -243,6 +249,8 @@ async function checkDesktop(browser) {
   assert(/northstar-venue-hero/.test(state.circuitVenueHero), `desktop venue hero did not match selected track: ${state.circuitVenueHero}`);
   assert(state.surfaceRacingGroove === "rubbered-racing-groove", `desktop rubbered racing groove was missing: ${state.surfaceRacingGroove}`);
   assert(state.surfaceWetSheen === "wet-asphalt-sheen", `desktop wet surface sheen was missing: ${state.surfaceWetSheen}`);
+  assert(/painted-left-track-edge/.test(state.surfaceEdgeLines), `desktop painted edge lines were missing: ${state.surfaceEdgeLines}`);
+  assert(state.surfaceFlowCues >= 20, `desktop apex flow cues were too sparse: ${state.surfaceFlowCues}`);
   assert(state.surfaceGridSlots >= 10, `desktop painted grid slots were missing: ${state.surfaceGridSlots}`);
   assert(state.surfacePuddles >= 5, `desktop standing water details were missing: ${state.surfacePuddles}`);
   assert(state.surfaceWetSheenOpacity > 0.1, `desktop wet sheen did not react to storm weather: ${state.surfaceWetSheenOpacity}`);

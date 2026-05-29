@@ -256,6 +256,19 @@ function makeWetPuddle(distance: number, lateral: number, scale: [number, number
   return puddle;
 }
 
+function makeFlowCue(distance: number, material: THREE.Material) {
+  const sample = sampleTrack(distance);
+  const cue = makePlane(
+    "painted-apex-flow-cue",
+    [0.22, sample.brakingZone ? 3.1 : 2.35],
+    worldPosition(distance, Math.max(-3.1, Math.min(3.1, sample.racingLineOffset)), 0.067),
+    material
+  );
+  cue.rotation.y = trackWorldHeadingAt(distance) - sample.curve * 2.2;
+  cue.renderOrder = 3;
+  return cue;
+}
+
 function makeBoardMaterial(label: string, background = "#f4f7ef", foreground = "#17211b") {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -472,6 +485,8 @@ export function buildGpCircuit() {
   const wetSheenMaterial = new THREE.MeshBasicMaterial({ color: "#c9dde1", transparent: true, opacity: 0, depthWrite: false });
   const puddleMaterial = new THREE.MeshBasicMaterial({ color: "#b9d3d9", transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const gridPaintMaterial = new THREE.MeshBasicMaterial({ color: "#f4f7ef", transparent: true, opacity: 0.74, depthWrite: false });
+  const edgePaintMaterial = new THREE.MeshBasicMaterial({ color: "#f4f7ef", transparent: true, opacity: 0.58, depthWrite: false });
+  const flowPaintMaterial = new THREE.MeshBasicMaterial({ color: "#d8ef8f", transparent: true, opacity: 0.36, depthWrite: false });
   const chevronMaterial = makeBoardMaterial(">>", "#e20e3b", "#ffffff");
   const brakeMaterial = makeBoardMaterial("BRAKE", "#e20e3b", "#ffffff");
   const board150 = makeBoardMaterial("150");
@@ -491,7 +506,9 @@ export function buildGpCircuit() {
     0.047
   );
   const wetSheen = makeSurfaceRibbon("wet-asphalt-sheen", wetSheenMaterial, () => 0, (sample) => sample.halfWidth * 1.78, 0.056, -80, RENDERED_TRACK_LENGTH, 22);
-  circuit.add(roadMesh, leftRunoff, rightRunoff, racingGroove, wetSheen, racingLine);
+  const leftEdgeLine = makeSurfaceRibbon("painted-left-track-edge", edgePaintMaterial, (sample) => -sample.halfWidth + 0.42, () => 0.12, 0.069, -130, RENDERED_TRACK_LENGTH, 16);
+  const rightEdgeLine = makeSurfaceRibbon("painted-right-track-edge", edgePaintMaterial, (sample) => sample.halfWidth - 0.42, () => 0.12, 0.069, -130, RENDERED_TRACK_LENGTH, 16);
+  circuit.add(roadMesh, leftRunoff, rightRunoff, racingGroove, wetSheen, leftEdgeLine, rightEdgeLine, racingLine);
 
   for (let index = 0; index < 10; index += 1) {
     const distance = 34 + index * 13.2;
@@ -537,6 +554,15 @@ export function buildGpCircuit() {
         circuit.add(makeSkidMark(lapStart + brakingStart - 42, lateral, 36, skidMaterial));
       }
     }
+  }
+
+  let flowCueCount = 0;
+  for (let ahead = 150; ahead < RENDERED_TRACK_LENGTH; ahead += 34) {
+    const sample = sampleTrack(ahead);
+    if (sample.section.kind === "straight") continue;
+    if (sample.cornerPhase === "exit" && !sample.brakingZone) continue;
+    circuit.add(makeFlowCue(ahead, flowPaintMaterial));
+    flowCueCount += 1;
   }
 
   for (let index = 0; index < 120; index += 1) {
@@ -691,6 +717,8 @@ export function buildGpCircuit() {
     wetSheenMaterial,
     puddleMaterial,
     gridPaintMaterial,
+    edgePaintMaterial,
+    flowPaintMaterial,
     chevronMaterial,
     brakeMaterial,
     board150,
@@ -707,7 +735,9 @@ export function buildGpCircuit() {
     groove: grooveMaterial,
     wetSheen: wetSheenMaterial,
     puddle: puddleMaterial,
-    gridPaint: gridPaintMaterial
+    gridPaint: gridPaintMaterial,
+    edgePaint: edgePaintMaterial,
+    flowPaint: flowPaintMaterial
   };
   circuit.userData.dressingStats = {
     dynamicPieces: dynamicPieces.length,
@@ -719,6 +749,8 @@ export function buildGpCircuit() {
   circuit.userData.surfaceStats = {
     racingGroove: racingGroove.name,
     wetSheen: wetSheen.name,
+    edgeLines: [leftEdgeLine.name, rightEdgeLine.name],
+    flowCues: flowCueCount,
     gridSlots: 10,
     puddles: puddlePlacements.length
   };

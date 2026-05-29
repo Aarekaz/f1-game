@@ -404,6 +404,8 @@ export class ThreeRaceRenderer {
       | {
           racingGroove: string;
           wetSheen: string;
+          edgeLines: string[];
+          flowCues: number;
           gridSlots: number;
           puddles: number;
         }
@@ -420,6 +422,8 @@ export class ThreeRaceRenderer {
     if (surfaceStats) {
       this.renderer.domElement.dataset.surfaceRacingGroove = surfaceStats.racingGroove;
       this.renderer.domElement.dataset.surfaceWetSheen = surfaceStats.wetSheen;
+      this.renderer.domElement.dataset.surfaceEdgeLines = surfaceStats.edgeLines.join(",");
+      this.renderer.domElement.dataset.surfaceFlowCues = String(surfaceStats.flowCues);
       this.renderer.domElement.dataset.surfaceGridSlots = String(surfaceStats.gridSlots);
       this.renderer.domElement.dataset.surfacePuddles = String(surfaceStats.puddles);
     }
@@ -440,6 +444,8 @@ export class ThreeRaceRenderer {
           wetSheen: THREE.MeshBasicMaterial;
           puddle: THREE.MeshBasicMaterial;
           gridPaint: THREE.MeshBasicMaterial;
+          edgePaint: THREE.MeshBasicMaterial;
+          flowPaint: THREE.MeshBasicMaterial;
         }
       | undefined;
     this.renderer.setClearColor(telemetry.skyColor);
@@ -452,18 +458,20 @@ export class ThreeRaceRenderer {
     horizonMaterials?.treeline.color.set(telemetry.grassColor);
 
     if (weatherMaterials) {
-      weatherMaterials.asphalt.color.set(telemetry.roadWetness > 0.4 ? "#1f272b" : "#30363a");
+      weatherMaterials.asphalt.color.set(telemetry.roadWetness > 0.4 ? "#283134" : "#30363a");
       weatherMaterials.asphalt.roughness = 0.86 - telemetry.roadWetness * 0.46;
       weatherMaterials.asphalt.metalness = 0.02 + telemetry.roadWetness * 0.16;
-      weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#59645f" : getActiveTrackLayout().runoffColor);
-      weatherMaterials.racingLine.opacity = 0.32 - telemetry.roadWetness * 0.11;
+      weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#64736b" : getActiveTrackLayout().runoffColor);
+      weatherMaterials.racingLine.opacity = 0.3 - telemetry.roadWetness * 0.08;
       weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
       weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
       weatherMaterials.glass.opacity = 0.62 + telemetry.roadWetness * 0.16;
-      weatherMaterials.groove.opacity = 0.18 + telemetry.roadWetness * 0.08;
+      weatherMaterials.groove.opacity = 0.14 + telemetry.roadWetness * 0.05;
       weatherMaterials.wetSheen.opacity = telemetry.roadWetness * (0.12 + telemetry.rainIntensity * 0.1);
       weatherMaterials.puddle.opacity = telemetry.roadWetness * 0.28;
       weatherMaterials.gridPaint.opacity = 0.82 - telemetry.roadWetness * 0.16;
+      weatherMaterials.edgePaint.opacity = 0.52 + telemetry.roadWetness * 0.18;
+      weatherMaterials.flowPaint.opacity = 0.28 + telemetry.roadWetness * 0.12;
       this.renderer.domElement.dataset.surfaceWetSheenOpacity = weatherMaterials.wetSheen.opacity.toFixed(2);
       this.renderer.domElement.dataset.surfacePuddleOpacity = weatherMaterials.puddle.opacity.toFixed(2);
     }
