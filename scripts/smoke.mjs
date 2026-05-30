@@ -382,6 +382,7 @@ async function checkDesktop(browser) {
     surfaceTerrainSkirtDrop: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainSkirtDrop ?? 0),
     surfaceTerrainOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainOpacity ?? 0),
     surfaceRunoffReach: Number(document.querySelector("#game canvas")?.dataset.surfaceRunoffReach ?? 0),
+    surfaceTechnicalZones: Number(document.querySelector("#game canvas")?.dataset.surfaceTechnicalZones ?? 0),
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
@@ -688,6 +689,7 @@ async function checkDesktop(browser) {
   assert(state.surfaceTerrainSkirtDrop < -12, `desktop terrain skirt did not drop below the elevated circuit: ${state.surfaceTerrainSkirtDrop}`);
   assert(state.surfaceTerrainOpacity > 0.08 && state.surfaceTerrainOpacity < 0.2, `desktop terrain skirt was too opaque: ${state.surfaceTerrainOpacity}`);
   assert(state.surfaceRunoffReach >= 10 && state.surfaceRunoffReach <= 11, `desktop runoff apron was too wide for camera readability: ${state.surfaceRunoffReach}`);
+  assert(state.surfaceTechnicalZones >= 3, `desktop trackside technical zones were missing: ${state.surfaceTechnicalZones}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
   assert(state.hudCoverage < 0.16, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
   assert(state.racingStatusWidth <= 250, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);
