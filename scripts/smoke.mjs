@@ -75,6 +75,12 @@ async function checkDesktop(browser) {
     assistSelect: document.querySelector("#assist-select")?.value ?? "",
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionBrief: document.querySelector("#session-brief")?.textContent ?? "",
+    briefingTrack: document.querySelector("#brief-track-name")?.textContent ?? "",
+    briefingPath: document.querySelector("#brief-track-path")?.getAttribute("d") ?? "",
+    briefingDifficulty: document.querySelector("#brief-difficulty")?.textContent ?? "",
+    briefingGrip: document.querySelector("#brief-grip")?.textContent ?? "",
+    briefingWeather: document.querySelector("#brief-weather")?.textContent ?? "",
+    briefingAssist: document.querySelector("#brief-assist")?.textContent ?? "",
     sessionBest: document.querySelector("#session-best")?.textContent ?? "",
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
@@ -94,6 +100,12 @@ async function checkDesktop(browser) {
   assert(ready.assistSelect === "balanced", "desktop assist selector did not default to balanced");
   assert(ready.hudPhase === "ready", `desktop HUD did not expose ready phase: ${ready.hudPhase}`);
   assert(/alpine|wet|spray|settles/i.test(ready.sessionBrief), `desktop session brief did not describe selection: ${ready.sessionBrief}`);
+  assert(ready.briefingTrack === "Northstar Ring", `desktop briefing track did not update: ${ready.briefingTrack}`);
+  assert(ready.briefingPath.length > 100, "desktop briefing circuit outline was not drawn");
+  assert(ready.briefingDifficulty === "90%", `desktop briefing difficulty was wrong: ${ready.briefingDifficulty}`);
+  assert(ready.briefingGrip === "78%", `desktop briefing grip was wrong: ${ready.briefingGrip}`);
+  assert(ready.briefingWeather === "Wet Storm", `desktop briefing weather was wrong: ${ready.briefingWeather}`);
+  assert(ready.briefingAssist === "Balanced", `desktop briefing assist was wrong: ${ready.briefingAssist}`);
   assert(/Best|flow/i.test(ready.sessionBest), `desktop personal best readout missing: ${ready.sessionBest}`);
   assert(ready.seriesActive === "northstar-storm", `desktop Apex Series selected event did not stay active: ${ready.seriesActive}`);
   assert(ready.seriesRows.length === 3, "desktop Apex Series row count changed after selection");

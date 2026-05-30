@@ -310,6 +310,91 @@ body {
   min-height: 40px;
 }
 
+.session-dossier {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.9fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.session-map-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.session-map-card span {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.session-map-card svg {
+  display: block;
+  width: 100%;
+  height: 86px;
+}
+
+#brief-track-path {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: var(--track-accent, #e20e3b);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 7;
+}
+
+#brief-track-start {
+  fill: #ffffff;
+  stroke: var(--track-accent, #e20e3b);
+  stroke-width: 3;
+}
+
+.session-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-self: center;
+}
+
+.session-stats span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.session-stats b,
+.session-stats em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-stats b {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.session-stats em {
+  color: #aeb8aa;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .start-panel {
   width: min(560px, calc(100vw - 32px));
 }
@@ -1272,6 +1357,14 @@ body {
 
   .result-sectors {
     grid-template-columns: 1fr;
+  }
+
+  .session-dossier {
+    grid-template-columns: 1fr;
+  }
+
+  .session-map-card svg {
+    height: 74px;
   }
 
   .session-selectors {

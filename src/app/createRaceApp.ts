@@ -15,6 +15,7 @@ import {
   type PersonalBest
 } from "../game/PersonalBestStore";
 import { SimcadeRaceModel } from "../game/SimcadeRaceModel";
+import { TRACK_LOOP_LENGTH, trackWorldPointAt } from "../game/trackPath";
 import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
 import { DEFAULT_SESSION, findAssist, findTrack, findWeather, type SessionConfig } from "../world/FictionalGpWorld";
@@ -55,6 +56,54 @@ function syncSessionBest(best: PersonalBest | null) {
   bestReadout.textContent = best
     ? `Best ${formatTime(best.bestTotalTime)} / lap ${formatTime(best.bestLap)} / ${Math.round(best.bestFlowScore * 100)}% flow`
     : "No personal best yet.";
+}
+
+function syncSessionDossier(config: SessionConfig) {
+  const trackName = document.getElementById("brief-track-name");
+  const difficulty = document.getElementById("brief-difficulty");
+  const grip = document.getElementById("brief-grip");
+  const weather = document.getElementById("brief-weather");
+  const assist = document.getElementById("brief-assist");
+  const path = document.getElementById("brief-track-path");
+  const start = document.getElementById("brief-track-start");
+
+  if (trackName) trackName.textContent = config.track.name;
+  if (difficulty) difficulty.textContent = `${Math.round(config.track.difficulty * 100)}%`;
+  if (grip) grip.textContent = `${Math.round(config.weather.gripMultiplier * 100)}%`;
+  if (weather) weather.textContent = config.weather.name.replace(" Practice", "").replace(" Qualifying", "");
+  if (assist) assist.textContent = config.assist.id === "balanced" ? "Balanced" : "Manual";
+  if (!(path instanceof SVGPathElement)) return;
+
+  const rawPoints = Array.from({ length: 96 }, (_, index) => trackWorldPointAt((index / 96) * TRACK_LOOP_LENGTH));
+  const bounds = rawPoints.reduce(
+    (next, point) => ({
+      minX: Math.min(next.minX, point.x),
+      maxX: Math.max(next.maxX, point.x),
+      minZ: Math.min(next.minZ, point.z),
+      maxZ: Math.max(next.maxZ, point.z)
+    }),
+    { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }
+  );
+  const width = Math.max(1, bounds.maxX - bounds.minX);
+  const height = Math.max(1, bounds.maxZ - bounds.minZ);
+  const scale = Math.min(142 / width, 72 / height);
+  const points = rawPoints.map((point) => ({
+    x: 90 + (point.x - (bounds.minX + width / 2)) * scale,
+    y: 52 + (point.z - (bounds.minZ + height / 2)) * scale
+  }));
+
+  path.setAttribute(
+    "d",
+    points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ") + " Z"
+  );
+  path.setAttribute("style", `--track-accent: ${config.track.accent}`);
+
+  if (start instanceof SVGCircleElement) {
+    const [startPoint] = points;
+    start.setAttribute("cx", startPoint.x.toFixed(1));
+    start.setAttribute("cy", startPoint.y.toFixed(1));
+    start.setAttribute("style", `--track-accent: ${config.track.accent}`);
+  }
 }
 
 function setSelectValue(id: string, value: string) {
@@ -292,6 +341,7 @@ export function createRaceApp() {
     hud.setSeriesResult(null);
     model.configure(session);
     renderer.configure(session);
+    syncSessionDossier(session);
     latestTelemetry = model.telemetry();
     lastPhase = latestTelemetry.phase;
     setPaused(false);
