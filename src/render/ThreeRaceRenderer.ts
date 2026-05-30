@@ -126,6 +126,7 @@ export class ThreeRaceRenderer {
   private readonly proximityMarkers = this.buildProximityMarkers();
   private readonly racingLineAssist = this.buildRacingLineAssist();
   private readonly checkpointBeacon = this.buildCheckpointBeacon();
+  private readonly cockpitFrame = this.buildCockpitFrame();
   private readonly cameraPosition = new THREE.Vector3(0, 5.8, 22.5);
   private readonly cameraTarget = new THREE.Vector3(0, 0.72, -16.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
@@ -155,6 +156,7 @@ export class ThreeRaceRenderer {
     this.sun.castShadow = true;
     this.scene.add(this.sun);
     this.camera.add(this.lensRain);
+    this.camera.add(this.cockpitFrame);
     this.scene.add(this.camera);
 
     this.scene.add(this.circuit);
@@ -298,12 +300,15 @@ export class ThreeRaceRenderer {
     this.updateRacingLineAssist(telemetry);
     this.updateCheckpointBeacon(telemetry);
     const podMode = this.cameraMode === "pod";
+    this.car.visible = !podMode || telemetry.phase === "ready";
+    this.renderer.domElement.dataset.externalCarVisible = String(this.car.visible);
+    this.updateCockpitFrame(telemetry, podMode);
     this.camera.fov = podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
 
     const lookAhead = podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18;
-    const cameraLag = podMode ? 5.4 + speedRatio * 1.4 - telemetry.car.braking * 0.45 : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2;
-    const lateralShoulder = podMode ? carLateral * 0.12 - telemetry.car.yawRate * 0.28 : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
-    const targetLateral = podMode ? carLateral * 0.13 + telemetry.car.yawRate * 0.78 - telemetry.curve * 0.72 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85;
+    const cameraLag = podMode ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2;
+    const lateralShoulder = podMode ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
+    const targetLateral = podMode ? carLateral * 0.08 + telemetry.car.yawRate * 0.34 - telemetry.curve * 0.4 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85;
     const cameraPoint = {
       x: carX - trackTangent.x * cameraLag + trackNormal.x * lateralShoulder,
       z: carZ - trackTangent.z * cameraLag + trackNormal.z * lateralShoulder
@@ -326,7 +331,7 @@ export class ThreeRaceRenderer {
       this.desiredCameraPosition.set(
         cameraPoint.x,
         carY +
-          (podMode ? 2.1 : 2.74) -
+          (podMode ? 1.34 : 2.74) -
           telemetry.car.braking * (podMode ? 0.06 : 0.18) +
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
           speedRatio * (podMode ? 0.12 : 0.16) +
@@ -336,7 +341,7 @@ export class ThreeRaceRenderer {
       );
       this.desiredCameraTarget.set(
         targetPoint.x + Math.sin(performance.now() * 0.025) * airBuffet * (podMode ? 0.06 : 0.14),
-        carY + (podMode ? 0.98 : 0.68) + telemetry.car.slip * 0.18 + Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
+        carY + (podMode ? 0.82 : 0.68) + telemetry.car.slip * 0.18 + Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
         targetPoint.z
       );
       if (telemetry.cameraSnap || this.cameraModeSnap) {
@@ -724,6 +729,135 @@ export class ThreeRaceRenderer {
 
     this.checkpointBeacon.userData.labelText = text;
     texture.needsUpdate = true;
+  }
+
+  private buildCockpitFrame() {
+    const group = new THREE.Group();
+    group.name = "pod-camera-cockpit-frame";
+    group.visible = false;
+    group.position.set(0, -0.42, -1.38);
+
+    const carbonMaterial = new THREE.MeshBasicMaterial({
+      color: "#10171a",
+      transparent: true,
+      opacity: 0.88,
+      depthTest: false,
+      depthWrite: false,
+      fog: false
+    });
+    const trimMaterial = new THREE.MeshBasicMaterial({
+      color: "#d81842",
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false,
+      fog: false
+    });
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      color: "#111b1f",
+      transparent: true,
+      opacity: 0.58,
+      depthTest: false,
+      depthWrite: false,
+      fog: false
+    });
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: "#ff254d",
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.13, 1.15), carbonMaterial);
+    nose.name = "cockpit-nose";
+    nose.position.set(0, -0.38, -0.36);
+    nose.rotation.x = -0.1;
+    group.add(nose);
+
+    const noseStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.014, 1.08), trimMaterial);
+    noseStripe.name = "cockpit-nose-stripe";
+    noseStripe.position.set(0, -0.303, -0.37);
+    noseStripe.rotation.x = -0.1;
+    group.add(noseStripe);
+
+    const wheel = new THREE.Group();
+    wheel.name = "cockpit-steering-wheel";
+    wheel.position.set(0, -0.3, -0.72);
+    wheel.rotation.x = -0.18;
+    const wheelRing = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.018, 8, 32), carbonMaterial);
+    wheelRing.name = "cockpit-wheel-ring";
+    wheel.add(wheelRing);
+    const wheelBar = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.032, 0.025), carbonMaterial);
+    wheelBar.name = "cockpit-wheel-bar";
+    wheel.add(wheelBar);
+    const wheelDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.075), glowMaterial);
+    wheelDisplay.name = "cockpit-wheel-display";
+    wheelDisplay.position.z = 0.018;
+    wheel.add(wheelDisplay);
+    group.add(wheel);
+
+    const haloStem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.017, 0.58, 10), haloMaterial);
+    haloStem.name = "cockpit-halo-stem";
+    haloStem.position.set(0, 0.24, -0.78);
+    haloStem.rotation.x = 0.08;
+    group.add(haloStem);
+
+    for (const side of [-1, 1]) {
+      const haloArm = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.017, 0.86, 10), haloMaterial);
+      haloArm.name = "cockpit-halo-arm";
+      haloArm.position.set(side * 0.4, 0.12, -0.7);
+      haloArm.rotation.z = side * 0.68;
+      haloArm.rotation.x = -0.25;
+      group.add(haloArm);
+
+      const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.055, 0.03), trimMaterial);
+      mirror.name = "cockpit-mirror";
+      mirror.position.set(side * 0.58, -0.08, -0.72);
+      mirror.rotation.y = side * 0.22;
+      group.add(mirror);
+    }
+
+    const brakeFlash = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.06), glowMaterial);
+    brakeFlash.name = "cockpit-brake-flash";
+    brakeFlash.position.set(0, -0.23, -0.49);
+    group.add(brakeFlash);
+
+    group.userData.parts = 10;
+    group.userData.wheel = wheel;
+    group.userData.glowMaterial = glowMaterial;
+    group.userData.carbonMaterial = carbonMaterial;
+    group.userData.trimMaterial = trimMaterial;
+    group.userData.haloMaterial = haloMaterial;
+    return group;
+  }
+
+  private updateCockpitFrame(telemetry: RaceTelemetry, podMode: boolean) {
+    const speedRatio = clamp(telemetry.speedKph / 310, 0, 1);
+    const visible = podMode && telemetry.phase !== "ready";
+    this.cockpitFrame.visible = visible;
+    this.renderer.domElement.dataset.cockpitFrame = visible ? "visible" : "hidden";
+    this.renderer.domElement.dataset.cockpitFrameParts = String(this.cockpitFrame.userData.parts ?? 0);
+
+    const wheel = this.cockpitFrame.userData.wheel as THREE.Group | undefined;
+    const steerAngle = clamp(telemetry.car.yawRate * 0.95 - telemetry.car.heading * 0.28, -0.62, 0.62);
+    if (wheel) wheel.rotation.z = -steerAngle;
+
+    const brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.7, 0, 1);
+    const glowMaterial = this.cockpitFrame.userData.glowMaterial as THREE.MeshBasicMaterial | undefined;
+    if (glowMaterial) {
+      glowMaterial.opacity = visible ? 0.16 + brakeGlow * 0.36 + telemetry.ers * 0.04 : 0;
+      glowMaterial.color.set(brakeGlow > 0.25 ? "#ff3156" : "#69f7ff");
+    }
+
+    this.cockpitFrame.position.y = -0.42 - speedRatio * 0.025 + telemetry.car.braking * 0.018 + Math.sin(performance.now() * 0.018) * speedRatio * 0.004;
+    this.cockpitFrame.position.x = clamp(telemetry.carX / 44, -0.06, 0.06) + telemetry.car.yawRate * 0.015;
+    this.cockpitFrame.rotation.z = clamp(-telemetry.car.yawRate * 0.018 + telemetry.car.bank * 0.025, -0.035, 0.035);
+
+    this.renderer.domElement.dataset.cockpitWheelAngle = steerAngle.toFixed(3);
+    this.renderer.domElement.dataset.cockpitBrakeGlow = brakeGlow.toFixed(2);
   }
 
   private animateFormulaCar(
