@@ -110,6 +110,11 @@ export type RaceTelemetry = {
   checkpointCount: number;
   checkpointProgress: string;
   sectorSplits: [number | null, number | null, number | null];
+  lastSector: 1 | 2 | 3 | null;
+  lastSectorTime: number | null;
+  lastSectorDelta: number | null;
+  sectorPaceScore: number;
+  sectorPaceState: string;
   lapValid: boolean;
   lapProgress: number;
   raceProgress: number;
@@ -258,6 +263,12 @@ export class SimcadeRaceModel {
   private lapTime = 0;
   private bestLap: number | null = null;
   private splitDelta: number | null = null;
+  private previousSectorTime = 0;
+  private lastSector: 1 | 2 | 3 | null = null;
+  private lastSectorTime: number | null = null;
+  private lastSectorDelta: number | null = null;
+  private sectorPaceScore = 0;
+  private sectorPaceState = "Build sector";
   private totalTime = 0;
   private overtakeStreak = 0;
   private trackLimitWarnings = 0;
@@ -423,6 +434,11 @@ export class SimcadeRaceModel {
       checkpointCount: director.checkpointCount,
       checkpointProgress: `${Math.min(director.checkpointIndex + 1, director.checkpointCount)}/${director.checkpointCount}`,
       sectorSplits: director.sectorSplits,
+      lastSector: this.lastSector,
+      lastSectorTime: this.lastSectorTime,
+      lastSectorDelta: this.lastSectorDelta,
+      sectorPaceScore: this.sectorPaceScore,
+      sectorPaceState: this.sectorPaceState,
       lapValid: director.lapValid,
       lapProgress: director.lapProgress,
       raceProgress: director.raceProgress,
@@ -513,6 +529,12 @@ export class SimcadeRaceModel {
     this.lapTime = 0;
     this.bestLap = null;
     this.splitDelta = null;
+    this.previousSectorTime = 0;
+    this.lastSector = null;
+    this.lastSectorTime = null;
+    this.lastSectorDelta = null;
+    this.sectorPaceScore = 0;
+    this.sectorPaceState = "Build sector";
     this.totalTime = 0;
     this.overtakeStreak = 0;
     this.trackLimitWarnings = 0;
@@ -1326,8 +1348,16 @@ export class SimcadeRaceModel {
       }
 
       if (event.type === "sector") {
-        this.message = `Sector ${event.sector} ${event.time.toFixed(2)}`;
-        this.messageTimer = 0.9;
+        const sectorTime = event.time - this.previousSectorTime;
+        const sectorDelta = sectorTime - this.referenceSectorTime(event.sector);
+        this.previousSectorTime = event.time;
+        this.lastSector = event.sector;
+        this.lastSectorTime = sectorTime;
+        this.lastSectorDelta = sectorDelta;
+        this.sectorPaceScore = this.scoreSectorPace(sectorDelta);
+        this.sectorPaceState = this.sectorPaceLabel(this.sectorPaceScore);
+        this.message = `S${event.sector} ${this.sectorPaceState} ${sectorDelta >= 0 ? "+" : ""}${sectorDelta.toFixed(2)}`;
+        this.messageTimer = 1.05;
       }
 
       if (event.type === "lap") {
@@ -1348,6 +1378,7 @@ export class SimcadeRaceModel {
           this.lapTime = 0;
           this.cleanLap = true;
           this.offTrackTime = 0;
+          this.previousSectorTime = 0;
         }
       }
 
@@ -1359,5 +1390,29 @@ export class SimcadeRaceModel {
         this.messageTimer = 8;
       }
     }
+  }
+
+  private referenceSectorTime(sector: 1 | 2 | 3) {
+    const sectorEnds = getTrackSectorEnds();
+    const sectorStart = sector === 1 ? 0 : sectorEnds[sector - 2];
+    const sectorLength = sectorEnds[sector - 1] - sectorStart;
+    const wetPenalty = this.dynamicRoadWetness() * 0.16;
+    const difficultyPenalty = this.session.track.difficulty * 0.08;
+    return (sectorLength / 67) * (1 + wetPenalty + difficultyPenalty);
+  }
+
+  private scoreSectorPace(delta: number) {
+    const paceScore = clamp(1 - (delta + 2.5) / 9, 0, 1);
+    const rhythmBonus = this.flowScore * 0.26;
+    const cleanBonus = this.cleanLap ? 0.12 : -0.18;
+    return clamp(paceScore * 0.62 + rhythmBonus + cleanBonus, 0, 1);
+  }
+
+  private sectorPaceLabel(score: number) {
+    if (!this.cleanLap) return "Sector invalid";
+    if (score > 0.82) return "Purple sector";
+    if (score > 0.66) return "Green sector";
+    if (score > 0.48) return "Solid sector";
+    return "Sector time lost";
   }
 }

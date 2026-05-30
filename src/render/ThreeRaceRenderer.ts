@@ -262,6 +262,11 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.brakeTemp = telemetry.brakeTemp.toFixed(3);
     this.renderer.domElement.dataset.brakeFade = telemetry.brakeFade.toFixed(3);
     this.renderer.domElement.dataset.brakeState = telemetry.brakeState;
+    this.renderer.domElement.dataset.lastSector = telemetry.lastSector === null ? "" : String(telemetry.lastSector);
+    this.renderer.domElement.dataset.lastSectorTime = telemetry.lastSectorTime === null ? "" : telemetry.lastSectorTime.toFixed(2);
+    this.renderer.domElement.dataset.lastSectorDelta = telemetry.lastSectorDelta === null ? "" : telemetry.lastSectorDelta.toFixed(2);
+    this.renderer.domElement.dataset.sectorPaceScore = telemetry.sectorPaceScore.toFixed(3);
+    this.renderer.domElement.dataset.sectorPaceState = telemetry.sectorPaceState;
     this.renderer.domElement.dataset.assistSteer = telemetry.assistSteer.toFixed(3);
     this.renderer.domElement.dataset.assistBrake = telemetry.assistBrake.toFixed(3);
     this.renderer.domElement.dataset.assistThrottleTrim = telemetry.assistThrottleTrim.toFixed(3);

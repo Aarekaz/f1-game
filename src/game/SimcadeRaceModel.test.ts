@@ -376,6 +376,11 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.checkpointCount).toBe(7);
     expect(telemetry.checkpointProgress).toBe("1/7");
     expect(telemetry.sectorSplits).toEqual([null, null, null]);
+    expect(telemetry.lastSector).toBeNull();
+    expect(telemetry.lastSectorTime).toBeNull();
+    expect(telemetry.lastSectorDelta).toBeNull();
+    expect(telemetry.sectorPaceScore).toBe(0);
+    expect(telemetry.sectorPaceState).toBe("Build sector");
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);
     expect(telemetry.rpm).toBeGreaterThan(0);
     expect(telemetry.aeroBoostAvailable).toBe(false);
@@ -455,6 +460,23 @@ describe("SimcadeRaceModel", () => {
     const telemetry = run(model, 8, { throttle: 1 });
 
     expect(Math.abs(telemetry.curve)).toBeGreaterThan(0.005);
+  });
+
+  it("rates completed sectors with live pace feedback", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const telemetry = runGuided(model, 16);
+
+    expect(telemetry.lastSector).not.toBeNull();
+    expect(telemetry.lastSectorTime).toBeGreaterThan(0);
+    expect(telemetry.lastSectorDelta).not.toBeNull();
+    expect(telemetry.sectorPaceScore).toBeGreaterThanOrEqual(0);
+    expect(telemetry.sectorPaceScore).toBeLessThanOrEqual(1);
+    expect(["Purple sector", "Green sector", "Solid sector", "Sector time lost", "Sector invalid"]).toContain(telemetry.sectorPaceState);
   });
 
   it("moves through named circuit sections", () => {

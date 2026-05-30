@@ -238,7 +238,7 @@ export class HudController {
     }
 
     if (this.shiftLights) {
-      const activeCount = telemetry.phase === "racing" ? Math.max(0, Math.min(5, Math.ceil((rpmRatio - 0.43) / 0.1))) : 0;
+      const activeCount = telemetry.phase === "racing" ? Math.max(0, Math.min(5, Math.ceil((rpmRatio - 0.34) / 0.12))) : 0;
       const redline = rpmRatio > 0.92;
       this.shiftLights.dataset.activeLights = String(activeCount);
       this.shiftLights.dataset.redline = redline ? "true" : "false";
@@ -368,6 +368,7 @@ export class HudController {
     if (telemetry.overtakeStreak > 0) return `${telemetry.overtakeStreak} overtakes banked`;
     if (telemetry.airState === "Slipstream") return `Slipstream ${(telemetry.draft * 100).toFixed(0)}%`;
     if (telemetry.airState === "Dirty air") return `Dirty air ${(telemetry.dirtyAir * 100).toFixed(0)}%`;
+    if (telemetry.lastSector !== null && telemetry.sectorPaceScore > 0.58) return telemetry.sectorPaceState;
     if (telemetry.phase === "racing") return `${telemetry.flowState} ${(telemetry.flowScore * 100).toFixed(0)}%`;
     return "Clean air";
   }

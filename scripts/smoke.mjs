@@ -263,6 +263,11 @@ async function checkDesktop(browser) {
     brakeTemp: Number(document.querySelector("#game canvas")?.dataset.brakeTemp ?? 0),
     brakeFade: Number(document.querySelector("#game canvas")?.dataset.brakeFade ?? 0),
     brakeState: document.querySelector("#game canvas")?.dataset.brakeState ?? "",
+    lastSector: document.querySelector("#game canvas")?.dataset.lastSector ?? "",
+    lastSectorTime: document.querySelector("#game canvas")?.dataset.lastSectorTime ?? "",
+    lastSectorDelta: document.querySelector("#game canvas")?.dataset.lastSectorDelta ?? "",
+    sectorPaceScore: Number(document.querySelector("#game canvas")?.dataset.sectorPaceScore ?? 0),
+    sectorPaceState: document.querySelector("#game canvas")?.dataset.sectorPaceState ?? "",
     surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
@@ -518,6 +523,13 @@ async function checkDesktop(browser) {
   assert(state.brakeTemp > 0 && state.brakeTemp <= 1.1, `desktop brake temperature telemetry was invalid: ${state.brakeTemp}`);
   assert(state.brakeFade >= 0 && state.brakeFade <= 1, `desktop brake fade telemetry was invalid: ${state.brakeFade}`);
   assert(/brake/i.test(state.brakeState), `desktop brake state was missing: ${state.brakeState}`);
+  assert(state.sectorPaceScore >= 0 && state.sectorPaceScore <= 1, `desktop sector pace score was invalid: ${state.sectorPaceScore}`);
+  assert(/sector/i.test(state.sectorPaceState), `desktop sector pace state was missing: ${state.sectorPaceState}`);
+  if (state.lastSector) {
+    assert(/^[123]$/.test(state.lastSector), `desktop last sector was invalid: ${state.lastSector}`);
+    assert(state.lastSectorTime.length > 0, "desktop last sector time was missing");
+    assert(state.lastSectorDelta.length > 0, "desktop last sector delta was missing");
+  }
   assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");

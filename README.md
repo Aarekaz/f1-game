@@ -22,6 +22,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - The pre-race briefing shows the active series contract before launch, including position, flow, cleanliness, and penalty requirements.
 - The live HUD tracks the active series target during the run, including current position, flow, and penalty state.
+- Sector timing now gives live pace ratings, so the engineer can call out purple, green, solid, or lost sectors during the run.
 - Apex Series targets are judged at the flag, and the next event unlocks only after the current scenario target is met.
 - Race results explain the contract outcome so missed targets point to the next thing to improve.
 - The primary result action changes to retry a missed target or rerun a cleared session.
