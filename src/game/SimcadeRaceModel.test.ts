@@ -330,6 +330,33 @@ describe("SimcadeRaceModel", () => {
     expect(loaded.suspensionTravel).toBeGreaterThan(cruise.suspensionTravel);
   });
 
+  it("samples wheel contact before the car center leaves the asphalt", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const cruise = run(model, 4.6, { throttle: 1 });
+
+    let edgeContact = cruise;
+    let foundSplitContact = false;
+    for (let elapsed = 0; elapsed < 2.4; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 0.9 });
+      if (telemetry.surfaceName === "Asphalt" && telemetry.tireContactGrip < telemetry.surfaceGripModifier && telemetry.tireRunoffShare > 0) {
+        edgeContact = telemetry;
+        foundSplitContact = true;
+        break;
+      }
+    }
+
+    expect(foundSplitContact).toBe(true);
+    expect(edgeContact.surfaceName).toBe("Asphalt");
+    expect(edgeContact.tireContactGrip).toBeLessThan(edgeContact.surfaceGripModifier);
+    expect(edgeContact.tireRunoffShare).toBeGreaterThan(0);
+    expect(edgeContact.surfaceEdgeLoad).toBeGreaterThan(cruise.surfaceEdgeLoad);
+  });
+
   it("smooths keyboard steering into a recoverable tire response", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -511,6 +538,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.lateralScrub).toBe(0);
     expect(telemetry.forwardBite).toBe(1);
     expect(telemetry.longitudinalGrip).toBe(1);
+    expect(telemetry.tireContactGrip).toBe(1);
+    expect(telemetry.tireRunoffShare).toBe(0);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
