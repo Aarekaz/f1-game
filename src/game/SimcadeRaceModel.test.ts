@@ -713,6 +713,33 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(crawling.carX)).toBeLessThan(Math.abs(stranded.carX));
   });
 
+  it("bleeds speed through apron drag instead of an invisible runoff speed cap", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const fast = run(model, 4.5, { throttle: 1, ers: true });
+    let previous = fast;
+    let maxChunkLoss = 0;
+    let touchedLooseSurface = false;
+    let apronScrub = 0;
+
+    for (let index = 0; index < 12; index += 1) {
+      const telemetry = run(model, 1 / 6, { throttle: 1, steer: 1, ers: true });
+      maxChunkLoss = Math.max(maxChunkLoss, previous.speedKph - telemetry.speedKph);
+      touchedLooseSurface = touchedLooseSurface || telemetry.surfaceName === "Runoff" || telemetry.surfaceName === "Gravel";
+      apronScrub = Math.max(apronScrub, telemetry.lateralScrub);
+      previous = telemetry;
+    }
+
+    expect(touchedLooseSurface).toBe(true);
+    expect(maxChunkLoss).toBeLessThan(90);
+    expect(previous.speedKph).toBeLessThan(fast.speedKph - 110);
+    expect(apronScrub).toBeGreaterThan(0.2);
+  });
+
   it("spends tire budget when the driver asks for full steering at high speed", () => {
     const straightLine = new SimcadeRaceModel({
       track: findTrack("aurelia"),
