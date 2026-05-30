@@ -34,6 +34,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP high-speed steering scrub](readme-assets/screenshots/09-aurelia-high-speed-steering-scrub.png) |
 
+| Raised kerb contact |
+| --- |
+| ![Aurelia GP raised kerb contact](readme-assets/screenshots/10-aurelia-raised-kerb-contact.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -89,6 +93,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Road adhesion and lateral scrub now share the tire budget, so heavy steering, dirty tires, kerbs, and runoff change speed and grip instead of feeling like a flat lateral script.
 - The handling model samples four tire contact patches, so brushing a kerb or dropping the outside tires onto runoff changes grip before the car center has fully left the asphalt.
 - Track-edge load now turns asphalt-to-kerb/runoff crossings into suspension, rumble, and contact-patch events instead of simple surface-label swaps.
+- Raised kerbs and shoulder drops now live in the road height model, so the chassis lifts, rolls, and loads over edge contact instead of only changing grip numbers.
 - Balanced recovery keeps forced-wide moments on the visible runoff apron, so the car does not spend the camera view floating through empty grass.
 - The outer recovery apron now slows the car through drag, scrub, rumble, and tire saturation instead of snapping speed down with an invisible cap.
 - Longitudinal grip now gates throttle and braking, so running wide over kerbs/runoff costs drive and stopping power instead of only changing the scenery label.
