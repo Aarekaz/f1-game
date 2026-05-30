@@ -408,6 +408,25 @@ describe("SimcadeRaceModel", () => {
     expect(["Asphalt", "Kerb", "Runoff"]).toContain(forcedWide.surfaceName);
   });
 
+  it("pulls a manual car back toward visible runoff after it runs wide", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4, { throttle: 1 });
+
+    const wide = run(model, 3.2, { throttle: 1, steer: 1 });
+    const recovering = run(model, 1.2, { throttle: 0.45 });
+    const track = sampleTrack(recovering.trackOffset);
+
+    expect(wide.onTrack).toBe(false);
+    expect(Math.abs(recovering.carX)).toBeLessThan(Math.abs(wide.carX));
+    expect(Math.abs(recovering.carX)).toBeLessThanOrEqual(track.halfWidth + 2.7);
+    expect(["Kerb", "Runoff", "Gravel"]).toContain(recovering.surfaceName);
+  });
+
   it("rides the lateral road surface instead of the centerline height", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
