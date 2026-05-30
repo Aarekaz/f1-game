@@ -18,6 +18,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP loose-surface crawl](readme-assets/screenshots/05-aurelia-loose-surface-crawl.png) |
 
+| Wet launch |
+| --- |
+| ![Northstar Ring physical wet launch](readme-assets/screenshots/06-northstar-physical-launch.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -94,6 +98,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
 - Panic braking now bleeds steering authority through lockup and tire saturation, so full brake plus full lock scrubs forward instead of rotating like an arcade handbrake.
 - Full braking can now bring the car all the way to rest, and throttle has to build speed back up instead of snapping to a hidden rolling minimum.
+- Race launches now start from tire bite instead of injecting a big hidden speed jump, while full keyboard throttle still gets the car moving through visible wheelspin.
 - Standing starts and post-stop restarts now build through available traction, so wet asphalt crawls away with wheelspin instead of launching like dry pavement.
 - Full-lock restarts now scrub front grip and give up launch drive, so throttle plus maximum steering feels like overloaded tires instead of a sideways snap.
 - Wheel-to-wheel contact can now leave persistent front-wing damage, costing downforce and making the car harder to place until the run ends.
