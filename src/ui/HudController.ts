@@ -93,6 +93,7 @@ export class HudController {
   private raceProgress = requireElement("race-progress");
   private ers = requireElement("ers");
   private grip = requireElement("grip");
+  private tire = requireElement("tire");
   private flow = requireElement("flow");
   private message = requireElement("message");
   private startLights = optionalElement("start-lights");
@@ -160,6 +161,8 @@ export class HudController {
     setMeter(this.raceProgress, telemetry.raceProgress);
     setMeter(this.ers, telemetry.ers);
     setMeter(this.grip, telemetry.grip);
+    setMeter(this.tire, 1 - telemetry.tireWear);
+    this.tire.dataset.state = telemetry.tireState;
     setMeter(this.flow, telemetry.flowScore);
     this.currentLapTime.textContent = formatTime(telemetry.lapTime);
 
@@ -349,6 +352,9 @@ export class HudController {
     if (telemetry.surfaceName === "Gravel") return `Gravel ${(telemetry.surfaceRumble * 100).toFixed(0)}%`;
     if (telemetry.surfaceName === "Runoff") return "Runoff";
     if (telemetry.surfaceName === "Kerb" && telemetry.surfaceRumble > 0.18) return "Kerb vibration";
+    if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
+    if (telemetry.tireState === "Cold tires") return "Cold tires";
+    if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
     if (telemetry.contactRisk > 0.54) return `Contact risk ${(telemetry.contactRisk * 100).toFixed(0)}%`;
     if (telemetry.sideBySide > 0.22) return `Wheel to wheel ${(telemetry.sideBySide * 100).toFixed(0)}%`;
     if (telemetry.defensiveRivals > 0 && telemetry.rivalProximity > 0.12) return "Defensive car ahead";

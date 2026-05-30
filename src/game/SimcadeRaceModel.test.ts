@@ -244,6 +244,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.aeroBoostAvailable).toBe(false);
     expect(telemetry.aeroBoostActive).toBe(0);
     expect(telemetry.aeroDragReduction).toBe(0);
+    expect(telemetry.tireTemp).toBeGreaterThan(0);
+    expect(telemetry.tireWear).toBe(0);
+    expect(telemetry.tireState.length).toBeGreaterThan(0);
     expect(telemetry.flowScore).toBeGreaterThan(0);
     expect(telemetry.flowState).toBe("Good rhythm");
     expect(telemetry.cameraSnap).toBe(false);
@@ -399,6 +402,18 @@ describe("SimcadeRaceModel", () => {
     expect(peakAero).toBeGreaterThan(0.45);
     expect(peakDragReduction).toBeGreaterThan(0);
     expect(aeroCue).toMatch(/Aero/);
+  });
+
+  it("builds tire temperature and wear when the car is overdriven", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    const settled = run(model, 3, { throttle: 1 });
+    const abused = run(model, 4.4, { throttle: 1, steer: 1, brake: 0.22 });
+
+    expect(abused.tireTemp).toBeGreaterThan(settled.tireTemp);
+    expect(abused.tireWear).toBeGreaterThan(settled.tireWear);
+    expect(abused.grip).toBeLessThanOrEqual(1);
+    expect(abused.tireState.length).toBeGreaterThan(0);
   });
 
   it("settles casual throttle driving better with balanced assists than manual inputs", () => {

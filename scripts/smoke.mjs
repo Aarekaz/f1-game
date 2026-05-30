@@ -245,6 +245,11 @@ async function checkDesktop(browser) {
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
     flowState: document.querySelector("#game canvas")?.dataset.flowState ?? "",
     flowMeter: document.querySelector("#flow")?.style.getPropertyValue("--value") ?? "",
+    tireTemp: Number(document.querySelector("#game canvas")?.dataset.tireTemp ?? 0),
+    tireWear: Number(document.querySelector("#game canvas")?.dataset.tireWear ?? 0),
+    tireState: document.querySelector("#game canvas")?.dataset.tireState ?? "",
+    tireMeter: document.querySelector("#tire")?.style.getPropertyValue("--value") ?? "",
+    tireMeterState: document.querySelector("#tire")?.getAttribute("data-state") ?? "",
     surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
@@ -468,6 +473,11 @@ async function checkDesktop(browser) {
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
   assert(state.flowState.length > 0, "desktop flow state was missing");
   assert(/%/.test(state.flowMeter), `desktop flow meter did not update: ${state.flowMeter}`);
+  assert(state.tireTemp > 0 && state.tireTemp <= 1.1, `desktop tire temperature telemetry was invalid: ${state.tireTemp}`);
+  assert(state.tireWear >= 0 && state.tireWear < 0.2, `desktop tire wear telemetry was invalid: ${state.tireWear}`);
+  assert(/Tires|tire/i.test(state.tireState), `desktop tire state was missing: ${state.tireState}`);
+  assert(/%/.test(state.tireMeter), `desktop tire meter did not update: ${state.tireMeter}`);
+  assert(state.tireMeterState === state.tireState, `desktop tire meter state was not wired: ${state.tireMeterState}`);
   assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");

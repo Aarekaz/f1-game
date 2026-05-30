@@ -890,7 +890,7 @@ body {
 }
 
 .hud[data-phase="racing"] .bars {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
   margin-top: 7px;
   opacity: 0.68;
@@ -1268,6 +1268,11 @@ body {
 #grip {
   background:
     linear-gradient(90deg, #f3d348 var(--value, 80%), rgba(255, 255, 255, 0.14) 0);
+}
+
+#tire {
+  background:
+    linear-gradient(90deg, #74d6c9 var(--value, 100%), rgba(255, 255, 255, 0.14) 0);
 }
 
 #flow {

@@ -240,6 +240,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.aeroBoostAvailable = String(telemetry.aeroBoostAvailable);
     this.renderer.domElement.dataset.aeroBoostActive = telemetry.aeroBoostActive.toFixed(2);
     this.renderer.domElement.dataset.aeroDragReduction = telemetry.aeroDragReduction.toFixed(2);
+    this.renderer.domElement.dataset.tireTemp = telemetry.tireTemp.toFixed(2);
+    this.renderer.domElement.dataset.tireWear = telemetry.tireWear.toFixed(3);
+    this.renderer.domElement.dataset.tireState = telemetry.tireState;
     this.renderer.domElement.dataset.assistSteer = telemetry.assistSteer.toFixed(3);
     this.renderer.domElement.dataset.assistBrake = telemetry.assistBrake.toFixed(3);
     this.renderer.domElement.dataset.assistThrottleTrim = telemetry.assistThrottleTrim.toFixed(3);

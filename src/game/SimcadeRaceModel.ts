@@ -49,6 +49,9 @@ export type RaceTelemetry = {
   aeroBoostAvailable: boolean;
   aeroBoostActive: number;
   aeroDragReduction: number;
+  tireTemp: number;
+  tireWear: number;
+  tireState: string;
   grip: number;
   flowScore: number;
   flowState: string;
@@ -218,6 +221,8 @@ export class SimcadeRaceModel {
   private aeroBoostAvailable = false;
   private aeroBoostActive = 0;
   private aeroDragReduction = 0;
+  private tireTemp = 0.52;
+  private tireWear = 0;
   private lapTime = 0;
   private bestLap: number | null = null;
   private splitDelta: number | null = null;
@@ -324,6 +329,9 @@ export class SimcadeRaceModel {
       aeroBoostAvailable: this.aeroBoostAvailable,
       aeroBoostActive: this.aeroBoostActive,
       aeroDragReduction: this.aeroDragReduction,
+      tireTemp: this.tireTemp,
+      tireWear: this.tireWear,
+      tireState: this.tireState(),
       grip: this.grip,
       flowScore: this.flowScore,
       flowState: this.flowState(),
@@ -436,6 +444,8 @@ export class SimcadeRaceModel {
     this.aeroBoostAvailable = false;
     this.aeroBoostActive = 0;
     this.aeroDragReduction = 0;
+    this.tireTemp = 0.52;
+    this.tireWear = 0;
     this.lapTime = 0;
     this.bestLap = null;
     this.splitDelta = null;
@@ -555,6 +565,7 @@ export class SimcadeRaceModel {
     this.wheelspin = approach(this.wheelspin, wheelspinTarget, dt * 7.5);
     this.lockup = approach(this.lockup, lockupTarget, dt * 10);
     this.understeer = approach(this.understeer, understeerTarget, dt * 6);
+    this.updateTireState(dt, speedRatio, throttle, brake, Math.abs(steer), surface.roughness, onTrack);
 
     const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34);
     const braking = brake * 248 * (1 - this.lockup * 0.22);
@@ -575,6 +586,8 @@ export class SimcadeRaceModel {
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const weatherGrip = this.session.weather.gripMultiplier * surface.grip;
+    const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
+    const tireGripFactor = clamp(1 - tireTempPenalty - this.tireWear * 0.18, 0.76, 1.04);
     const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
@@ -582,6 +595,7 @@ export class SimcadeRaceModel {
       ? clamp(
           (1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32) *
             weatherGrip *
+            tireGripFactor *
             bankingSupport -
             wetPenalty -
             dirtyAirPenalty,
@@ -756,6 +770,28 @@ export class SimcadeRaceModel {
       ? clamp((paceScore * 0.3 + lineScore * 0.3 + carCalm * 0.28 + raceRoom * 0.12) * sectionWeight + 0.08, 0, 1)
       : 0.08;
     this.flowScore = approach(this.flowScore, target, dt * (target > this.flowScore ? 0.82 : 2.9));
+  }
+
+  private updateTireState(dt: number, speedRatio: number, throttle: number, brake: number, steerDemand: number, surfaceRoughness: number, onTrack: boolean) {
+    const heatLoad =
+      speedRatio * 0.16 +
+      steerDemand * speedRatio * 0.22 +
+      brake * 0.24 +
+      this.wheelspin * 0.34 +
+      this.lockup * 0.42 +
+      surfaceRoughness * 0.12;
+    const cooling = this.session.weather.roadWetness * 0.16 + (1 - throttle) * 0.035;
+    const targetTemp = clamp(0.42 + heatLoad - cooling, 0.2, 1.08);
+    this.tireTemp = approach(this.tireTemp, targetTemp, dt * (targetTemp > this.tireTemp ? 1.55 : 0.95));
+
+    const wearRate =
+      0.00025 +
+      speedRatio * 0.00045 +
+      this.wheelspin * 0.0048 +
+      this.lockup * 0.0062 +
+      this.understeer * 0.0022 +
+      (onTrack ? 0 : 0.002 + surfaceRoughness * 0.0025);
+    this.tireWear = clamp(this.tireWear + wearRate * dt, 0, 1);
   }
 
   private updateTrackLimits(dt: number, onTrack: boolean) {
@@ -969,6 +1005,14 @@ export class SimcadeRaceModel {
     if (this.flowScore > 0.74) return "In the zone";
     if (this.flowScore > 0.48) return "Good rhythm";
     return "Untidy";
+  }
+
+  private tireState() {
+    if (this.tireWear > 0.68) return "Worn tires";
+    if (this.tireTemp > 0.88) return "Tires hot";
+    if (this.tireTemp < 0.38) return "Cold tires";
+    if (this.tireTemp > 0.62 && this.tireTemp < 0.84) return "Tires ready";
+    return "Tires stable";
   }
 
   private trackCue(track: ReturnType<typeof sampleTrack>) {
