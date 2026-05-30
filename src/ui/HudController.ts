@@ -71,6 +71,11 @@ export class HudController {
   private resultFlow = optionalElement("result-flow");
   private resultGrade = optionalElement("result-grade");
   private resultPersonalBest = optionalElement("result-pb");
+  private resultSectors = [
+    optionalElement("result-sector-1"),
+    optionalElement("result-sector-2"),
+    optionalElement("result-sector-3")
+  ];
   private renderedTrackName = "";
   private latestBest: PersonalBest | null = null;
   private latestUpdate: PersonalBestUpdate | null = null;
@@ -349,5 +354,9 @@ export class HudController {
       this.resultPersonalBest.textContent =
         update && (update.isNewTotalBest || update.isNewLapBest || update.isNewFlowBest) ? "New" : this.latestBest ? "Held" : "--";
     }
+
+    this.resultSectors.forEach((sector, index) => {
+      if (sector) sector.textContent = formatTime(telemetry.sectorSplits[index]);
+    });
   }
 }

@@ -44,4 +44,15 @@ describe("RaceDirector", () => {
     expect(events.some((event) => event.type === "finish")).toBe(true);
     expect(director.snapshot(TRACK_LOOP_LENGTH * 2 + 1).raceProgress).toBe(1);
   });
+
+  it("keeps final sector splits available after finish", () => {
+    const director = new RaceDirector(1);
+    const events = director.update(TRACK_LOOP_LENGTH + 1, 72);
+    const sectorEvents = events.filter((event) => event.type === "sector");
+    const snapshot = director.snapshot(TRACK_LOOP_LENGTH + 1);
+
+    expect(sectorEvents).toHaveLength(3);
+    expect(snapshot.finished).toBe(true);
+    expect(snapshot.sectorSplits.every((split) => split !== null && split > 0)).toBe(true);
+  });
 });

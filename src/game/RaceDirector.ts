@@ -107,18 +107,19 @@ export class RaceDirector {
       const time = totalTime - this.currentLapStartTime;
       const valid = this.validLap && this.nextCheckpointIndex >= this.checkpoints.length;
       events.push({ type: "lap", lap: this.lap, time, valid });
+      if (this.lap >= this.laps) {
+        this.finished = true;
+        this.lap += 1;
+        events.push({ type: "finish", time: totalTime + this.penaltySeconds });
+        break;
+      }
+
       this.lap += 1;
       this.currentLapStartTime = totalTime;
       this.nextCheckpointIndex = 0;
       this.nextSectorIndex = 0;
       this.sectorSplits = [null, null, null];
       this.validLap = true;
-
-      if (this.lap > this.laps) {
-        this.finished = true;
-        events.push({ type: "finish", time: totalTime + this.penaltySeconds });
-        break;
-      }
     }
 
     this.previousDistance = Math.max(this.previousDistance, distance);

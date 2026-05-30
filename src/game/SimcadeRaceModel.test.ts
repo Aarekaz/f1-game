@@ -342,6 +342,7 @@ describe("SimcadeRaceModel", () => {
     expect(finished.bestLap === null || finished.bestLap > 0).toBe(true);
     expect(finished.totalTime).toBeGreaterThan(finished.lapTime);
     expect(finished.penaltySeconds).toBeGreaterThanOrEqual(0);
+    expect(finished.sectorSplits.every((split) => split !== null && split > 0)).toBe(true);
   });
 
   it("resets after finishing when restart is requested", () => {

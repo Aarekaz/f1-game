@@ -432,6 +432,32 @@ body {
   font-weight: 950;
 }
 
+.result-sectors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.result-sectors span {
+  display: grid;
+  gap: 4px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  color: #aeb8aa;
+  background: rgba(255, 255, 255, 0.055);
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.result-sectors b {
+  color: #ffffff;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
 .topbar div {
   min-height: 58px;
   padding: 9px 11px;
@@ -1101,6 +1127,10 @@ body {
   }
 
   .game-panel dl {
+    grid-template-columns: 1fr;
+  }
+
+  .result-sectors {
     grid-template-columns: 1fr;
   }
 
