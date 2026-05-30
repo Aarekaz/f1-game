@@ -652,6 +652,26 @@ describe("SimcadeRaceModel", () => {
     expect(bogged.trackOffset).toBeCloseTo(awayBottomed.trackOffset, 1);
   });
 
+  it("lets gentle throttle crawl a stopped loose-surface car toward the circuit", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.2, { throttle: 1, ers: true });
+    run(model, 2.8, { throttle: 1, steer: 1 });
+    const stranded = run(model, 1.6, { throttle: 0 });
+    const steerTowardRoad = stranded.carX > 0 ? -0.58 : 0.58;
+    const crawling = run(model, 2.4, { throttle: 0.55, steer: steerTowardRoad });
+
+    expect(stranded.speedKph).toBeLessThan(3);
+    expect(["Runoff", "Gravel"]).toContain(stranded.surfaceName);
+    expect(crawling.speedKph).toBeGreaterThan(8);
+    expect(crawling.trackOffset).toBeGreaterThan(stranded.trackOffset + 1.5);
+    expect(Math.abs(crawling.carX)).toBeLessThan(Math.abs(stranded.carX));
+  });
+
   it("spends tire budget when the driver asks for full steering at high speed", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
