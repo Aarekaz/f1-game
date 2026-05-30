@@ -665,7 +665,7 @@ export class SimcadeRaceModel {
     this.wheelspin = Math.max(this.wheelspin, wetSpin);
     this.slip = Math.max(this.slip, wetSpin * 0.58);
     this.grip = clamp(this.grip - wetSpin * 0.18, 0.52, 1);
-    this.speed = 42 + quality * 54 - wetSpin * 16;
+    this.speed = Math.max(0, 26 + quality * 34 - wetSpin * 10);
     this.cameraSnapTimer = 0.35;
 
     if (quality > 0.86) {
