@@ -240,6 +240,9 @@ async function checkDesktop(browser) {
     aeroBoostActive: Number(document.querySelector("#game canvas")?.dataset.aeroBoostActive ?? 0),
     aeroDragReduction: Number(document.querySelector("#game canvas")?.dataset.aeroDragReduction ?? 0),
     rearAeroFlap: Number(document.querySelector("#game canvas")?.dataset.rearAeroFlap ?? 0),
+    shiftCut: Number(document.querySelector("#game canvas")?.dataset.shiftCut ?? 0),
+    tractionBite: Number(document.querySelector("#game canvas")?.dataset.tractionBite ?? 0),
+    powerState: document.querySelector("#game canvas")?.dataset.powerState ?? "",
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
     rivalLabelsVisible: Number(document.querySelector("#game canvas")?.dataset.rivalLabelsVisible ?? 0),
@@ -487,6 +490,9 @@ async function checkDesktop(browser) {
   assert(state.aeroBoostActive > 0.35, `desktop aero boost did not activate: ${state.aeroBoostActive}`);
   assert(state.aeroDragReduction > 0, `desktop aero drag reduction stayed inactive: ${state.aeroDragReduction}`);
   assert(state.rearAeroFlap > 0.35, `desktop rear aero flap did not open: ${state.rearAeroFlap}`);
+  assert(state.shiftCut >= 0 && state.shiftCut <= 1, `desktop shift-cut telemetry was invalid: ${state.shiftCut}`);
+  assert(state.tractionBite >= 0 && state.tractionBite <= 1, `desktop traction-bite telemetry was invalid: ${state.tractionBite}`);
+  assert(/Power|Shift|Traction|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.rivalLabelsVisible > 0, `desktop in-world rival labels did not render: ${state.rivalLabelsVisible}`);
@@ -528,7 +534,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);

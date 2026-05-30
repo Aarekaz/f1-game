@@ -52,6 +52,9 @@ export type RaceTelemetry = {
   aeroBoostAvailable: boolean;
   aeroBoostActive: number;
   aeroDragReduction: number;
+  shiftCut: number;
+  tractionBite: number;
+  powerState: string;
   tireTemp: number;
   tireWear: number;
   tireState: string;
@@ -164,6 +167,7 @@ const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
 const MAX_SPEED = 310;
 const MIN_RACE_SPEED = 16;
+const GEAR_SPEED_LIMITS = [0, 68, 112, 154, 196, 238, 278, MAX_SPEED];
 const RIVAL_GRID = [
   { driver: "Vega", team: "NOVA", color: "#24c7ff" },
   { driver: "Kade", team: "ORO", color: "#f4d35e" },
@@ -234,6 +238,9 @@ export class SimcadeRaceModel {
   private aeroBoostAvailable = false;
   private aeroBoostActive = 0;
   private aeroDragReduction = 0;
+  private currentGear = 1;
+  private shiftCut = 0;
+  private tractionBite = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
   private fuelLoad = 1;
@@ -352,6 +359,9 @@ export class SimcadeRaceModel {
       aeroBoostAvailable: this.aeroBoostAvailable,
       aeroBoostActive: this.aeroBoostActive,
       aeroDragReduction: this.aeroDragReduction,
+      shiftCut: this.shiftCut,
+      tractionBite: this.tractionBite,
+      powerState: this.powerState(),
       tireTemp: this.tireTemp,
       tireWear: this.tireWear,
       tireState: this.tireState(),
@@ -477,6 +487,9 @@ export class SimcadeRaceModel {
     this.aeroBoostAvailable = false;
     this.aeroBoostActive = 0;
     this.aeroDragReduction = 0;
+    this.currentGear = 1;
+    this.shiftCut = 0;
+    this.tractionBite = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
     this.fuelLoad = 1;
@@ -564,17 +577,19 @@ export class SimcadeRaceModel {
     const roadWetness = this.dynamicRoadWetness();
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     this.updateFuelLoad(dt, throttle, boost, speedRatio);
+    this.updatePowertrainState(dt, throttle, brake, roadWetness, onTrack, surface.roughness);
     const fuelWeightPenalty = this.fuelLoad * 0.075;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
+    const aeroBoostSpeedThreshold = 150 - roadWetness * 26;
     this.aeroBoostAvailable =
       onTrack &&
       track.section.kind === "straight" &&
       !track.brakingZone &&
-      Math.abs(track.curve) < 0.018 &&
-      this.speed > 150 &&
+      Math.abs(track.curve) < 0.045 &&
+      this.speed > aeroBoostSpeedThreshold &&
       throttle > 0.52 &&
       brake < 0.08 &&
-      this.grip > 0.56;
+      this.grip > 0.48;
     const aeroTarget = this.aeroBoostAvailable && boost ? 1 : 0;
     this.aeroBoostActive = approach(this.aeroBoostActive, aeroTarget, dt * (aeroTarget > this.aeroBoostActive ? 18 : 5));
     this.aeroDragReduction = this.aeroBoostActive * (8 + speedRatio * speedRatio * 26);
@@ -624,7 +639,11 @@ export class SimcadeRaceModel {
     this.updateTireState(dt, speedRatio, throttle, brake, Math.abs(steer), surface.roughness, onTrack);
     this.updateBrakeState(dt, brake, speedRatio, roadWetness);
 
-    const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34) * (1 - fuelWeightPenalty);
+    const torqueCurve = this.engineTorqueCurve();
+    const shiftInterruption = 1 - this.shiftCut * 0.54;
+    const tractionDelivery = 1 - this.tractionBite * 0.36;
+    const acceleration =
+      throttle * (114 - speedRatio * 50) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.28) * (1 - fuelWeightPenalty);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
     const braking = brake * 248 * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
     const boostPower = boost * 72;
@@ -863,6 +882,42 @@ export class SimcadeRaceModel {
     this.fuelLoad = clamp(this.fuelLoad - burnRate * dt, 0.38, 1);
   }
 
+  private updatePowertrainState(dt: number, throttle: number, brake: number, roadWetness: number, onTrack: boolean, surfaceRoughness: number) {
+    this.shiftCut = Math.max(0, this.shiftCut - dt * 7.8);
+
+    const nextGear = Math.min(7, this.currentGear + 1);
+    const previousGear = Math.max(1, this.currentGear - 1);
+    const upshiftAt = GEAR_SPEED_LIMITS[this.currentGear] - 4 + throttle * 6;
+    const downshiftAt = GEAR_SPEED_LIMITS[previousGear] - 16 - brake * 8;
+
+    if (this.currentGear < 7 && this.speed > upshiftAt && throttle > 0.18) {
+      this.currentGear = nextGear;
+      this.shiftCut = Math.max(this.shiftCut, 1);
+    } else if (this.currentGear > 1 && this.speed < downshiftAt) {
+      this.currentGear = previousGear;
+      this.shiftCut = Math.max(this.shiftCut, 0.55);
+    }
+
+    const lowGearLoad = clamp((5 - this.currentGear) / 4, 0, 1);
+    const wetWheelLoad = roadWetness * throttle * (0.16 + lowGearLoad * 0.2);
+    const lowGripLoad = (1 - this.grip) * throttle * (0.28 + lowGearLoad * 0.22);
+    const gearTorqueLoad = throttle * lowGearLoad * (0.12 + roadWetness * 0.1);
+    const roughLoad = onTrack ? surfaceRoughness * throttle * 0.12 : surfaceRoughness * (0.22 + throttle * 0.18);
+    const shiftRecoveryLoad = this.shiftCut * throttle * 0.16;
+    const biteTarget = clamp(wetWheelLoad + lowGripLoad + gearTorqueLoad + roughLoad + shiftRecoveryLoad + this.wheelspin * 0.36, 0, 1);
+    this.tractionBite = approach(this.tractionBite, biteTarget, dt * (biteTarget > this.tractionBite ? 7.4 : 4.8));
+  }
+
+  private engineTorqueCurve() {
+    const lower = GEAR_SPEED_LIMITS[this.currentGear - 1] ?? 0;
+    const upper = GEAR_SPEED_LIMITS[this.currentGear] ?? MAX_SPEED;
+    const gearProgress = clamp((this.speed - lower) / Math.max(1, upper - lower), 0, 1);
+    const midRangePunch = Math.sin(gearProgress * Math.PI) * 0.28;
+    const lowGearPunch = this.currentGear <= 2 ? 0.08 : 0;
+    const redlineTailoff = clamp((gearProgress - 0.9) / 0.1, 0, 1) * 0.18;
+    return clamp(0.82 + midRangePunch + lowGearPunch - redlineTailoff, 0.74, 1.16);
+  }
+
   private updateBrakeState(dt: number, brake: number, speedRatio: number, roadWetness: number) {
     const heat = brake * speedRatio * (0.32 + brake * 0.42 + this.lockup * 0.18);
     const cooling = (1 - brake) * (0.08 + speedRatio * 0.12) + roadWetness * 0.04;
@@ -915,21 +970,15 @@ export class SimcadeRaceModel {
   }
 
   private gear() {
-    if (this.speed < 30) return 1;
-    if (this.speed < 78) return 2;
-    if (this.speed < 124) return 3;
-    if (this.speed < 168) return 4;
-    if (this.speed < 214) return 5;
-    if (this.speed < 262) return 6;
-    return 7;
+    return this.currentGear;
   }
 
   private rpm() {
-    const gear = this.gear();
-    const lower = [0, 0, 30, 78, 124, 168, 214, 262][gear] ?? 0;
-    const upper = [30, 78, 124, 168, 214, 262, MAX_SPEED][gear - 1] ?? MAX_SPEED;
+    const gear = this.currentGear;
+    const lower = GEAR_SPEED_LIMITS[gear - 1] ?? 0;
+    const upper = GEAR_SPEED_LIMITS[gear] ?? MAX_SPEED;
     const gearProgress = clamp((this.speed - lower) / Math.max(1, upper - lower), 0, 1);
-    return Math.round(4600 + gearProgress * 5200 + this.slip * 900);
+    return Math.round(4300 + gearProgress * 5600 + this.slip * 760 - this.shiftCut * 850);
   }
 
   private updateRivals(dt: number) {
@@ -1130,6 +1179,13 @@ export class SimcadeRaceModel {
     if (this.brakeTemp > 0.72) return "Brakes hot";
     if (this.brakeTemp < 0.28) return "Cold brakes";
     return "Brakes ready";
+  }
+
+  private powerState() {
+    if (this.shiftCut > 0.32) return "Shift cut";
+    if (this.tractionBite > 0.42) return "Traction limited";
+    if (this.rpm() > 9200) return "Near redline";
+    return "Power hooked";
   }
 
   private trackEvolutionState() {

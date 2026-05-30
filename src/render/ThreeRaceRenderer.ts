@@ -246,6 +246,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.aeroBoostAvailable = String(telemetry.aeroBoostAvailable);
     this.renderer.domElement.dataset.aeroBoostActive = telemetry.aeroBoostActive.toFixed(2);
     this.renderer.domElement.dataset.aeroDragReduction = telemetry.aeroDragReduction.toFixed(2);
+    this.renderer.domElement.dataset.shiftCut = telemetry.shiftCut.toFixed(3);
+    this.renderer.domElement.dataset.tractionBite = telemetry.tractionBite.toFixed(3);
+    this.renderer.domElement.dataset.powerState = telemetry.powerState;
     this.renderer.domElement.dataset.tireTemp = telemetry.tireTemp.toFixed(2);
     this.renderer.domElement.dataset.tireWear = telemetry.tireWear.toFixed(3);
     this.renderer.domElement.dataset.tireState = telemetry.tireState;
@@ -277,7 +280,8 @@ export class ThreeRaceRenderer {
     const rumblePulse = Math.sin(performance.now() * 0.052) * telemetry.surfaceRumble;
     this.car.position.y += Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026 + rumblePulse * 0.032;
     this.car.rotation.y = trackYaw - telemetry.car.heading - telemetry.curve * 0.5;
-    this.car.rotation.x = telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018 + rumblePulse * 0.018;
+    this.car.rotation.x =
+      telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018 + telemetry.shiftCut * 0.018 + telemetry.tractionBite * 0.014 + rumblePulse * 0.018;
     this.car.rotation.z =
       -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
     this.animateFormulaCar(this.car, {
@@ -312,7 +316,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rearAeroFlap = telemetry.aeroBoostActive.toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
-    const airBuffet = clamp(telemetry.dirtyAir * 0.48 + telemetry.draft * 0.18 + telemetry.contactRisk * 0.22, 0, 1);
+    const airBuffet = clamp(telemetry.dirtyAir * 0.48 + telemetry.draft * 0.18 + telemetry.contactRisk * 0.22 + telemetry.shiftCut * 0.08, 0, 1);
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateAirWake(carX, carY, carZ, carWorldYaw, telemetry.draft, telemetry.dirtyAir, speedRatio);
     this.updateTireSmoke(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
@@ -334,12 +338,19 @@ export class ThreeRaceRenderer {
     this.camera.fov = fovTarget;
 
     const lookAhead = (podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18) + Math.abs(apexDirection) * (podMode ? 8 : 16);
-    const cameraLag = podMode ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2;
-    const lateralShoulder = podMode ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
+    const powertrainLurch = telemetry.shiftCut * 0.9 + telemetry.tractionBite * 0.42;
+    const powertrainLateralKick = telemetry.tractionBite * clamp(telemetry.car.heading * 2.2 + telemetry.car.yawRate * 0.9, -1, 1);
+    const cameraLag = podMode
+      ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
+      : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2 + powertrainLurch;
+    const lateralShoulder = podMode
+      ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 - powertrainLateralKick * 0.08
+      : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62 - powertrainLateralKick * 0.55;
     const targetLateral =
       (podMode ? carLateral * 0.08 + telemetry.car.yawRate * 0.34 - telemetry.curve * 0.4 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85) +
       apexSample.racingLineOffset * (podMode ? 0.28 : 0.46) +
-      cameraApexBias;
+      cameraApexBias +
+      powertrainLateralKick * (podMode ? 0.22 : 1.65);
     const targetDistance = telemetry.car.z + lookAhead;
     const cameraPoint = {
       x: carX - trackTangent.x * cameraLag + trackNormal.x * lateralShoulder,
@@ -364,6 +375,7 @@ export class ThreeRaceRenderer {
           telemetry.car.braking * (podMode ? 0.06 : 0.18) +
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
           speedRatio * (podMode ? 0.12 : 0.16) +
+          powertrainLurch * (podMode ? 0.018 : 0.055) +
           telemetry.surfaceRumble * 0.08 +
           Math.sin(performance.now() * 0.02) * airBuffet * (podMode ? 0.04 : 0.08),
         cameraPoint.z

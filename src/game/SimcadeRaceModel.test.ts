@@ -192,6 +192,33 @@ describe("SimcadeRaceModel", () => {
     expect(heated.speedKph).toBeLessThan(260);
   });
 
+  it("shifts through gears with a momentary power cut and traction bite", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("mirage"),
+      weather: findWeather("storm"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.2, { throttle: 1 });
+
+    let peakShiftCut = 0;
+    let peakTractionBite = 0;
+    let highestGear = 1;
+    for (let elapsed = 0; elapsed < 7; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true });
+      peakShiftCut = Math.max(peakShiftCut, telemetry.shiftCut);
+      peakTractionBite = Math.max(peakTractionBite, telemetry.tractionBite);
+      highestGear = Math.max(highestGear, telemetry.gear);
+    }
+
+    const telemetry = model.telemetry();
+    expect(highestGear).toBeGreaterThan(1);
+    expect(peakShiftCut).toBeGreaterThan(0.2);
+    expect(peakTractionBite).toBeGreaterThan(0.2);
+    expect(telemetry.rpm).toBeGreaterThan(4200);
+    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited"]).toContain(telemetry.powerState);
+  });
+
   it("steers with grip limits and loses grip off track", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -320,6 +347,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.aeroBoostAvailable).toBe(false);
     expect(telemetry.aeroBoostActive).toBe(0);
     expect(telemetry.aeroDragReduction).toBe(0);
+    expect(telemetry.shiftCut).toBe(0);
+    expect(telemetry.tractionBite).toBe(0);
+    expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);
     expect(telemetry.tireState.length).toBeGreaterThan(0);
