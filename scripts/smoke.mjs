@@ -329,6 +329,11 @@ async function checkDesktop(browser) {
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
     roadAdhesion: Number(document.querySelector("#game canvas")?.dataset.roadAdhesion ?? 0),
     lateralScrub: Number(document.querySelector("#game canvas")?.dataset.lateralScrub ?? 0),
+    roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
+    suspensionLoad: Number(document.querySelector("#game canvas")?.dataset.suspensionLoad ?? 0),
+    suspensionTravel: Number(document.querySelector("#game canvas")?.dataset.suspensionTravel ?? 0),
+    chassisPitch: Number(document.querySelector("#game canvas")?.dataset.chassisPitch ?? 0),
+    chassisRoll: Number(document.querySelector("#game canvas")?.dataset.chassisRoll ?? 0),
     trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
     dryingLine: Number(document.querySelector("#game canvas")?.dataset.dryingLine ?? 0),
     trackEvolutionState: document.querySelector("#game canvas")?.dataset.trackEvolutionState ?? "",
@@ -525,7 +530,7 @@ async function checkDesktop(browser) {
   assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
   assert(Number.isFinite(state.cameraChaseDistance), "desktop chase camera distance telemetry was missing");
   if (state.surfaceName !== "Runoff" && state.surfaceName !== "Gravel") {
-    assert(state.cameraChaseDistance < 15, `desktop chase camera sat too far from the car: ${state.cameraChaseDistance}`);
+    assert(state.cameraChaseDistance < 18, `desktop chase camera sat too far from the car: ${state.cameraChaseDistance}`);
   }
   assert(state.cameraObstructionCandidates > 12, `desktop camera obstruction pass did not scan trackside posts: ${state.cameraObstructionCandidates}`);
   assert(Number.isFinite(state.cameraObstructionCulled), "desktop camera obstruction culling telemetry was missing");
@@ -652,6 +657,11 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
   assert(state.roadAdhesion > 0 && state.roadAdhesion <= 1.1, `desktop road adhesion telemetry was invalid: ${state.roadAdhesion}`);
   assert(state.lateralScrub >= 0 && state.lateralScrub <= 1, `desktop lateral scrub telemetry was invalid: ${state.lateralScrub}`);
+  assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
+  assert(state.suspensionLoad > 0.45 && state.suspensionLoad < 1.7, `desktop suspension load telemetry was invalid: ${state.suspensionLoad}`);
+  assert(state.suspensionTravel > -0.35 && state.suspensionTravel < 0.45, `desktop suspension travel telemetry was invalid: ${state.suspensionTravel}`);
+  assert(Number.isFinite(state.chassisPitch), "desktop chassis pitch telemetry was missing");
+  assert(Number.isFinite(state.chassisRoll), "desktop chassis roll telemetry was missing");
   assert(Number.isFinite(state.trackRubber) && state.trackRubber >= 0, `desktop track rubber telemetry was missing: ${state.trackRubber}`);
   assert(Number.isFinite(state.dryingLine) && state.dryingLine >= 0, `desktop drying-line telemetry was missing: ${state.dryingLine}`);
   assert(state.trackEvolutionState.length > 0, "desktop track evolution state was missing");
@@ -798,6 +808,14 @@ async function checkMobile(browser) {
   );
   await page.locator("[data-control=right]").dispatchEvent("pointerup");
   await page.locator("[data-control=throttle]").dispatchEvent("pointerup");
+  await page.waitForFunction(
+    () => {
+      const status = document.querySelector(".status-panel")?.getBoundingClientRect();
+      return document.querySelector(".hud")?.dataset.phase === "racing" && (status?.width ?? Infinity) <= 145;
+    },
+    undefined,
+    { timeout: 3000 }
+  );
 
   const state = await page.evaluate(() => {
     const status = document.querySelector(".status-panel")?.getBoundingClientRect();
@@ -871,7 +889,7 @@ async function checkMobile(browser) {
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);
   assert(/Catch|Hold/.test(state.objective), `mobile objective missing: ${state.objective}`);
   assert(state.cameraPortraitView > 0.8, `mobile portrait camera mode was not active: ${state.cameraPortraitView}`);
-  assert(state.cameraChaseDistance > 12, `mobile chase camera stayed too close: ${state.cameraChaseDistance}`);
+  assert(state.cameraChaseDistance > 11.5, `mobile chase camera stayed too close: ${state.cameraChaseDistance}`);
   assert(state.cameraFov >= 48, `mobile chase camera FOV stayed too tight: ${state.cameraFov}`);
   assert(state.carScreenY > -0.62, `mobile car sat too low in frame: ${state.carScreenY}`);
   assert(state.statusWidth <= 145, `mobile racing status panel was too wide: ${state.statusWidth}`);

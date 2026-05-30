@@ -270,6 +270,11 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.surfaceRumble = telemetry.surfaceRumble.toFixed(3);
     this.renderer.domElement.dataset.roadAdhesion = telemetry.roadAdhesion.toFixed(3);
     this.renderer.domElement.dataset.lateralScrub = telemetry.lateralScrub.toFixed(3);
+    this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
+    this.renderer.domElement.dataset.suspensionLoad = telemetry.suspensionLoad.toFixed(3);
+    this.renderer.domElement.dataset.suspensionTravel = telemetry.suspensionTravel.toFixed(3);
+    this.renderer.domElement.dataset.chassisPitch = telemetry.car.pitch.toFixed(3);
+    this.renderer.domElement.dataset.chassisRoll = telemetry.car.roll.toFixed(3);
     this.renderer.domElement.dataset.trackRubber = telemetry.trackRubber.toFixed(3);
     this.renderer.domElement.dataset.dryingLine = telemetry.dryingLine.toFixed(3);
     this.renderer.domElement.dataset.trackEvolutionState = telemetry.trackEvolutionState;
@@ -334,12 +339,21 @@ export class ThreeRaceRenderer {
     const speedRatio = Math.min(1, telemetry.speedKph / 310);
     this.car.position.set(carX, carY, carZ);
     const rumblePulse = Math.sin(performance.now() * 0.052) * telemetry.surfaceRumble;
-    this.car.position.y += Math.sin(performance.now() * 0.016) * speedRatio * 0.018 + telemetry.car.slip * 0.026 + rumblePulse * 0.032;
+    this.car.position.y +=
+      Math.sin(performance.now() * 0.016) * speedRatio * 0.018 +
+      telemetry.car.slip * 0.026 +
+      rumblePulse * 0.032 -
+      telemetry.suspensionTravel * 0.045;
     this.car.rotation.y = trackYaw - telemetry.car.heading - telemetry.curve * 0.5;
     this.car.rotation.x =
-      telemetry.car.braking * 0.035 - telemetry.car.throttle * speedRatio * 0.018 + telemetry.shiftCut * 0.018 + telemetry.tractionBite * 0.014 + rumblePulse * 0.018;
+      telemetry.car.pitch +
+      telemetry.car.braking * 0.035 -
+      telemetry.car.throttle * speedRatio * 0.018 +
+      telemetry.shiftCut * 0.018 +
+      telemetry.tractionBite * 0.014 +
+      rumblePulse * 0.018;
     this.car.rotation.z =
-      -telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
+      telemetry.car.roll - telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
     this.animateFormulaCar(this.car, {
       distance: telemetry.car.z,
       speedKph: telemetry.speedKph,
@@ -1058,9 +1072,15 @@ export class ThreeRaceRenderer {
       glowMaterial.color.set(brakeGlow > 0.25 ? "#ff3156" : "#69f7ff");
     }
 
-    this.cockpitFrame.position.y = -0.42 - speedRatio * 0.025 + telemetry.car.braking * 0.018 + Math.sin(performance.now() * 0.018) * speedRatio * 0.004;
+    this.cockpitFrame.position.y =
+      -0.42 -
+      speedRatio * 0.025 +
+      telemetry.car.braking * 0.018 -
+      telemetry.suspensionTravel * 0.035 +
+      Math.sin(performance.now() * 0.018) * speedRatio * 0.004;
     this.cockpitFrame.position.x = clamp(telemetry.carX / 44, -0.06, 0.06) + telemetry.car.yawRate * 0.015;
-    this.cockpitFrame.rotation.z = clamp(-telemetry.car.yawRate * 0.018 + telemetry.car.bank * 0.025, -0.035, 0.035);
+    this.cockpitFrame.rotation.x = clamp(telemetry.car.pitch * 0.32, -0.035, 0.035);
+    this.cockpitFrame.rotation.z = clamp(telemetry.car.roll * 0.28 - telemetry.car.yawRate * 0.018 + telemetry.car.bank * 0.025, -0.042, 0.042);
 
     this.renderer.domElement.dataset.cockpitWheelAngle = steerAngle.toFixed(3);
     this.renderer.domElement.dataset.cockpitBrakeGlow = brakeGlow.toFixed(2);
