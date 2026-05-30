@@ -90,6 +90,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Panic braking now bleeds steering authority through lockup and tire saturation, so full brake plus full lock scrubs forward instead of rotating like an arcade handbrake.
 - Full braking can now bring the car all the way to rest, and throttle has to build speed back up instead of snapping to a hidden rolling minimum.
 - Standing starts and post-stop restarts now build through available traction, so wet asphalt crawls away with wheelspin instead of launching like dry pavement.
+- Full-lock restarts now scrub front grip and give up launch drive, so throttle plus maximum steering feels like overloaded tires instead of a sideways snap.
 - Wheel-to-wheel contact can now leave persistent front-wing damage, costing downforce and making the car harder to place until the run ends.
 - A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
 - The car now carries a soft dynamic contact shadow, which helps it feel planted on the circuit instead of floating above the procedural surface.
