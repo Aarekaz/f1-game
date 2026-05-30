@@ -28,6 +28,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Race results show steward status and penalties, not just pace numbers.
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
+- Steering input is shaped for finer center control and quicker opposite-lock recovery, so keyboard and gamepad corrections feel less twitchy.
 - A driver-aid HUD chip that shows when balanced assist is actively steering, braking, or trimming throttle.
 - Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.

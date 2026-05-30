@@ -31,6 +31,16 @@ function approach(current: number, target: number, amount: number) {
   return current + (target - current) * clamp01(amount);
 }
 
+function clampSigned(value: number) {
+  return Math.max(-1, Math.min(1, value));
+}
+
+export function shapeSteerInput(value: number) {
+  const clamped = clampSigned(value);
+  const magnitude = Math.abs(clamped);
+  return Math.sign(clamped) * Math.pow(magnitude, 1.18);
+}
+
 export class InputState {
   private keys: KeyMap = {
     left: false,
@@ -80,8 +90,10 @@ export class InputState {
   update(dt: number): InputActions {
     const steerTarget = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
     const gamepad = this.readGamepad();
-    const combinedSteerTarget = Math.abs(gamepad.steer) > Math.abs(steerTarget) ? gamepad.steer : steerTarget;
-    this.steer = approach(this.steer, combinedSteerTarget, dt * (combinedSteerTarget === 0 ? 9 : 6));
+    const combinedSteerTarget = shapeSteerInput(Math.abs(gamepad.steer) > Math.abs(steerTarget) ? gamepad.steer : steerTarget);
+    const steeringOppositeLock = this.steer !== 0 && combinedSteerTarget !== 0 && Math.sign(this.steer) !== Math.sign(combinedSteerTarget);
+    const steeringResponse = combinedSteerTarget === 0 ? 10.5 : steeringOppositeLock ? 11.5 : 6.4;
+    this.steer = approach(this.steer, combinedSteerTarget, dt * steeringResponse);
     this.throttle = approach(this.throttle, Math.max(this.keys.throttle ? 1 : 0, gamepad.throttle), dt * 7);
     this.brake = approach(this.brake, Math.max(this.keys.brake ? 1 : 0, gamepad.brake), dt * 10);
 

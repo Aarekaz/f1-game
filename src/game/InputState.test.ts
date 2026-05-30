@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { InputState } from "./InputState";
+import { InputState, shapeSteerInput } from "./InputState";
 
 type StubButton = {
   pressed: boolean;
@@ -19,6 +19,14 @@ function stubGamepad(buttons: StubButton[], axes = [0]) {
 describe("InputState", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("shapes steering for finer center control while preserving full lock", () => {
+    expect(shapeSteerInput(0)).toBe(0);
+    expect(shapeSteerInput(1)).toBe(1);
+    expect(shapeSteerInput(-1)).toBe(-1);
+    expect(shapeSteerInput(0.25)).toBeLessThan(0.25);
+    expect(shapeSteerInput(-0.5)).toBeGreaterThan(-0.5);
   });
 
   it("keeps analog gamepad throttle, brake, and ERS as held controls", () => {
@@ -71,5 +79,19 @@ describe("InputState", () => {
     buttons[4].pressed = true;
     const pressedAgain = input.update(1 / 60);
     expect(pressedAgain.cameraToggle).toBe(true);
+  });
+
+  it("recovers opposite lock faster than normal steering build-up", () => {
+    const buttons = makeButtons();
+    stubGamepad(buttons, [1]);
+
+    const input = new InputState();
+    const right = input.update(1 / 20);
+    input.update(1 / 20);
+    stubGamepad(buttons, [-1]);
+    const left = input.update(1 / 20);
+
+    expect(right.steer).toBeGreaterThan(0.25);
+    expect(left.steer).toBeLessThan(0);
   });
 });
