@@ -837,7 +837,12 @@ export class SimcadeRaceModel {
     const torqueCurve = this.engineTorqueCurve();
     const shiftInterruption = 1 - this.shiftCut * 0.54;
     const steeringPowerTrim = clamp(steeringLoadDemand * 0.34, 0, 0.46);
-    const tractionDelivery = (1 - this.tractionBite * 0.2) * clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08, 0.52, 1.06) * (1 - steeringPowerTrim);
+    const standingStartTraction = clamp(0.34 + speedRatio * 2.4 + this.longitudinalGrip * 0.18 - roadWetness * 0.16, 0.32, 1);
+    const tractionDelivery =
+      (1 - this.tractionBite * 0.2) *
+      clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08, 0.52, 1.06) *
+      (1 - steeringPowerTrim) *
+      standingStartTraction;
     const acceleration =
       throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
@@ -857,7 +862,7 @@ export class SimcadeRaceModel {
       : clamp((72 - this.speed) / 72, 0, 1) * settledRecoveryInput * (surface.name === "Gravel" ? 0.32 : 0.58);
     const looseSurfaceRecoveryDrive = onTrack
       ? 0
-      : settledRecoveryInput * (surface.name === "Gravel" ? 54 : 82) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
+      : settledRecoveryInput * (surface.name === "Gravel" ? 68 : 96) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
     const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief));
     this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42, 0, 1), dt * 12);
 
