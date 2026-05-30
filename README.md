@@ -14,6 +14,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- | --- |
 | ![Northstar Ring wet storm](readme-assets/screenshots/03-northstar-wet-storm.png) | ![Mirage Bay GP dusk pack](readme-assets/screenshots/04-mirage-dusk-pack.png) |
 
+| Loose-surface crawl |
+| --- |
+| ![Aurelia GP loose-surface crawl](readme-assets/screenshots/05-aurelia-loose-surface-crawl.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -73,6 +77,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Longitudinal grip now gates throttle and braking, so running wide over kerbs/runoff costs drive and stopping power instead of only changing the scenery label.
 - Loose-surface mistakes now crawl back when the driver releases full-lock steering, so runoff and gravel cost time without turning the car into a dead stop.
 - Stranded runoff recovery now rewards steering back toward the circuit while steering away still bogs the car, making low-speed rejoin control feel intentional instead of stuck.
+- Stopped runoff and gravel recoveries now respond to partial throttle when the driver points back at the circuit, so rejoining feels like crawling through a surface instead of toggling between stuck and launched.
 - High-speed full-lock steering now eats into the same tire budget before the car leaves the track, so the front tires scrub and the engine stops pulling like it is still on a straight.
 - Steering now needs rolling speed before it can yaw or sidestep the car, so turning the wheel at a full stop no longer rotates the chassis in place.
 - Road centering, camber, and rejoin pull now need rolling speed or active throttle, so a stopped off-line car stays planted instead of being dragged sideways by invisible forces.
