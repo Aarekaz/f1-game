@@ -15,6 +15,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Racing-style gear, RPM, and shift-light feedback in the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - Race results can advance straight into the next Apex Series event, so a session feels like part of a ladder instead of a one-off run.
+- Race results show steward status and penalties, not just pace numbers.
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.

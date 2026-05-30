@@ -63,10 +63,15 @@ async function checkDesktop(browser) {
     text: document.querySelector("#audio-toggle")?.textContent ?? "",
     stored: window.localStorage.getItem("apex-formula:audio-muted") ?? ""
   }));
+  const resultStewardFields = await page.evaluate(() => ({
+    penalty: Boolean(document.querySelector("#result-penalty")),
+    steward: Boolean(document.querySelector("#result-steward"))
+  }));
   assert(audioInitial.pressed === "false" && audioInitial.text === "SND", `desktop audio toggle initial state was wrong: ${JSON.stringify(audioInitial)}`);
   assert(audioMuted.pressed === "true" && audioMuted.label === "Unmute audio" && audioMuted.text === "OFF", `desktop audio mute state was wrong: ${JSON.stringify(audioMuted)}`);
   assert(audioMuted.stored === "true", `desktop audio mute did not persist: ${audioMuted.stored}`);
   assert(audioUnmuted.pressed === "false" && audioUnmuted.text === "SND" && audioUnmuted.stored === "false", `desktop audio unmute state was wrong: ${JSON.stringify(audioUnmuted)}`);
+  assert(resultStewardFields.penalty && resultStewardFields.steward, "desktop result steward fields were missing");
 
   const seriesStart = await page.evaluate(() => ({
     rows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? ""),

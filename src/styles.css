@@ -590,6 +590,10 @@ body {
   font-weight: 950;
 }
 
+.game-panel dd.warning {
+  color: #ff8f7d;
+}
+
 .result-sectors {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

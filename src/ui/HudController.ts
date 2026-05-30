@@ -79,6 +79,8 @@ export class HudController {
   private resultFlow = optionalElement("result-flow");
   private resultGrade = optionalElement("result-grade");
   private resultPersonalBest = optionalElement("result-pb");
+  private resultPenalty = optionalElement("result-penalty");
+  private resultSteward = optionalElement("result-steward");
   private resultSeriesTitle = optionalElement("result-series-title");
   private resultSeriesScore = optionalElement("result-series-score");
   private resultSectors = [
@@ -381,6 +383,22 @@ export class HudController {
       const update = this.latestUpdate;
       this.resultPersonalBest.textContent =
         update && (update.isNewTotalBest || update.isNewLapBest || update.isNewFlowBest) ? "New" : this.latestBest ? "Held" : "--";
+    }
+
+    if (this.resultPenalty) {
+      this.resultPenalty.textContent = telemetry.penaltySeconds > 0 ? `+${telemetry.penaltySeconds}s` : "Clear";
+      this.resultPenalty.classList.toggle("warning", telemetry.penaltySeconds > 0);
+    }
+
+    if (this.resultSteward) {
+      const stewardText =
+        telemetry.penaltySeconds > 0
+          ? `${telemetry.trackLimitWarnings} warning${telemetry.trackLimitWarnings === 1 ? "" : "s"}`
+          : telemetry.cleanLap && telemetry.lapValid
+            ? "Clean"
+            : "Invalid";
+      this.resultSteward.textContent = stewardText;
+      this.resultSteward.classList.toggle("warning", telemetry.penaltySeconds > 0 || !telemetry.cleanLap || !telemetry.lapValid);
     }
 
     this.resultSectors.forEach((sector, index) => {
