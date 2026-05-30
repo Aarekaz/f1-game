@@ -763,13 +763,20 @@ export function buildGpCircuit() {
 
   const startElevation = trackElevationAt(18);
   const startBridgePoint = trackWorldPointAt(38, 0);
+  const timingBridgeClearance = 11.9;
+  const timingBridgeDeckHeight = startElevation + 6.35;
   const timingBridge = new THREE.Group();
-  timingBridge.name = "timing-bridge";
+  timingBridge.name = "camera-safe-timing-bridge";
   timingBridge.position.set(startBridgePoint.x, 0, startBridgePoint.z);
   timingBridge.rotation.y = trackWorldHeadingAt(38);
-  timingBridge.add(makeBox("timing-bridge-crossbar", [18.4, 0.72, 0.5], [0, startElevation + 5.2, 0], bridgeMaterial));
-  timingBridge.add(makeBox("timing-bridge-left-upright", [0.5, 5.2, 0.5], [-8.9, startElevation + 2.6, 0], bridgeMaterial));
-  timingBridge.add(makeBox("timing-bridge-right-upright", [0.5, 5.2, 0.5], [8.9, startElevation + 2.6, 0], bridgeMaterial));
+  timingBridge.userData.cameraSafe = true;
+  timingBridge.add(makeBox("timing-bridge-crossbar", [25.1, 0.48, 0.42], [0, timingBridgeDeckHeight, 0], bridgeMaterial));
+  timingBridge.add(
+    makeBox("timing-bridge-left-upright", [0.34, 5.95, 0.34], [-timingBridgeClearance, startElevation + 2.98, 0], bridgeMaterial)
+  );
+  timingBridge.add(
+    makeBox("timing-bridge-right-upright", [0.34, 5.95, 0.34], [timingBridgeClearance, startElevation + 2.98, 0], bridgeMaterial)
+  );
   circuit.add(timingBridge);
   const startLinePoint = trackWorldPointAt(18, 0);
   const startLine = makeBox("start-line", [12.2, 0.025, 0.42], [startLinePoint.x, startElevation + 0.055, startLinePoint.z], kerbWhite);
@@ -827,7 +834,10 @@ export function buildGpCircuit() {
     pitWallModules: dynamicPieces.filter((piece) => piece.object.name === "fictional-pit-wall").length,
     marshalPosts: dynamicPieces.filter((piece) => piece.object.name === "marshal-post").length,
     checkpointGates: checkpointGateCount,
-    venueHero: venueHero.name
+    venueHero: venueHero.name,
+    timingBridge: timingBridge.name,
+    timingBridgeClearance,
+    timingBridgeDeckHeight
   };
   circuit.userData.surfaceStats = {
     terrainBands: 2,

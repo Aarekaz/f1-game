@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
 import {
+  getTrackCheckpoints,
+  getTrackSectorEnds,
   getActiveTrackLayout,
   sampleTrack,
   setActiveTrackLayout,
@@ -352,6 +354,7 @@ export class ThreeRaceRenderer {
     const cameraLag = podMode
       ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
       : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2 + powertrainLurch;
+    const cameraStructureLift = podMode ? 0 : this.cameraStructureLift(telemetry.car.z, speedRatio);
     const lateralShoulder = podMode
       ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 - powertrainLateralKick * 0.08
       : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62 - powertrainLateralKick * 0.55;
@@ -384,6 +387,7 @@ export class ThreeRaceRenderer {
           telemetry.car.braking * (podMode ? 0.06 : 0.18) +
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
           speedRatio * (podMode ? 0.12 : 0.16) +
+          cameraStructureLift +
           powertrainLurch * (podMode ? 0.018 : 0.055) +
           telemetry.surfaceRumble * 0.08 +
           Math.sin(performance.now() * 0.02) * airBuffet * (podMode ? 0.04 : 0.08),
@@ -391,7 +395,7 @@ export class ThreeRaceRenderer {
       );
       this.desiredCameraTarget.set(
         targetPoint.x + Math.sin(performance.now() * 0.025) * airBuffet * (podMode ? 0.06 : 0.14),
-        carY + (podMode ? 0.82 : 0.68) + telemetry.car.slip * 0.18 + Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
+        carY + (podMode ? 0.82 : 0.68) + cameraStructureLift * 0.18 + telemetry.car.slip * 0.18 + Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
         targetPoint.z
       );
       if (telemetry.cameraSnap || this.cameraModeSnap) {
@@ -425,6 +429,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraBuffet = airBuffet.toFixed(2);
     this.renderer.domElement.dataset.cameraLookAhead = lookAhead.toFixed(2);
     this.renderer.domElement.dataset.cameraApexBias = cameraApexBias.toFixed(3);
+    this.renderer.domElement.dataset.cameraStructureLift = cameraStructureLift.toFixed(3);
     this.renderer.domElement.dataset.cameraRoll = cameraRoll.toFixed(3);
     this.renderer.domElement.dataset.cameraFov = this.camera.fov.toFixed(2);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
@@ -1104,6 +1109,9 @@ export class ThreeRaceRenderer {
           marshalPosts: number;
           checkpointGates: number;
           venueHero: string;
+          timingBridge: string;
+          timingBridgeClearance: number;
+          timingBridgeDeckHeight: number;
         }
       | undefined;
     const surfaceStats = this.circuit.userData.surfaceStats as
@@ -1126,6 +1134,9 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.circuitMarshalPosts = String(stats.marshalPosts);
       this.renderer.domElement.dataset.circuitCheckpointGates = String(stats.checkpointGates);
       this.renderer.domElement.dataset.circuitVenueHero = stats.venueHero;
+      this.renderer.domElement.dataset.circuitTimingBridge = stats.timingBridge;
+      this.renderer.domElement.dataset.circuitTimingBridgeClearance = stats.timingBridgeClearance.toFixed(1);
+      this.renderer.domElement.dataset.circuitTimingBridgeDeckHeight = stats.timingBridgeDeckHeight.toFixed(1);
     }
 
     if (surfaceStats) {
@@ -1138,6 +1149,24 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.surfaceGridSlots = String(surfaceStats.gridSlots);
       this.renderer.domElement.dataset.surfacePuddles = String(surfaceStats.puddles);
     }
+  }
+
+  private cameraStructureLift(distance: number, speedRatio: number) {
+    const structureDistances = [
+      38,
+      ...getTrackCheckpoints().map((checkpoint) => checkpoint.distance),
+      ...getTrackSectorEnds().filter((sectorEnd) => sectorEnd < TRACK_LOOP_LENGTH)
+    ];
+    let strongest = 0;
+
+    for (const structureDistance of structureDistances) {
+      const normalizedDelta = ((distance - structureDistance + TRACK_LOOP_LENGTH / 2) % TRACK_LOOP_LENGTH + TRACK_LOOP_LENGTH) % TRACK_LOOP_LENGTH;
+      const wrappedDelta = Math.abs(normalizedDelta - TRACK_LOOP_LENGTH / 2);
+      const influence = clamp(1 - wrappedDelta / 36, 0, 1);
+      strongest = Math.max(strongest, influence * influence);
+    }
+
+    return strongest * (0.58 + speedRatio * 0.44);
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {

@@ -218,6 +218,7 @@ async function checkDesktop(browser) {
     cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
     cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
+    cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
     cameraRoll: Number(document.querySelector("#game canvas")?.dataset.cameraRoll ?? 0),
     cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
@@ -315,6 +316,9 @@ async function checkDesktop(browser) {
     circuitMarshalPosts: Number(document.querySelector("#game canvas")?.dataset.circuitMarshalPosts ?? 0),
     circuitCheckpointGates: Number(document.querySelector("#game canvas")?.dataset.circuitCheckpointGates ?? 0),
     circuitVenueHero: document.querySelector("#game canvas")?.dataset.circuitVenueHero ?? "",
+    circuitTimingBridge: document.querySelector("#game canvas")?.dataset.circuitTimingBridge ?? "",
+    circuitTimingBridgeClearance: Number(document.querySelector("#game canvas")?.dataset.circuitTimingBridgeClearance ?? 0),
+    circuitTimingBridgeDeckHeight: Number(document.querySelector("#game canvas")?.dataset.circuitTimingBridgeDeckHeight ?? 0),
     surfaceTerrainBands: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainBands ?? 0),
     surfaceRacingGroove: document.querySelector("#game canvas")?.dataset.surfaceRacingGroove ?? "",
     surfaceMarbles: document.querySelector("#game canvas")?.dataset.surfaceMarbles ?? "",
@@ -445,6 +449,7 @@ async function checkDesktop(browser) {
   assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
   assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
+  assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRoll), "desktop camera roll telemetry was missing");
   assert(state.cameraFov >= 42 && state.cameraFov <= 56, `desktop camera FOV was out of range: ${state.cameraFov}`);
   assert(podCamera.mode === "pod", `desktop camera toggle did not enter pod mode: ${podCamera.mode}`);
@@ -581,6 +586,9 @@ async function checkDesktop(browser) {
   assert(state.circuitMarshalPosts >= 3, `desktop marshal posts were missing: ${state.circuitMarshalPosts}`);
   assert(state.circuitCheckpointGates >= 7, `desktop checkpoint gates were missing: ${state.circuitCheckpointGates}`);
   assert(/northstar-venue-hero/.test(state.circuitVenueHero), `desktop venue hero did not match selected track: ${state.circuitVenueHero}`);
+  assert(state.circuitTimingBridge === "camera-safe-timing-bridge", `desktop timing bridge was not camera-safe: ${state.circuitTimingBridge}`);
+  assert(state.circuitTimingBridgeClearance >= 11, `desktop timing bridge clearance was too tight: ${state.circuitTimingBridgeClearance}`);
+  assert(state.circuitTimingBridgeDeckHeight >= 6, `desktop timing bridge deck was too low: ${state.circuitTimingBridgeDeckHeight}`);
   assert(state.surfaceTerrainBands >= 2, `desktop terrain was not split into road-safe bands: ${state.surfaceTerrainBands}`);
   assert(state.surfaceRacingGroove === "rubbered-racing-groove", `desktop rubbered racing groove was missing: ${state.surfaceRacingGroove}`);
   assert(/offline-marbles/.test(state.surfaceMarbles), `desktop offline marbles were missing: ${state.surfaceMarbles}`);
