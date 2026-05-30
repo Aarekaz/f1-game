@@ -299,6 +299,24 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(steered.car.yawRate)).toBeLessThan(0.05);
   });
 
+  it("does not slide a stopped off-line car back toward the road center", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.2, { throttle: 1 });
+    run(model, 0.9, { throttle: 1, steer: 0.85 });
+    const stopped = run(model, 2.8, { brake: 1 });
+    const rested = run(model, 3, {});
+
+    expect(stopped.speedKph).toBe(0);
+    expect(Math.abs(stopped.carX)).toBeGreaterThan(1);
+    expect(Math.abs(rested.carX - stopped.carX)).toBeLessThan(0.2);
+    expect(rested.speedKph).toBe(0);
+  });
+
   it("shifts through gears with a momentary power cut and traction bite", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("mirage"),
