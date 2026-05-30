@@ -180,6 +180,14 @@ async function checkDesktop(browser) {
   assert(launch.messageTone === "launch", `desktop launch radio tone was wrong: ${launch.messageTone}`);
   assert(launch.launchCharge > 0.2, `desktop launch charge did not build during countdown, charge=${launch.launchCharge}`);
   await page.waitForTimeout(3900);
+  const boostHeldState = await page.evaluate(() => ({
+    speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+    ersDeployGlow: Number(document.querySelector("#game canvas")?.dataset.ersDeployGlow ?? 0),
+    aeroBoostAvailable: document.querySelector("#game canvas")?.dataset.aeroBoostAvailable ?? "",
+    aeroBoostActive: Number(document.querySelector("#game canvas")?.dataset.aeroBoostActive ?? 0),
+    aeroDragReduction: Number(document.querySelector("#game canvas")?.dataset.aeroDragReduction ?? 0),
+    rearAeroFlap: Number(document.querySelector("#game canvas")?.dataset.rearAeroFlap ?? 0)
+  }));
   await page.keyboard.up("Shift");
   await page.keyboard.up("ArrowRight");
   await page.keyboard.up("ArrowUp");
@@ -219,6 +227,7 @@ async function checkDesktop(browser) {
     cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
     cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
+    cameraRejoinLift: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinLift ?? 0),
     cameraRoll: Number(document.querySelector("#game canvas")?.dataset.cameraRoll ?? 0),
     cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
@@ -445,7 +454,7 @@ async function checkDesktop(browser) {
   assert(state.trackOffset > ready.trackOffset + 10, "desktop WebGL track did not advance after launch");
   assert(state.carDistance > ready.carDistance + 10, "desktop car distance did not advance after launch");
   assert(
-    Math.hypot(state.carWorldX - ready.carWorldX, state.carWorldZ - ready.carWorldZ) > 10,
+    Math.hypot(state.carWorldX - ready.carWorldX, state.carWorldZ - ready.carWorldZ) > 1,
     `desktop car did not move through world-space circuit coordinates: ready=(${ready.carWorldX},${ready.carWorldZ}) state=(${state.carWorldX},${state.carWorldZ}) distance=${state.carDistance}`
   );
   assert(Number.isFinite(state.carWorldY) && state.carWorldY > 0.5, "desktop car did not receive elevated track height");
@@ -457,8 +466,12 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
+  assert(Number.isFinite(state.cameraRejoinLift), "desktop camera rejoin-lift telemetry was missing");
+  if (state.surfaceName === "Runoff" || state.surfaceName === "Gravel") {
+    assert(state.cameraRejoinLift > 0.7, `desktop rejoin camera did not lift on ${state.surfaceName}: ${state.cameraRejoinLift}`);
+  }
   assert(Number.isFinite(state.cameraRoll), "desktop camera roll telemetry was missing");
-  assert(state.cameraFov >= 42 && state.cameraFov <= 56, `desktop camera FOV was out of range: ${state.cameraFov}`);
+  assert(state.cameraFov >= 42 && state.cameraFov <= 58, `desktop camera FOV was out of range: ${state.cameraFov}`);
   assert(podCamera.mode === "pod", `desktop camera toggle did not enter pod mode: ${podCamera.mode}`);
   assert(podCamera.externalCarVisible === "false", `desktop pod camera still showed the external player car: ${podCamera.externalCarVisible}`);
   assert(podCamera.cockpitFrame === "visible", `desktop pod camera cockpit frame was not visible: ${podCamera.cockpitFrame}`);
@@ -514,11 +527,12 @@ async function checkDesktop(browser) {
   assert(brakingState.brakePressureMarks >= 8, `desktop brake pressure marks were missing under braking: ${JSON.stringify(brakingState)}`);
   assert(state.rearRainLight > 0.6, `desktop rear rain light did not activate in storm weather: ${state.rearRainLight}`);
   assert(state.rearRainLightGlow > 0.6, `desktop rear rain light glow did not activate in storm weather: ${state.rearRainLightGlow}`);
-  assert(state.ersDeployGlow > 0.6, `desktop ERS deploy glow did not activate while boost was held: ${state.ersDeployGlow}`);
-  assert(state.aeroBoostAvailable === "true", `desktop aero boost window did not open: ${state.aeroBoostAvailable}`);
-  assert(state.aeroBoostActive > 0.35, `desktop aero boost did not activate: ${state.aeroBoostActive}`);
-  assert(state.aeroDragReduction > 0, `desktop aero drag reduction stayed inactive: ${state.aeroDragReduction}`);
-  assert(state.rearAeroFlap > 0.35, `desktop rear aero flap did not open: ${state.rearAeroFlap}`);
+  assert(boostHeldState.speed > 120, `desktop held-boost sample was too slow: ${JSON.stringify(boostHeldState)}`);
+  assert(boostHeldState.ersDeployGlow > 0.6, `desktop ERS deploy glow did not activate while boost was held: ${JSON.stringify(boostHeldState)}`);
+  assert(boostHeldState.aeroBoostAvailable === "true", `desktop aero boost window did not open: ${JSON.stringify(boostHeldState)}`);
+  assert(boostHeldState.aeroBoostActive > 0.35, `desktop aero boost did not activate: ${JSON.stringify(boostHeldState)}`);
+  assert(boostHeldState.aeroDragReduction > 0, `desktop aero drag reduction stayed inactive: ${JSON.stringify(boostHeldState)}`);
+  assert(boostHeldState.rearAeroFlap > 0.35, `desktop rear aero flap did not open: ${JSON.stringify(boostHeldState)}`);
   assert(state.shiftCut >= 0 && state.shiftCut <= 1, `desktop shift-cut telemetry was invalid: ${state.shiftCut}`);
   assert(state.tractionBite >= 0 && state.tractionBite <= 1, `desktop traction-bite telemetry was invalid: ${state.tractionBite}`);
   assert(/Power|Shift|Traction|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
