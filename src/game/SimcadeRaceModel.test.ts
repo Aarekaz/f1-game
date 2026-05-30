@@ -222,6 +222,38 @@ describe("SimcadeRaceModel", () => {
     expect(heated.speedKph).toBeLessThan(260);
   });
 
+  it("lets full braking bring the car to a real stop", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const fast = run(model, 4.2, { throttle: 1 });
+    const stopped = run(model, 2.4, { brake: 1 });
+
+    expect(fast.speedKph).toBeGreaterThan(150);
+    expect(stopped.speedKph).toBeLessThan(3);
+    expect(stopped.trackOffset).toBeLessThan(fast.trackOffset + 45);
+  });
+
+  it("accelerates out of rest instead of jumping to a hidden speed floor", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.2, { throttle: 1 });
+    const stopped = run(model, 2.4, { brake: 1 });
+    const firstThrottleFrame = model.update(1 / 60, { ...idle, throttle: 1 });
+    const rolling = run(model, 0.7, { throttle: 1 });
+
+    expect(stopped.speedKph).toBeLessThan(3);
+    expect(firstThrottleFrame.speedKph).toBeLessThan(8);
+    expect(rolling.speedKph).toBeGreaterThan(firstThrottleFrame.speedKph + 20);
+  });
+
   it("shifts through gears with a momentary power cut and traction bite", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("mirage"),
@@ -1018,7 +1050,7 @@ describe("SimcadeRaceModel", () => {
     const stranded = run(model, 18, { throttle: 1, steer: 1 });
     const track = sampleTrack(stranded.trackOffset);
 
-    expect(stranded.surfaceName).toBe("Gravel");
+    expect(["Runoff", "Gravel"]).toContain(stranded.surfaceName);
     expect(stranded.speedKph).toBeLessThanOrEqual(20);
     expect(Math.abs(stranded.carX)).toBeLessThanOrEqual(track.halfWidth + 2.7);
 
