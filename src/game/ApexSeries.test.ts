@@ -12,6 +12,8 @@ const apexBest: PersonalBest = {
   cleanFinishes: 1,
   runs: 1,
   grade: "Apex",
+  seriesTargetMet: true,
+  seriesTargetMetAt: "2026-05-29T00:00:00.000Z",
   updatedAt: "2026-05-29T00:00:00.000Z"
 };
 
@@ -35,7 +37,21 @@ describe("ApexSeries", () => {
     expect(summary.maxScore).toBe(12);
     expect(summary.events[2]).toMatchObject({
       id: "northstar-storm",
-      status: "Apex / P2"
+      targetMet: true,
+      status: "Target met / Apex"
+    });
+  });
+
+  it("keeps a saved attempt separate from cleared target progress", () => {
+    const summary = summarizeApexSeries((session) =>
+      session.track.id === "northstar" ? { ...apexBest, seriesTargetMet: false, seriesTargetMetAt: undefined } : null
+    );
+
+    expect(summary.completed).toBe(0);
+    expect(summary.score).toBe(0);
+    expect(summary.events[2]).toMatchObject({
+      targetMet: false,
+      status: "Best Apex / P2"
     });
   });
 

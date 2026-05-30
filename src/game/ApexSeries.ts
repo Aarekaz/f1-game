@@ -22,6 +22,7 @@ export type ApexSeriesEvent = {
 export type ApexSeriesEventSummary = ApexSeriesEvent & {
   session: SessionConfig;
   best: PersonalBest | null;
+  targetMet: boolean;
   score: number;
   status: string;
 };
@@ -134,20 +135,22 @@ export function summarizeApexSeries(readBest: (session: SessionConfig) => Person
   const events = APEX_SERIES_EVENTS.map((event): ApexSeriesEventSummary => {
     const session = sessionForSeriesEvent(event);
     const best = readBest(session);
-    const score = scorePersonalBest(best);
+    const targetMet = best?.seriesTargetMet === true;
+    const score = targetMet ? scorePersonalBest(best) : 0;
     return {
       ...event,
       session,
       best,
+      targetMet,
       score,
-      status: best ? `${best.grade} / P${best.bestPosition}` : "Open"
+      status: targetMet ? `Target met / ${best.grade}` : best ? `Best ${best.grade} / P${best.bestPosition}` : "Open"
     };
   });
 
   return {
     events,
-    completed: events.filter((event) => event.best).length,
-    apexes: events.filter((event) => event.best?.grade === "Apex").length,
+    completed: events.filter((event) => event.targetMet).length,
+    apexes: events.filter((event) => event.targetMet && event.best?.grade === "Apex").length,
     score: events.reduce((total, event) => total + event.score, 0),
     maxScore: events.length * 4
   };

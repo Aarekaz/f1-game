@@ -23,6 +23,8 @@ export type PersonalBest = {
   cleanFinishes: number;
   runs: number;
   grade: string;
+  seriesTargetMet?: boolean;
+  seriesTargetMetAt?: string;
   updatedAt: string;
 };
 

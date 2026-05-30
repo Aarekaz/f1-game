@@ -533,6 +533,16 @@ body {
   text-transform: uppercase;
 }
 
+.game-panel .series-progress button[data-series-status="met"] b {
+  color: #17211b;
+  background: #d7eb8f;
+}
+
+.game-panel .series-progress button[data-series-status="attempt"] b {
+  color: #f5f7ee;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .game-panel button {
   justify-self: start;
   min-width: 140px;

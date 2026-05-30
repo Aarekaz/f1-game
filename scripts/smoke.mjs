@@ -38,6 +38,8 @@ async function checkDesktop(browser) {
         cleanFinishes: 1,
         runs: 1,
         grade: "Apex",
+        seriesTargetMet: true,
+        seriesTargetMetAt: "2026-05-29T00:00:00.000Z",
         updatedAt: "2026-05-29T00:00:00.000Z"
       })
     );
@@ -80,7 +82,7 @@ async function checkDesktop(browser) {
     active: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? ""
   }));
   assert(seriesStart.rows.length === 3, `desktop Apex Series rows missing: ${seriesStart.rows.join(" | ")}`);
-  assert(/Storm Charge.*Northstar Ring.*Apex \/ P3/i.test(seriesStart.rows.join(" | ")), "desktop Apex Series did not show saved Northstar progress");
+  assert(/Storm Charge.*Northstar Ring.*Target met \/ Apex/i.test(seriesStart.rows.join(" | ")), "desktop Apex Series did not show cleared Northstar progress");
   assert(seriesStart.active === "aurelia-rhythm", `desktop Apex Series default event was not active: ${seriesStart.active}`);
 
   await page.locator("[data-series-event='mirage-dusk']").click();

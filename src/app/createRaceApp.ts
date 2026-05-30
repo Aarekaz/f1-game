@@ -163,6 +163,7 @@ function syncSeriesProgress(activeSession: SessionConfig, onSelect: (event: Apex
     button.type = "button";
     button.className = isActive ? "active" : "";
     button.dataset.seriesEvent = event.id;
+    button.dataset.seriesStatus = event.targetMet ? "met" : event.best ? "attempt" : "open";
     button.setAttribute("aria-current", isActive ? "true" : "false");
     appendTextElement(button, "span", event.round, "series-round");
     const eventCopy = document.createElement("span");
@@ -430,22 +431,34 @@ export function createRaceApp() {
       const update = mergePersonalBest(previousBest, result);
       const seriesEvent = findApexSeriesEvent(session);
       const targetEvaluation = seriesEvent ? evaluateApexSeriesTarget(seriesEvent, result) : null;
-      queuedNextSeriesEvent = seriesEvent && targetEvaluation?.passed ? nextApexSeriesEvent(seriesEvent) : null;
-      savePersonalBest(session, update.best);
-      syncSessionBest(update.best);
+      const previousTargetMet = previousBest?.seriesTargetMet === true;
+      const targetMet = previousTargetMet || (targetEvaluation?.passed ?? false);
+      const bestToSave: PersonalBest = seriesEvent
+        ? {
+            ...update.best,
+            seriesTargetMet: targetMet,
+            seriesTargetMetAt: previousBest?.seriesTargetMetAt ?? (targetEvaluation?.passed ? update.best.updatedAt : undefined)
+          }
+        : update.best;
+      const previousSeriesScore = previousTargetMet ? scorePersonalBest(previousBest) : 0;
+      const seriesScore = targetMet ? scorePersonalBest(bestToSave) : 0;
+      const adjustedUpdate = { ...update, best: bestToSave };
+      queuedNextSeriesEvent = seriesEvent && targetMet ? nextApexSeriesEvent(seriesEvent) : null;
+      savePersonalBest(session, bestToSave);
+      syncSessionBest(bestToSave);
       syncSeriesProgress(session, selectSeriesEvent);
       syncNextSeriesEventButton(queuedNextSeriesEvent);
-      hud.setPersonalBest(update.best);
-      hud.setPersonalBestUpdate(update);
+      hud.setPersonalBest(bestToSave);
+      hud.setPersonalBestUpdate(adjustedUpdate);
       hud.setSeriesResult(
         seriesEvent
           ? {
               title: `${seriesEvent.round} ${seriesEvent.title}`,
               target: seriesEvent.target,
-              targetMet: targetEvaluation?.passed ?? false,
-              targetDetail: targetEvaluation?.passed ? (targetEvaluation?.summary ?? "") : (targetEvaluation?.misses[0] ?? ""),
-              score: scorePersonalBest(update.best),
-              scoreDelta: Math.max(0, scorePersonalBest(update.best) - scorePersonalBest(previousBest))
+              targetMet,
+              targetDetail: targetMet ? (targetEvaluation?.summary ?? "already cleared") : (targetEvaluation?.misses[0] ?? ""),
+              score: seriesScore,
+              scoreDelta: Math.max(0, seriesScore - previousSeriesScore)
             }
           : null
       );
