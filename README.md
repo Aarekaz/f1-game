@@ -27,6 +27,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
 - Trackside posts near the chase camera are culled when they would cut across the car, which keeps the view usable in dense circuit sections.
+- Foreground safety barriers now yield to the chase camera during kerb and runoff moments, keeping the car and road readable.
 - Overhead gate pieces also respect the chase camera, so checkpoint signage does not slap across the road when the player arrives at speed.
 - The chase camera now lifts and pulls back during runoff or gravel mistakes, keeping rejoin moments readable instead of letting foreground geometry swallow the car.
 - Rejoin framing now recenters on the actual car when it runs wide, instead of letting the ideal racing line pull the player into the HUD.
