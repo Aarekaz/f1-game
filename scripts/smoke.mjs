@@ -189,7 +189,7 @@ async function checkDesktop(browser) {
       );
     },
     undefined,
-    { timeout: 9000 }
+    { timeout: 12000 }
   );
   const boostHeldState = await page.evaluate(() => ({
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
@@ -261,6 +261,8 @@ async function checkDesktop(browser) {
     cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
     cameraRejoinLift: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinLift ?? 0),
     cameraRejoinFocus: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinFocus ?? 0),
+    cameraRoadRecoveryFocus: Number(document.querySelector("#game canvas")?.dataset.cameraRoadRecoveryFocus ?? 0),
+    cameraRoadTargetDelta: Number(document.querySelector("#game canvas")?.dataset.cameraRoadTargetDelta ?? 0),
     cameraRoll: Number(document.querySelector("#game canvas")?.dataset.cameraRoll ?? 0),
     cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
     cameraFrameGuard: Number(document.querySelector("#game canvas")?.dataset.cameraFrameGuard ?? 0),
@@ -533,9 +535,13 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRejoinLift), "desktop camera rejoin-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRejoinFocus), "desktop camera rejoin-focus telemetry was missing");
+  assert(Number.isFinite(state.cameraRoadRecoveryFocus), "desktop camera road-recovery telemetry was missing");
+  assert(Number.isFinite(state.cameraRoadTargetDelta), "desktop camera road-target telemetry was missing");
   if (state.surfaceName === "Runoff" || state.surfaceName === "Gravel") {
     assert(state.cameraRejoinLift > 0.7, `desktop rejoin camera did not lift on ${state.surfaceName}: ${state.cameraRejoinLift}`);
     assert(state.cameraRejoinFocus > 0.08, `desktop rejoin camera did not focus on the off-track car: ${state.cameraRejoinFocus}`);
+    assert(state.cameraRoadRecoveryFocus > 0.08, `desktop rejoin camera did not bias back toward the circuit: ${state.cameraRoadRecoveryFocus}`);
+    assert(state.cameraRoadTargetDelta > 0.2, `desktop rejoin camera kept looking at grass instead of the road: ${state.cameraRoadTargetDelta}`);
     assert(Math.abs(state.carScreenX) < 0.66, `desktop rejoin camera let the car drift toward HUD: ${state.carScreenX}`);
   }
   assert(Number.isFinite(state.cameraRoll), "desktop camera roll telemetry was missing");
@@ -781,7 +787,11 @@ async function checkMobile(browser) {
 
   await page.locator("[data-control=throttle]").dispatchEvent("pointerdown");
   await page.locator("[data-control=right]").dispatchEvent("pointerdown");
-  await page.waitForTimeout(3900);
+  await page.waitForFunction(
+    () => document.querySelector(".hud")?.dataset.phase === "racing" && Number(document.querySelector("#speed")?.textContent ?? 0) > 60,
+    undefined,
+    { timeout: 9000 }
+  );
   await page.locator("[data-control=right]").dispatchEvent("pointerup");
   await page.locator("[data-control=throttle]").dispatchEvent("pointerup");
 
@@ -799,6 +809,11 @@ async function checkMobile(browser) {
       speed: Number(document.querySelector("#speed")?.textContent ?? 0),
       objective: document.querySelector("#objective")?.textContent ?? "",
       canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
+      cameraPortraitView: Number(document.querySelector("#game canvas")?.dataset.cameraPortraitView ?? 0),
+      cameraChaseDistance: Number(document.querySelector("#game canvas")?.dataset.cameraChaseDistance ?? 0),
+      cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
+      carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
+      statusOpacity: Number(getComputedStyle(document.querySelector(".status-panel")).opacity),
       statusWidth: status?.width ?? 0,
       statusBottom: status?.bottom ?? 0,
       controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
@@ -851,7 +866,12 @@ async function checkMobile(browser) {
   assertCanvasBox(state.canvasBox, "mobile");
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);
   assert(/Catch|Hold/.test(state.objective), `mobile objective missing: ${state.objective}`);
-  assert(state.statusWidth <= 170, `mobile racing status panel was too wide: ${state.statusWidth}`);
+  assert(state.cameraPortraitView > 0.8, `mobile portrait camera mode was not active: ${state.cameraPortraitView}`);
+  assert(state.cameraChaseDistance > 12, `mobile chase camera stayed too close: ${state.cameraChaseDistance}`);
+  assert(state.cameraFov >= 48, `mobile chase camera FOV stayed too tight: ${state.cameraFov}`);
+  assert(state.carScreenY > -0.62, `mobile car sat too low in frame: ${state.carScreenY}`);
+  assert(state.statusWidth <= 145, `mobile racing status panel was too wide: ${state.statusWidth}`);
+  assert(state.statusOpacity < 0.8, `mobile racing status panel did not soften over the road: ${state.statusOpacity}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
   assert(state.throttleWidth >= 56, "mobile throttle button is too small");
   assert(state.cameraWidth >= 38, "mobile camera button is too small");
@@ -863,7 +883,11 @@ async function checkManualAssist(browser) {
   await page.selectOption("#assist-select", "manual");
   await page.click("#start-race");
   await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(4200);
+  await page.waitForFunction(
+    () => document.querySelector(".hud")?.dataset.phase === "racing" && Number(document.querySelector("#speed")?.textContent ?? 0) > 60,
+    undefined,
+    { timeout: 9000 }
+  );
   await page.keyboard.up("ArrowUp");
 
   const state = await page.evaluate(() => ({
