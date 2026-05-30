@@ -254,6 +254,7 @@ async function checkDesktop(browser) {
     cameraObstructionCulled: Number(document.querySelector("#game canvas")?.dataset.cameraObstructionCulled ?? 0),
     cameraBarrierObstructionsCulled: Number(document.querySelector("#game canvas")?.dataset.cameraBarrierObstructionsCulled ?? 0),
     cameraGateObstructionsCulled: Number(document.querySelector("#game canvas")?.dataset.cameraGateObstructionsCulled ?? 0),
+    cameraBoardObstructionsCulled: Number(document.querySelector("#game canvas")?.dataset.cameraBoardObstructionsCulled ?? 0),
     cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
     cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
@@ -262,6 +263,7 @@ async function checkDesktop(browser) {
     cameraRejoinFocus: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinFocus ?? 0),
     cameraRoll: Number(document.querySelector("#game canvas")?.dataset.cameraRoll ?? 0),
     cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
+    cameraFrameGuard: Number(document.querySelector("#game canvas")?.dataset.cameraFrameGuard ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     carScreenZ: Number(document.querySelector("#game canvas")?.dataset.carScreenZ ?? 0),
@@ -525,6 +527,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraObstructionCulled), "desktop camera obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraBarrierObstructionsCulled), "desktop barrier obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraGateObstructionsCulled), "desktop gate obstruction culling telemetry was missing");
+  assert(Number.isFinite(state.cameraBoardObstructionsCulled), "desktop board obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
@@ -537,6 +540,7 @@ async function checkDesktop(browser) {
   }
   assert(Number.isFinite(state.cameraRoll), "desktop camera roll telemetry was missing");
   assert(state.cameraFov >= 42 && state.cameraFov <= 58, `desktop camera FOV was out of range: ${state.cameraFov}`);
+  assert(state.cameraFrameGuard >= 0 && state.cameraFrameGuard <= 1, `desktop camera frame guard telemetry was invalid: ${state.cameraFrameGuard}`);
   assert(podCamera.mode === "pod", `desktop camera toggle did not enter pod mode: ${podCamera.mode}`);
   assert(podCamera.externalCarVisible === "false", `desktop pod camera still showed the external player car: ${podCamera.externalCarVisible}`);
   assert(podCamera.cockpitFrame === "visible", `desktop pod camera cockpit frame was not visible: ${podCamera.cockpitFrame}`);
