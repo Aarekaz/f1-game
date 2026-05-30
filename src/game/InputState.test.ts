@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { InputState, shapeSteerInput } from "./InputState";
+import { InputState, shapeKeyboardSteerInput, shapeSteerInput } from "./InputState";
 
 type StubButton = {
   pressed: boolean;
@@ -27,6 +27,14 @@ describe("InputState", () => {
     expect(shapeSteerInput(-1)).toBe(-1);
     expect(shapeSteerInput(0.25)).toBeLessThan(0.25);
     expect(shapeSteerInput(-0.5)).toBeGreaterThan(-0.5);
+  });
+
+  it("ramps keyboard steering from a soft initial angle to full lock", () => {
+    expect(shapeKeyboardSteerInput(0, 1)).toBe(0);
+    expect(shapeKeyboardSteerInput(1, 0)).toBeCloseTo(0.66);
+    expect(shapeKeyboardSteerInput(-1, 0.36)).toBeCloseTo(-0.83);
+    expect(shapeKeyboardSteerInput(1, 0.72)).toBe(1);
+    expect(shapeKeyboardSteerInput(1, 2)).toBe(1);
   });
 
   it("keeps analog gamepad throttle, brake, and ERS as held controls", () => {

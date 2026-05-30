@@ -41,6 +41,14 @@ export function shapeSteerInput(value: number) {
   return Math.sign(clamped) * Math.pow(magnitude, 1.18);
 }
 
+export function shapeKeyboardSteerInput(direction: number, heldForSeconds: number) {
+  const clamped = clampSigned(direction);
+  if (clamped === 0) return 0;
+
+  const holdBuild = clamp01(heldForSeconds / 0.72);
+  return Math.sign(clamped) * (0.66 + holdBuild * 0.34);
+}
+
 export class InputState {
   private keys: KeyMap = {
     left: false,
@@ -54,6 +62,8 @@ export class InputState {
   };
 
   private steer = 0;
+  private keyboardSteerHold = 0;
+  private keyboardSteerDirection = 0;
   private throttle = 0;
   private brake = 0;
   private launchPulse = false;
@@ -88,7 +98,18 @@ export class InputState {
   }
 
   update(dt: number): InputActions {
-    const steerTarget = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+    const keyboardSteerDirection = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+    if (keyboardSteerDirection === 0) {
+      this.keyboardSteerHold = 0;
+      this.keyboardSteerDirection = 0;
+    } else if (keyboardSteerDirection === this.keyboardSteerDirection) {
+      this.keyboardSteerHold += dt;
+    } else {
+      this.keyboardSteerDirection = keyboardSteerDirection;
+      this.keyboardSteerHold = dt;
+    }
+
+    const steerTarget = shapeKeyboardSteerInput(keyboardSteerDirection, this.keyboardSteerHold);
     const gamepad = this.readGamepad();
     const combinedSteerTarget = shapeSteerInput(Math.abs(gamepad.steer) > Math.abs(steerTarget) ? gamepad.steer : steerTarget);
     const steeringOppositeLock = this.steer !== 0 && combinedSteerTarget !== 0 && Math.sign(this.steer) !== Math.sign(combinedSteerTarget);
@@ -128,6 +149,8 @@ export class InputState {
       restart: false
     };
     this.steer = 0;
+    this.keyboardSteerHold = 0;
+    this.keyboardSteerDirection = 0;
     this.throttle = 0;
     this.brake = 0;
     this.launchPulse = false;
