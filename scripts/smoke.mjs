@@ -162,7 +162,6 @@ async function checkDesktop(browser) {
   assert(ready.speed === 0, "desktop race moved before start");
 
   await page.keyboard.down("ArrowUp");
-  await page.keyboard.down("ArrowRight");
   await page.keyboard.down("Shift");
   await page.waitForTimeout(1200);
   const launch = await page.evaluate(() => ({
@@ -201,6 +200,21 @@ async function checkDesktop(browser) {
     rearAeroFlap: Number(document.querySelector("#game canvas")?.dataset.rearAeroFlap ?? 0)
   }));
   await page.keyboard.up("Shift");
+  await page.keyboard.down("ArrowRight");
+  await page.waitForFunction(
+    () => Number(document.querySelector("#game canvas")?.dataset.airWakeIntensity ?? 0) > 0.01,
+    undefined,
+    { timeout: 3000 }
+  );
+  const trafficWakeState = await page.evaluate(() => ({
+    airWakeIntensity: Number(document.querySelector("#game canvas")?.dataset.airWakeIntensity ?? 0),
+    airWakeRibbons: Number(document.querySelector("#game canvas")?.dataset.airWakeRibbons ?? 0)
+  }));
+  await page.waitForFunction(
+    () => Number(document.querySelector("#game canvas")?.dataset.cameraRejoinFocus ?? 0) > 0.08,
+    undefined,
+    { timeout: 5000 }
+  );
   await page.keyboard.up("ArrowRight");
   await page.keyboard.up("ArrowUp");
 
@@ -240,6 +254,7 @@ async function checkDesktop(browser) {
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
     cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
     cameraRejoinLift: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinLift ?? 0),
+    cameraRejoinFocus: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinFocus ?? 0),
     cameraRoll: Number(document.querySelector("#game canvas")?.dataset.cameraRoll ?? 0),
     cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
@@ -491,8 +506,11 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRejoinLift), "desktop camera rejoin-lift telemetry was missing");
+  assert(Number.isFinite(state.cameraRejoinFocus), "desktop camera rejoin-focus telemetry was missing");
   if (state.surfaceName === "Runoff" || state.surfaceName === "Gravel") {
     assert(state.cameraRejoinLift > 0.7, `desktop rejoin camera did not lift on ${state.surfaceName}: ${state.cameraRejoinLift}`);
+    assert(state.cameraRejoinFocus > 0.08, `desktop rejoin camera did not focus on the off-track car: ${state.cameraRejoinFocus}`);
+    assert(Math.abs(state.carScreenX) < 0.66, `desktop rejoin camera let the car drift toward HUD: ${state.carScreenX}`);
   }
   assert(Number.isFinite(state.cameraRoll), "desktop camera roll telemetry was missing");
   assert(state.cameraFov >= 42 && state.cameraFov <= 58, `desktop camera FOV was out of range: ${state.cameraFov}`);
@@ -606,8 +624,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.draft), "desktop draft telemetry was missing");
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
   assert(Number.isFinite(state.cameraBuffet), "desktop camera buffet telemetry was missing");
-  assert(state.airWakeIntensity > 0.01, `desktop air wake did not react to traffic turbulence: ${state.airWakeIntensity}`);
-  assert(state.airWakeRibbons >= 10, `desktop air wake ribbons were missing: ${state.airWakeRibbons}`);
+  assert(trafficWakeState.airWakeIntensity > 0.01, `desktop air wake did not react to traffic turbulence: ${trafficWakeState.airWakeIntensity}`);
+  assert(trafficWakeState.airWakeRibbons >= 10, `desktop air wake ribbons were missing: ${trafficWakeState.airWakeRibbons}`);
   assert(Number.isFinite(state.rivalProximity), "desktop rival proximity telemetry was missing");
   assert(Number.isFinite(state.sideBySide), "desktop side-by-side telemetry was missing");
   assert(Number.isFinite(state.contactRisk), "desktop contact-risk telemetry was missing");
