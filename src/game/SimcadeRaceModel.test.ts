@@ -355,6 +355,25 @@ describe("SimcadeRaceModel", () => {
     expect(["Asphalt", "Kerb", "Runoff"]).toContain(forcedWide.surfaceName);
   });
 
+  it("rides the lateral road surface instead of the centerline height", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 5.2, { throttle: 1 });
+
+    const loaded = run(model, 1.8, { throttle: 1, steer: 0.9 });
+    const track = sampleTrack(loaded.trackOffset);
+    const normalized = clamp(loaded.carX / Math.max(1, track.halfWidth), -1.35, 1.35);
+    const bankedHeight = track.elevation + track.bank * normalized + 0.065;
+
+    expect(Math.abs(loaded.carX)).toBeGreaterThan(0.65);
+    expect(loaded.car.y).toBeCloseTo(bankedHeight, 4);
+    expect(Math.abs(loaded.car.y - (track.elevation + 0.065))).toBeGreaterThan(0.002);
+  });
+
   it("reduces forward bite when the car is not aligned with the road", () => {
     const misaligned = new SimcadeRaceModel();
     misaligned.update(1 / 60, { ...idle, launch: true });

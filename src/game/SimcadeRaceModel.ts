@@ -1,5 +1,5 @@
 import { RaceDirector } from "./RaceDirector";
-import { TRACK_LOOP_LENGTH, getTrackCheckpoints, getTrackSectorEnds, sampleTrack, setActiveTrackLayout, trackCurveAt } from "./trackPath";
+import { TRACK_LOOP_LENGTH, getTrackCheckpoints, getTrackSectorEnds, sampleTrack, setActiveTrackLayout, terrainHeightAt, trackCurveAt } from "./trackPath";
 import { DEFAULT_SESSION, type SessionConfig } from "../world/FictionalGpWorld";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
@@ -210,6 +210,19 @@ function moveToward(current: number, target: number, maxDelta: number) {
   return current + Math.sign(delta) * maxDelta;
 }
 
+function surfaceHeightAt(distance: number, lateral: number, track: ReturnType<typeof sampleTrack>, offset = 0) {
+  const normalized = clamp(lateral / Math.max(1, track.halfWidth), -1.35, 1.35);
+  const bankedRoad = track.elevation + track.bank * normalized;
+  const terrain = terrainHeightAt(distance, lateral);
+  const terrainBlend = clamp((Math.abs(lateral) - track.halfWidth - 1.9) / 2.2, 0, 1);
+  return bankedRoad * (1 - terrainBlend) + terrain * terrainBlend + offset;
+}
+
+function surfaceBankAt(lateral: number, track: ReturnType<typeof sampleTrack>) {
+  const runoffBlend = clamp((Math.abs(lateral) - track.halfWidth) / 2.65, 0, 1);
+  return track.bank * (1 - runoffBlend * 0.5) - Math.sign(lateral) * runoffBlend * 0.035;
+}
+
 function createRivals(): RivalState[] {
   const fieldSize = RIVAL_GRID.length;
   return RIVAL_GRID.map((rival, index) => ({
@@ -362,6 +375,7 @@ export class SimcadeRaceModel {
   telemetry(): RaceTelemetry {
     const delta = this.bestLap === null ? 0 : this.lapTime - this.bestLap;
     const track = sampleTrack(this.z);
+    const carLateral = this.x - track.center;
     const gripContext = this.trackGripContext(track);
     const director = this.director.snapshot(this.z);
     return {
@@ -446,7 +460,7 @@ export class SimcadeRaceModel {
       splitDelta: this.splitDelta,
       trackOffset: this.z,
       curve: track.curve,
-      carX: this.x - track.center,
+      carX: carLateral,
       overtakeStreak: this.overtakeStreak,
       trackSection: track.section.name,
       trackSector: track.section.sector,
@@ -478,9 +492,9 @@ export class SimcadeRaceModel {
       cameraSnap: this.cameraSnapTimer > 0,
       car: {
         x: this.x,
-        y: track.elevation + 0.065,
+        y: surfaceHeightAt(this.z, carLateral, track, 0.065),
         z: this.z,
-        bank: track.bank,
+        bank: surfaceBankAt(carLateral, track),
         heading: this.heading,
         yawRate: this.yawRate,
         pitch: this.chassisPitch,
@@ -500,9 +514,9 @@ export class SimcadeRaceModel {
           driver: rival.driver,
           team: rival.team,
           x: rivalTrack.center + rival.lane,
-          y: rivalTrack.elevation + 0.055,
+          y: surfaceHeightAt(rival.distance, rival.lane, rivalTrack, 0.055),
           z: rival.distance,
-          bank: rivalTrack.bank,
+          bank: surfaceBankAt(rival.lane, rivalTrack),
           heading: -trackCurveAt(rival.distance) * 0.8,
           color: rival.color,
           gap: (rival.distance - this.z) / 42,
