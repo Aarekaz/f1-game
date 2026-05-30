@@ -1145,7 +1145,13 @@ export class SimcadeRaceModel {
       this.lateralVelocity = approach(this.lateralVelocity, -side * Math.min(1.2, overflow * 0.65), dt * (10 + speedRatio * 8));
     }
     this.heading = approach(this.heading, -track.curve * 0.18 - side * 0.06, dt * (1.4 + speedRatio * 1.8));
-    this.speed = Math.min(this.speed, 118 - speedRatio * 18);
+    const apronImpact = clamp(overflow / 2.4, 0, 1);
+    const lateralStrike = clamp(Math.abs(this.lateralVelocity) / 8, 0, 1);
+    const apronDrag = (24 + speedRatio * 58) * (0.38 + apronImpact * 0.62) * (0.4 + lateralStrike * 0.6);
+    this.speed = Math.max(0, this.speed - apronDrag * dt);
+    this.lateralScrub = Math.max(this.lateralScrub, clamp(0.14 + apronImpact * 0.36 + lateralStrike * 0.18, 0, 0.72));
+    this.surfaceRumble = Math.max(this.surfaceRumble, clamp(0.18 + apronImpact * 0.34 + speedRatio * 0.18, 0, 0.82));
+    this.tireSaturation = Math.max(this.tireSaturation, clamp(apronImpact * 0.2 + lateralStrike * 0.16, 0, 0.5));
   }
 
   private recoverToCircuit() {
