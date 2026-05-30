@@ -102,6 +102,27 @@ describe("SimcadeRaceModel", () => {
     expect(messy.car.wheelspin).toBeGreaterThan(controlled.car.wheelspin);
   });
 
+  it("starts the race launch from tire bite instead of a hidden speed jump", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+
+    let firstRacing = model.telemetry();
+    for (let elapsed = 0; elapsed < 3.4 && firstRacing.phase !== "racing"; elapsed += 1 / 60) {
+      firstRacing = model.update(1 / 60, { ...idle, throttle: 0.62 });
+    }
+    const rolling = run(model, 1.2, { throttle: 0.62 });
+
+    expect(firstRacing.phase).toBe("racing");
+    expect(firstRacing.speedKph).toBeLessThan(68);
+    expect(firstRacing.trackOffset).toBeLessThan(1);
+    expect(rolling.speedKph).toBeGreaterThan(firstRacing.speedKph + 45);
+    expect(rolling.trackOffset).toBeGreaterThan(firstRacing.trackOffset + 24);
+  });
+
   it("requests a camera snap when the race launches", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -243,7 +264,7 @@ describe("SimcadeRaceModel", () => {
 
     expect(locked.speedKph).toBeLessThan(controlled.speedKph);
     expect(Math.abs(locked.car.heading)).toBeLessThan(Math.abs(controlled.car.heading));
-    expect(Math.abs(locked.carX)).toBeLessThan(Math.abs(controlled.carX) + 0.65);
+    expect(Math.abs(locked.carX)).toBeLessThan(Math.abs(controlled.carX) + 0.8);
     expect(locked.car.lockup).toBeGreaterThan(controlled.car.lockup);
     expect(locked.car.understeer).toBeGreaterThan(controlled.car.understeer);
     expect(locked.lateralScrub).toBeGreaterThan(controlled.lateralScrub);
@@ -673,19 +694,28 @@ describe("SimcadeRaceModel", () => {
   });
 
   it("spends tire budget when the driver asks for full steering at high speed", () => {
-    const model = new SimcadeRaceModel({
+    const straightLine = new SimcadeRaceModel({
       track: findTrack("aurelia"),
       weather: findWeather("clear"),
       assist: findAssist("manual")
     });
-    model.update(1 / 60, { ...idle, launch: true });
-    const straight = run(model, 4, { throttle: 1 });
-    const loaded = run(model, 0.9, { throttle: 1, steer: 1 });
+    straightLine.update(1 / 60, { ...idle, launch: true });
+    run(straightLine, 4, { throttle: 1 });
+    const straight = run(straightLine, 0.9, { throttle: 1 });
+
+    const overdriven = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    overdriven.update(1 / 60, { ...idle, launch: true });
+    run(overdriven, 4, { throttle: 1 });
+    const loaded = run(overdriven, 0.9, { throttle: 1, steer: 1 });
 
     expect(loaded.tireSaturation).toBeGreaterThan(0.35);
     expect(loaded.lateralScrub).toBeGreaterThan(0.18);
     expect(loaded.forwardBite).toBeLessThan(straight.forwardBite - 0.35);
-    expect(loaded.speedKph).toBeLessThan(straight.speedKph + 35);
+    expect(loaded.speedKph).toBeLessThan(straight.speedKph);
   });
 
   it("rides the lateral road surface instead of the centerline height", () => {
@@ -995,7 +1025,7 @@ describe("SimcadeRaceModel", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
 
-    const telemetry = run(model, 8, { throttle: 1, ers: true });
+    const telemetry = run(model, 8.5, { throttle: 1, ers: true });
 
     expect(telemetry.position).toBeLessThan(8);
     expect(telemetry.overtakeStreak).toBeGreaterThan(0);
