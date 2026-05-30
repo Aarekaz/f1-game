@@ -179,7 +179,19 @@ async function checkDesktop(browser) {
   assert(launch.messageTitle === "Formation ready", `desktop launch radio title was wrong: ${launch.messageTitle}`);
   assert(launch.messageTone === "launch", `desktop launch radio tone was wrong: ${launch.messageTone}`);
   assert(launch.launchCharge > 0.2, `desktop launch charge did not build during countdown, charge=${launch.launchCharge}`);
-  await page.waitForTimeout(3900);
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector("#game canvas");
+      return (
+        Number(document.querySelector("#speed")?.textContent ?? 0) > 120 &&
+        canvas?.dataset.aeroBoostAvailable === "true" &&
+        Number(canvas?.dataset.aeroBoostActive ?? 0) > 0.35 &&
+        Number(canvas?.dataset.ersDeployGlow ?? 0) > 0.6
+      );
+    },
+    undefined,
+    { timeout: 9000 }
+  );
   const boostHeldState = await page.evaluate(() => ({
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     ersDeployGlow: Number(document.querySelector("#game canvas")?.dataset.ersDeployGlow ?? 0),
@@ -363,8 +375,13 @@ async function checkDesktop(browser) {
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
     horizonRenderPolicy: document.querySelector("#game canvas")?.dataset.horizonRenderPolicy ?? "",
+    horizonSkySize: document.querySelector("#game canvas")?.dataset.horizonSkySize ?? "",
     horizonSkyDepthWrite: document.querySelector("#game canvas")?.dataset.horizonSkyDepthWrite ?? "",
     horizonSkyRenderOrder: Number(document.querySelector("#game canvas")?.dataset.horizonSkyRenderOrder ?? 0),
+    surfaceTerrainReach: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainReach ?? 0),
+    surfaceTerrainSkirtDrop: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainSkirtDrop ?? 0),
+    surfaceTerrainOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainOpacity ?? 0),
+    surfaceRunoffReach: Number(document.querySelector("#game canvas")?.dataset.surfaceRunoffReach ?? 0),
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
@@ -661,8 +678,16 @@ async function checkDesktop(browser) {
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);
   assert(state.horizonRenderPolicy === "background-depth-safe", `desktop horizon render policy was unsafe: ${state.horizonRenderPolicy}`);
+  assert(state.horizonSkySize === "dome:6200", `desktop horizon sky dome was not full-bleed: ${state.horizonSkySize}`);
   assert(state.horizonSkyDepthWrite === "false", `desktop horizon sky wrote to depth: ${state.horizonSkyDepthWrite}`);
   assert(state.horizonSkyRenderOrder <= -1000, `desktop horizon sky did not render behind the world: ${state.horizonSkyRenderOrder}`);
+  assert(
+    state.surfaceTerrainReach >= 16 && state.surfaceTerrainReach <= 56,
+    `desktop terrain reach was not camera-safe: ${state.surfaceTerrainReach}`
+  );
+  assert(state.surfaceTerrainSkirtDrop < -12, `desktop terrain skirt did not drop below the elevated circuit: ${state.surfaceTerrainSkirtDrop}`);
+  assert(state.surfaceTerrainOpacity > 0.08 && state.surfaceTerrainOpacity < 0.2, `desktop terrain skirt was too opaque: ${state.surfaceTerrainOpacity}`);
+  assert(state.surfaceRunoffReach >= 10 && state.surfaceRunoffReach <= 11, `desktop runoff apron was too wide for camera readability: ${state.surfaceRunoffReach}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
   assert(state.hudCoverage < 0.16, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
   assert(state.racingStatusWidth <= 250, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);
