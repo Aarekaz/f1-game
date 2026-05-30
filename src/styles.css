@@ -1669,9 +1669,10 @@ body {
   .hud[data-phase="racing"] .status-panel {
     align-self: start;
     justify-self: end;
-    width: min(154px, 40vw);
-    margin-top: 74px;
-    padding: 8px;
+    width: min(138px, 36vw);
+    margin-top: 90px;
+    padding: 7px;
+    opacity: 0.74;
   }
 
   .speed-readout {
@@ -1683,7 +1684,7 @@ body {
   }
 
   .hud[data-phase="racing"] .speed-readout span {
-    font-size: clamp(28px, 9.4vw, 38px);
+    font-size: clamp(25px, 8.2vw, 33px);
   }
 
   .powertrain-readout {
@@ -1705,9 +1706,9 @@ body {
   }
 
   .hud[data-phase="racing"] .powertrain-readout strong {
-    width: 34px;
-    height: 30px;
-    font-size: 20px;
+    width: 30px;
+    height: 27px;
+    font-size: 18px;
   }
 
   .powertrain-readout span {
@@ -1736,7 +1737,7 @@ body {
   }
 
   .hud[data-phase="racing"] .objective-chip {
-    padding: 6px 7px;
+    padding: 5px 6px;
     font-size: 9px;
   }
 
@@ -1772,7 +1773,7 @@ body {
   }
 
   .hud[data-phase="racing"] .track-readout {
-    padding: 6px 7px;
+    padding: 5px 6px;
   }
 
   .hud[data-phase="racing"] .track-readout strong {
