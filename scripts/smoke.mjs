@@ -356,6 +356,7 @@ async function checkDesktop(browser) {
     tracksideGrandstands: Number(document.querySelector("#game canvas")?.dataset.tracksideGrandstands ?? 0),
     tracksideLightPosts: Number(document.querySelector("#game canvas")?.dataset.tracksideLightPosts ?? 0),
     circuitDressingPieces: Number(document.querySelector("#game canvas")?.dataset.circuitDressingPieces ?? 0),
+    circuitSafetyBarriers: Number(document.querySelector("#game canvas")?.dataset.circuitSafetyBarriers ?? 0),
     circuitCatchFences: Number(document.querySelector("#game canvas")?.dataset.circuitCatchFences ?? 0),
     circuitPitWallModules: Number(document.querySelector("#game canvas")?.dataset.circuitPitWallModules ?? 0),
     circuitMarshalPosts: Number(document.querySelector("#game canvas")?.dataset.circuitMarshalPosts ?? 0),
@@ -657,6 +658,7 @@ async function checkDesktop(browser) {
   assert(state.tracksideGrandstands >= 4, `desktop free grandstand assets did not load, grandstands=${state.tracksideGrandstands}`);
   assert(state.tracksideLightPosts >= 4, `desktop free light-post assets did not load, lights=${state.tracksideLightPosts}`);
   assert(state.circuitDressingPieces >= 280, `desktop circuit dressing was too sparse: ${state.circuitDressingPieces}`);
+  assert(state.circuitSafetyBarriers >= 100, `desktop layered GP barriers were missing: ${state.circuitSafetyBarriers}`);
   assert(state.circuitCatchFences >= 90, `desktop catch fencing was missing: ${state.circuitCatchFences}`);
   assert(state.circuitPitWallModules >= 5, `desktop pit wall modules were missing: ${state.circuitPitWallModules}`);
   assert(state.circuitMarshalPosts >= 3, `desktop marshal posts were missing: ${state.circuitMarshalPosts}`);
