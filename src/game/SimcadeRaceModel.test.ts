@@ -252,6 +252,33 @@ describe("SimcadeRaceModel", () => {
     expect(stopped.speedKph).toBeLessThan(3);
     expect(firstThrottleFrame.speedKph).toBeLessThan(8);
     expect(rolling.speedKph).toBeGreaterThan(firstThrottleFrame.speedKph + 20);
+    expect(rolling.speedKph).toBeLessThan(60);
+  });
+
+  it("makes wet restarts build speed through available traction", () => {
+    const dry = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    dry.update(1 / 60, { ...idle, launch: true });
+    run(dry, 4.2, { throttle: 1 });
+    run(dry, 2.4, { brake: 1 });
+    const dryRestart = run(dry, 0.8, { throttle: 1 });
+
+    const wet = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("storm"),
+      assist: findAssist("manual")
+    });
+    wet.update(1 / 60, { ...idle, launch: true });
+    run(wet, 4.2, { throttle: 1 });
+    run(wet, 2.4, { brake: 1 });
+    const wetRestart = run(wet, 0.8, { throttle: 1 });
+
+    expect(dryRestart.speedKph).toBeGreaterThan(20);
+    expect(wetRestart.speedKph).toBeLessThan(dryRestart.speedKph);
+    expect(wetRestart.car.wheelspin).toBeGreaterThan(dryRestart.car.wheelspin);
   });
 
   it("shifts through gears with a momentary power cut and traction bite", () => {
