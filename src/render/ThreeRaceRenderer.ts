@@ -427,7 +427,7 @@ export class ThreeRaceRenderer {
       Math.abs(apexDirection) * (podMode ? 1.2 : 2.4) +
       rejoinCameraLift * 1.1 +
       rejoinFocus * 3.4 +
-      portraitView * 4.8;
+      portraitView * 5.35;
     this.camera.fov = fovTarget;
 
     const lookAhead =
