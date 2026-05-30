@@ -69,7 +69,8 @@ async function checkDesktop(browser) {
     penalty: Boolean(document.querySelector("#result-penalty")),
     steward: Boolean(document.querySelector("#result-steward")),
     seriesScore: Boolean(document.querySelector("#result-series-score")),
-    seriesDetail: Boolean(document.querySelector("#result-series-detail"))
+    seriesDetail: Boolean(document.querySelector("#result-series-detail")),
+    restart: Boolean(document.querySelector("#restart-race"))
   }));
   assert(audioInitial.pressed === "false" && audioInitial.text === "SND", `desktop audio toggle initial state was wrong: ${JSON.stringify(audioInitial)}`);
   assert(audioMuted.pressed === "true" && audioMuted.label === "Unmute audio" && audioMuted.text === "OFF", `desktop audio mute state was wrong: ${JSON.stringify(audioMuted)}`);
@@ -78,6 +79,7 @@ async function checkDesktop(browser) {
   assert(resultStewardFields.penalty && resultStewardFields.steward, "desktop result steward fields were missing");
   assert(resultStewardFields.seriesScore, "desktop result series target score was missing");
   assert(resultStewardFields.seriesDetail, "desktop result series target detail was missing");
+  assert(resultStewardFields.restart, "desktop result restart action was missing");
 
   const seriesStart = await page.evaluate(() => ({
     rows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? ""),

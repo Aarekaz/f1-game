@@ -112,6 +112,7 @@ export class HudController {
   private resultSeriesTitle = optionalElement("result-series-title");
   private resultSeriesScore = optionalElement("result-series-score");
   private resultSeriesDetail = optionalElement("result-series-detail");
+  private resultRestart = optionalElement("restart-race");
   private resultSectors = [
     optionalElement("result-sector-1"),
     optionalElement("result-sector-2"),
@@ -529,6 +530,12 @@ export class HudController {
         this.resultSeriesDetail.textContent = this.latestSeriesResult.targetDetail;
         this.resultSeriesDetail.dataset.state = this.latestSeriesResult.targetMet ? "met" : "missed";
       }
+    }
+
+    if (this.resultRestart) {
+      const restartText = !this.latestSeriesResult ? "Race Again" : this.latestSeriesResult.targetMet ? "Run Again" : "Retry Target";
+      this.resultRestart.textContent = restartText;
+      this.resultRestart.setAttribute("aria-label", restartText);
     }
   }
 }

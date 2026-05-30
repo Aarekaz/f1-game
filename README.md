@@ -18,6 +18,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The live HUD tracks the active series target during the run, including current position, flow, and penalty state.
 - Apex Series targets are judged at the flag, and the next event unlocks only after the current scenario target is met.
 - Race results explain the contract outcome so missed targets point to the next thing to improve.
+- The primary result action changes to retry a missed target or rerun a cleared session.
 - Race results can advance straight into the next Apex Series event, so a session feels like part of a ladder instead of a one-off run.
 - Race results show steward status and penalties, not just pace numbers.
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
