@@ -18,6 +18,7 @@ type MaterialSet = {
   sensor: THREE.MeshStandardMaterial;
   rainLight: THREE.MeshStandardMaterial;
   rainLightGlow: THREE.MeshBasicMaterial;
+  ersGlow: THREE.MeshBasicMaterial;
 };
 
 function makeBox(
@@ -270,6 +271,13 @@ export function buildFormulaCarProxy(color = "#e72436") {
       opacity: 0,
       depthWrite: false,
       side: THREE.DoubleSide
+    }),
+    ersGlow: new THREE.MeshBasicMaterial({
+      color: "#69f7ff",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide
     })
   };
 
@@ -352,6 +360,17 @@ export function buildFormulaCarProxy(color = "#e72436") {
   rainLightGlow.visible = false;
   rainLightGlow.renderOrder = 6;
   car.add(rainLightGlow);
+  const ersDeployGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.28, 0.3), materials.ersGlow);
+  ersDeployGlow.name = "ers-deploy-glow";
+  ersDeployGlow.position.set(0, 0.28, 2.1);
+  ersDeployGlow.visible = false;
+  ersDeployGlow.renderOrder = 5;
+  car.add(ersDeployGlow);
+  for (const side of [-1, 1]) {
+    const ersFlow = makeBox(`ers-flow-${side < 0 ? "left" : "right"}`, [0.045, 0.035, 0.92], [side * 0.86, 0.24, 0.66], materials.ersGlow);
+    ersFlow.visible = false;
+    car.add(ersFlow);
+  }
 
   for (const x of [-0.96, 0.96]) {
     car.add(makeWheel(x < 0 ? "front-left-wheel" : "front-right-wheel", x, -1.5, materials));

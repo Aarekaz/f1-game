@@ -162,6 +162,7 @@ async function checkDesktop(browser) {
 
   await page.keyboard.down("ArrowUp");
   await page.keyboard.down("ArrowRight");
+  await page.keyboard.down("Shift");
   await page.waitForTimeout(1200);
   const launch = await page.evaluate(() => ({
     objective: document.querySelector("#objective")?.textContent ?? "",
@@ -178,6 +179,7 @@ async function checkDesktop(browser) {
   assert(launch.messageTone === "launch", `desktop launch radio tone was wrong: ${launch.messageTone}`);
   assert(launch.launchCharge > 0.2, `desktop launch charge did not build during countdown, charge=${launch.launchCharge}`);
   await page.waitForTimeout(3900);
+  await page.keyboard.up("Shift");
   await page.keyboard.up("ArrowRight");
   await page.keyboard.up("ArrowUp");
 
@@ -226,6 +228,7 @@ async function checkDesktop(browser) {
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     rearRainLight: Number(document.querySelector("#game canvas")?.dataset.rearRainLight ?? 0),
     rearRainLightGlow: Number(document.querySelector("#game canvas")?.dataset.rearRainLightGlow ?? 0),
+    ersDeployGlow: Number(document.querySelector("#game canvas")?.dataset.ersDeployGlow ?? 0),
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
     lensRainDroplets: Number(document.querySelector("#game canvas")?.dataset.lensRainDroplets ?? 0),
@@ -410,6 +413,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(state.rearRainLight > 0.6, `desktop rear rain light did not activate in storm weather: ${state.rearRainLight}`);
   assert(state.rearRainLightGlow > 0.6, `desktop rear rain light glow did not activate in storm weather: ${state.rearRainLightGlow}`);
+  assert(state.ersDeployGlow > 0.6, `desktop ERS deploy glow did not activate while boost was held: ${state.ersDeployGlow}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.lensRainDroplets >= 8, `desktop rain lens droplets were missing in storm weather: ${state.lensRainDroplets}`);

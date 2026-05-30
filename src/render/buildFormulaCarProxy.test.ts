@@ -25,6 +25,9 @@ describe("buildFormulaCarProxy", () => {
     expect(names.has("race-control-t-camera")).toBe(true);
     expect(names.has("rear-rain-light")).toBe(true);
     expect(names.has("rear-rain-light-glow")).toBe(true);
+    expect(names.has("ers-deploy-glow")).toBe(true);
+    expect(names.has("ers-flow-left")).toBe(true);
+    expect(names.has("ers-flow-right")).toBe(true);
     expect(names.has("sidepod-inlet-left")).toBe(true);
     expect(names.has("sidepod-livery-slash-right")).toBe(true);
     expect(names.has("front-left-wheel")).toBe(true);

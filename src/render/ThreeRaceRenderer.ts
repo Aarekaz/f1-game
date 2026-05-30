@@ -262,7 +262,8 @@ export class ThreeRaceRenderer {
       braking: telemetry.car.braking + telemetry.car.lockup * 0.65,
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
-      rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0
+      rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
+      ersDeploy: telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
     this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65, 0, 1).toFixed(2);
@@ -273,6 +274,11 @@ export class ThreeRaceRenderer {
     ).toFixed(2);
     this.renderer.domElement.dataset.rearRainLightGlow = clamp(
       telemetry.phase === "racing" ? telemetry.roadWetness * (0.36 + telemetry.rainIntensity * 0.42 + speedRatio * 0.22) : 0,
+      0,
+      1
+    ).toFixed(2);
+    this.renderer.domElement.dataset.ersDeployGlow = clamp(
+      telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0,
       0,
       1
     ).toFixed(2);
@@ -383,7 +389,8 @@ export class ThreeRaceRenderer {
         braking: 0,
         throttle: 0.72,
         wheelspin: 0,
-        rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0
+        rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0,
+        ersDeploy: 0
       });
       const sprayStrength = this.updateRivalSpray(
         rival.id,
@@ -461,7 +468,16 @@ export class ThreeRaceRenderer {
 
   private animateFormulaCar(
     root: ReturnType<typeof buildFormulaCarProxy>,
-    state: { distance: number; speedKph: number; steering: number; braking: number; throttle: number; wheelspin: number; rainLight: number }
+    state: {
+      distance: number;
+      speedKph: number;
+      steering: number;
+      braking: number;
+      throttle: number;
+      wheelspin: number;
+      rainLight: number;
+      ersDeploy: number;
+    }
   ) {
     const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
     const steerAngle = clamp(state.steering, -0.42, 0.42);
@@ -469,6 +485,8 @@ export class ThreeRaceRenderer {
     const wheelBlur = clamp((state.speedKph - 72) / 165 + state.wheelspin * 0.3, 0, 1);
     const rainLight = clamp(state.rainLight, 0, 1);
     const rainPulse = rainLight * (0.72 + Math.sin(performance.now() * 0.011 + state.distance * 0.025) * 0.28);
+    const ersDeploy = clamp(state.ersDeploy, 0, 1);
+    const ersPulse = ersDeploy * (0.72 + Math.sin(performance.now() * 0.018 + state.distance * 0.032) * 0.28);
     const rearFlap = root.getObjectByName("rear-wing-upper-plane");
 
     for (const wheelName of ["front-left-wheel", "front-right-wheel", "rear-left-wheel", "rear-right-wheel"]) {
@@ -517,6 +535,23 @@ export class ThreeRaceRenderer {
         const material = object.material;
         if (material instanceof THREE.MeshBasicMaterial) {
           material.opacity = rainPulse * 0.48;
+        }
+      }
+
+      if (object.name === "ers-deploy-glow") {
+        object.visible = ersDeploy > 0.03;
+        object.scale.set(0.9 + ersPulse * 0.58, 0.76 + ersPulse * 0.36, 1);
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = ersPulse * 0.42;
+        }
+      }
+
+      if (object.name.startsWith("ers-flow-")) {
+        object.visible = ersDeploy > 0.03;
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = ersPulse * 0.64;
         }
       }
     });
