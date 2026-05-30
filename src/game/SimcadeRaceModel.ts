@@ -312,6 +312,7 @@ export class SimcadeRaceModel {
   private fuelLoad = 1;
   private brakeTemp = 0.34;
   private brakeFade = 0;
+  private brakeReleaseShock = 0;
   private trackRubber = 0;
   private dryingLine = 0;
   private dirtyTirePickup = 0;
@@ -600,6 +601,7 @@ export class SimcadeRaceModel {
     this.fuelLoad = 1;
     this.brakeTemp = 0.34;
     this.brakeFade = 0;
+    this.brakeReleaseShock = 0;
     this.trackRubber = 0;
     this.dryingLine = 0;
     this.dirtyTirePickup = 0;
@@ -692,6 +694,7 @@ export class SimcadeRaceModel {
     const throttle = clamp(rawThrottle * (1 - assist.throttleTrim), 0, 1);
     const brake = clamp(Math.max(rawBrake, assist.brake), 0, 1);
     const steer = clamp(rawSteer + assist.steer, -1, 1);
+    const previousBrake = this.lastBrake;
     this.lastBrake = brake;
     this.lastThrottle = throttle;
 
@@ -834,6 +837,9 @@ export class SimcadeRaceModel {
     this.wheelspin = approach(this.wheelspin, wheelspinTarget, dt * 7.5);
     this.lockup = approach(this.lockup, lockupTarget, dt * 10);
     this.understeer = approach(this.understeer, understeerTarget, dt * 6);
+    const brakeReleaseImpulse = clamp((previousBrake - brake) * speedRatio * (0.72 + this.lockup * 0.58), 0, 1);
+    this.brakeReleaseShock = Math.max(this.brakeReleaseShock, brakeReleaseImpulse);
+    this.brakeReleaseShock = approach(this.brakeReleaseShock, 0, dt * 2.3);
     this.updateTireState(dt, speedRatio, throttle, brake, Math.abs(steer), contactRoughness, onTrack);
     this.updateBrakeState(dt, brake, speedRatio, roadWetness);
 
@@ -1092,6 +1098,7 @@ export class SimcadeRaceModel {
         slipAngleLoad * 0.1 -
         this.wheelspin * 0.08 -
         this.lockup * 0.06 -
+        this.brakeReleaseShock * 0.22 -
         roadWetness * (onTrack ? 0.025 : 0.075),
       onTrack ? 0.42 : 0.2,
       1.08
@@ -1101,7 +1108,11 @@ export class SimcadeRaceModel {
       longitudinalGripTarget,
       dt * (longitudinalGripTarget < this.longitudinalGrip ? 10 : 5)
     );
-    const pitchTarget = clamp(-this.roadGrade * 2.6 + this.roadCompression * 0.2 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08, -0.15, 0.15);
+    const pitchTarget = clamp(
+      -this.roadGrade * 2.6 + this.roadCompression * 0.2 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08 + this.brakeReleaseShock * 0.03,
+      -0.15,
+      0.15
+    );
     const rollTarget = clamp(
       -roadCamber * 0.36 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + contactRoughness * speedRatio * 0.04,
       -0.16,
@@ -1165,6 +1176,7 @@ export class SimcadeRaceModel {
     this.wheelspin = 0;
     this.understeer = 0;
     this.lockup = 0;
+    this.brakeReleaseShock = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
