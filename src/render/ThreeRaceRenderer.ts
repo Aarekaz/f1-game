@@ -272,6 +272,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.roadAdhesion = telemetry.roadAdhesion.toFixed(3);
     this.renderer.domElement.dataset.lateralScrub = telemetry.lateralScrub.toFixed(3);
     this.renderer.domElement.dataset.forwardBite = telemetry.forwardBite.toFixed(3);
+    this.renderer.domElement.dataset.longitudinalGrip = telemetry.longitudinalGrip.toFixed(3);
     this.renderer.domElement.dataset.roadAlignment = telemetry.roadAlignment.toFixed(3);
     this.renderer.domElement.dataset.roadCamber = telemetry.roadCamber.toFixed(3);
     this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
