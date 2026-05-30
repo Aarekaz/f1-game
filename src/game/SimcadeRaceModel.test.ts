@@ -339,6 +339,33 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(telemetry.carX)).toBeLessThan(sampleTrack(telemetry.trackOffset).halfWidth + 2.7);
   });
 
+  it("keeps balanced recovery inside the visible runoff apron", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4, { throttle: 1 });
+
+    const forcedWide = run(model, 3.2, { throttle: 1, steer: 1 });
+    const track = sampleTrack(forcedWide.trackOffset);
+
+    expect(Math.abs(forcedWide.carX)).toBeLessThanOrEqual(track.halfWidth + 1.1);
+    expect(["Asphalt", "Kerb", "Runoff"]).toContain(forcedWide.surfaceName);
+  });
+
+  it("reduces forward bite when the car is not aligned with the road", () => {
+    const misaligned = new SimcadeRaceModel();
+    misaligned.update(1 / 60, { ...idle, launch: true });
+    const settled = run(misaligned, 5, { throttle: 1, ers: true });
+    const crossedUp = run(misaligned, 1.4, { throttle: 1, steer: 1 });
+
+    expect(crossedUp.forwardBite).toBeLessThan(settled.forwardBite);
+    expect(crossedUp.roadAlignment).toBeLessThan(settled.roadAlignment);
+    expect(crossedUp.trackOffset - settled.trackOffset).toBeLessThan(settled.trackOffset);
+  });
+
   it("loads the suspension under braking and rough road contact", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -381,6 +408,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceRumble).toBe(0);
     expect(telemetry.roadAdhesion).toBe(1);
     expect(telemetry.lateralScrub).toBe(0);
+    expect(telemetry.forwardBite).toBe(1);
+    expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadGrade).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);

@@ -32,6 +32,8 @@ export type RaceTelemetry = {
   surfaceRumble: number;
   roadAdhesion: number;
   lateralScrub: number;
+  forwardBite: number;
+  roadAlignment: number;
   roadGrade: number;
   suspensionLoad: number;
   suspensionTravel: number;
@@ -258,6 +260,8 @@ export class SimcadeRaceModel {
   private grip = 1;
   private roadAdhesion = 1;
   private lateralScrub = 0;
+  private forwardBite = 1;
+  private roadAlignment = 1;
   private roadGrade = 0;
   private suspensionLoad = 1;
   private suspensionTravel = 0;
@@ -376,6 +380,8 @@ export class SimcadeRaceModel {
       surfaceRumble: this.surfaceRumble,
       roadAdhesion: this.roadAdhesion,
       lateralScrub: this.lateralScrub,
+      forwardBite: this.forwardBite,
+      roadAlignment: this.roadAlignment,
       roadGrade: this.roadGrade,
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
@@ -553,6 +559,8 @@ export class SimcadeRaceModel {
     this.dirtyTirePickup = 0;
     this.roadAdhesion = 1;
     this.lateralScrub = 0;
+    this.forwardBite = 1;
+    this.roadAlignment = 1;
     this.roadGrade = 0;
     this.suspensionLoad = 1;
     this.suspensionTravel = 0;
@@ -835,7 +843,7 @@ export class SimcadeRaceModel {
     const roadCentering =
       -lineError * this.roadAdhesion * (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) * (1 - Math.abs(rawSteer));
     const curveFollow = track.curve * metersPerSecond * 0.9;
-    const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (2.4 + speedRatio * 2.6);
+    const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8);
     const lateralIntent =
       Math.sin(this.heading) * metersPerSecond * 0.28 +
       steer * (1.32 + speedRatio * 1.78) * steeringSlipLimit * steeringLoad * this.roadAdhesion +
@@ -861,6 +869,19 @@ export class SimcadeRaceModel {
     );
     this.slip = Math.max(this.slip, scrubPenalty * 1.05);
     this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
+    const alignmentSlip = Math.abs(this.lateralVelocity - curveFollow);
+    const alignmentTarget = clamp(
+      Math.cos(this.heading) - alignmentSlip / Math.max(12, metersPerSecond * 0.9) - scrubPenalty * 0.34 - (onTrack ? 0 : 0.08),
+      0.32,
+      1
+    );
+    this.roadAlignment = approach(this.roadAlignment, alignmentTarget, dt * (onTrack ? 8 : 5.5));
+    const biteTarget = clamp(
+      this.roadAlignment * (0.54 + this.roadAdhesion * 0.46) - scrubPenalty * 0.28 - this.wheelspin * 0.1 - this.lockup * 0.08,
+      0.28,
+      1.04
+    );
+    this.forwardBite = approach(this.forwardBite, biteTarget, dt * (biteTarget < this.forwardBite ? 9 : 5));
     const pitchTarget = clamp(-this.roadGrade * 2.6 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08, -0.13, 0.13);
     const rollTarget = clamp(
       -track.bank * 0.32 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + surface.roughness * speedRatio * 0.04,
@@ -870,8 +891,8 @@ export class SimcadeRaceModel {
     this.chassisPitch = approach(this.chassisPitch, pitchTarget, dt * 8);
     this.chassisRoll = approach(this.chassisRoll, rollTarget, dt * 9);
     const rollingProgress = onTrack
-      ? clamp(1 - Math.abs(this.heading) * 0.03 - scrubPenalty * 0.04, 0.94, 1)
-      : clamp(1 - Math.abs(this.heading) * 0.08 - scrubPenalty * 0.12 - 0.08, 0.8, 1);
+      ? clamp(0.76 + this.forwardBite * 0.24 - Math.abs(this.heading) * 0.018 - scrubPenalty * 0.04, 0.74, 1.02)
+      : clamp(0.42 + this.forwardBite * 0.32 - Math.abs(this.heading) * 0.06 - scrubPenalty * 0.14, 0.32, 0.82);
     this.z += metersPerSecond * dt * 1.55 * rollingProgress;
     this.x += this.lateralVelocity * dt;
     if (!onTrack && this.session.assist.steeringHelp > 0) {
@@ -889,7 +910,7 @@ export class SimcadeRaceModel {
 
   private keepCarInsideRecoveryApron(track: ReturnType<typeof sampleTrack>, dt: number, speedRatio: number) {
     const lateral = this.x - track.center;
-    const apronReach = track.halfWidth + (this.session.assist.steeringHelp > 0 ? 1.85 : 2.65);
+    const apronReach = track.halfWidth + (this.session.assist.steeringHelp > 0 ? 1.05 : 2.65);
     const overflow = Math.abs(lateral) - apronReach;
 
     if (overflow <= 0) {
@@ -921,6 +942,8 @@ export class SimcadeRaceModel {
     this.surfaceRumble = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
+    this.forwardBite = Math.max(this.forwardBite, 0.82);
+    this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
     this.suspensionTravel = 0;
     this.chassisPitch = 0;
@@ -960,7 +983,8 @@ export class SimcadeRaceModel {
     const offLine = clamp((lineError - Math.max(2.1, track.halfWidth * 0.36)) / Math.max(1.8, track.halfWidth * 0.32), 0, 1);
     const dryBias = 1 - this.dynamicRoadWetness() * 0.55;
     const rubberedLineGrip = lineQuality * this.trackRubber * (0.035 + dryBias * 0.035);
-    const marbles = offLine * this.trackRubber * (0.42 + this.tireWear * 0.5) * dryBias;
+    const pickupDebris = this.dirtyTirePickup * offLine * 0.028;
+    const marbles = offLine * this.trackRubber * (0.42 + this.tireWear * 0.5) * dryBias + pickupDebris;
 
     return { lineError, lineQuality, offLine, rubberedLineGrip, marbles };
   }
