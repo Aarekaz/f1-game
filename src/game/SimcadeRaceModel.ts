@@ -775,8 +775,15 @@ export class SimcadeRaceModel {
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const cornerDemand = track.section.kind === "straight" ? 0.18 : track.section.difficulty;
     const longitudinalForceDemand = throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52);
+    const steeringLoadDemand =
+      Math.pow(Math.abs(rawSteer), 1.25) *
+      speedRatio *
+      speedRatio *
+      (0.92 + speedRatio * 1.35) *
+      (onTrack ? 1 : 0.52 + this.tireContactGrip * 0.42);
     const lateralForceDemand =
       Math.abs(steer) * speedRatio * (0.26 + cornerDemand * 0.52) +
+      steeringLoadDemand +
       Math.abs(track.curve) * speedRatio * (3 + cornerDemand * 1.05) +
       Math.abs(this.lateralVelocity) * 0.018;
     const forceCapacity = clamp(
@@ -830,7 +837,8 @@ export class SimcadeRaceModel {
 
     const torqueCurve = this.engineTorqueCurve();
     const shiftInterruption = 1 - this.shiftCut * 0.54;
-    const tractionDelivery = (1 - this.tractionBite * 0.2) * clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08, 0.52, 1.06);
+    const steeringPowerTrim = clamp(steeringLoadDemand * 0.34, 0, 0.46);
+    const tractionDelivery = (1 - this.tractionBite * 0.2) * clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08, 0.52, 1.06) * (1 - steeringPowerTrim);
     const acceleration =
       throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
