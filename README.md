@@ -58,6 +58,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
 - Steering input is shaped for finer center control and quicker opposite-lock recovery, so keyboard and gamepad corrections feel less twitchy.
+- Committed steering now travels more through chassis heading and tire scrub instead of a direct sideways lane shift, so the car's rotation better explains its path through the corner.
 - A driver-aid HUD chip that shows when balanced assist is actively steering, braking, or trimming throttle.
 - Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
 - The racing HUD collapses into a lighter instrument cluster once the car is moving, leaving more of the circuit visible.
