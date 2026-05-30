@@ -327,6 +327,36 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(steered.car.yawRate)).toBeLessThan(0.05);
   });
 
+  it("makes full-lock restarts trade launch drive for front-tire scrub", () => {
+    const makeStoppedCar = () => {
+      const model = new SimcadeRaceModel({
+        track: findTrack("aurelia"),
+        weather: findWeather("clear"),
+        assist: findAssist("manual")
+      });
+      model.update(1 / 60, { ...idle, launch: true });
+      run(model, 4.2, { throttle: 1 });
+      const stopped = run(model, 2.4, { brake: 1 });
+
+      return { model, stopped };
+    };
+
+    const straightCase = makeStoppedCar();
+    const fullLockCase = makeStoppedCar();
+
+    const straight = run(straightCase.model, 1, { throttle: 1 });
+    const fullLock = run(fullLockCase.model, 1, { throttle: 1, steer: 1 });
+    const straightLateralTravel = Math.abs(straight.carX - straightCase.stopped.carX);
+    const fullLockLateralTravel = Math.abs(fullLock.carX - fullLockCase.stopped.carX);
+
+    expect(straightCase.stopped.speedKph).toBeLessThan(3);
+    expect(fullLockCase.stopped.speedKph).toBeLessThan(3);
+    expect(fullLock.speedKph).toBeLessThan(straight.speedKph - 8);
+    expect(fullLockLateralTravel).toBeLessThan(straightLateralTravel + 1.45);
+    expect(fullLock.tireSaturation).toBeGreaterThan(straight.tireSaturation);
+    expect(fullLock.forwardBite).toBeLessThan(straight.forwardBite);
+  });
+
   it("does not slide a stopped off-line car back toward the road center", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
