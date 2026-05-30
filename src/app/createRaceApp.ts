@@ -1,5 +1,5 @@
 import { RaceAudioController } from "../audio/RaceAudioController";
-import { summarizeApexSeries, type ApexSeriesEventSummary } from "../game/ApexSeries";
+import { findApexSeriesEvent, scorePersonalBest, summarizeApexSeries, type ApexSeriesEventSummary } from "../game/ApexSeries";
 import { InputState, type InputActions } from "../game/InputState";
 import {
   mergePersonalBest,
@@ -214,6 +214,7 @@ export function createRaceApp() {
     latestTelemetry = model.telemetry();
     lastPhase = latestTelemetry.phase;
     hud.setPersonalBestUpdate(null);
+    hud.setSeriesResult(null);
     setPaused(false);
     renderer.update(latestTelemetry);
     hud.update(latestTelemetry);
@@ -251,6 +252,7 @@ export function createRaceApp() {
     syncSeriesProgress(session, selectSeriesEvent);
     hud.setPersonalBest(best);
     hud.setPersonalBestUpdate(null);
+    hud.setSeriesResult(null);
     model.configure(session);
     renderer.configure(session);
     latestTelemetry = model.telemetry();
@@ -290,12 +292,24 @@ export function createRaceApp() {
       setPaused(false);
     }
     if (telemetry.phase === "finished" && lastPhase !== "finished") {
-      const update = mergePersonalBest(readPersonalBest(session), resultFromTelemetry(telemetry));
+      const previousBest = readPersonalBest(session);
+      const update = mergePersonalBest(previousBest, resultFromTelemetry(telemetry));
+      const seriesEvent = findApexSeriesEvent(session);
       savePersonalBest(session, update.best);
       syncSessionBest(update.best);
       syncSeriesProgress(session, selectSeriesEvent);
       hud.setPersonalBest(update.best);
       hud.setPersonalBestUpdate(update);
+      hud.setSeriesResult(
+        seriesEvent
+          ? {
+              title: `${seriesEvent.round} ${seriesEvent.title}`,
+              target: seriesEvent.target,
+              score: scorePersonalBest(update.best),
+              scoreDelta: Math.max(0, scorePersonalBest(update.best) - scorePersonalBest(previousBest))
+            }
+          : null
+      );
     }
 
     renderer.update(telemetry);

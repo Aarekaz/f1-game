@@ -2,6 +2,13 @@ import type { RaceTelemetry } from "../game/SimcadeRaceModel";
 import { resultHeadline, type PersonalBest, type PersonalBestUpdate } from "../game/PersonalBestStore";
 import { TRACK_LOOP_LENGTH, trackWorldPointAt, wrapDistance } from "../game/trackPath";
 
+export type SeriesResultUpdate = {
+  title: string;
+  target: string;
+  score: number;
+  scoreDelta: number;
+};
+
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) throw new Error(`Missing HUD element #${id}`);
@@ -71,6 +78,8 @@ export class HudController {
   private resultFlow = optionalElement("result-flow");
   private resultGrade = optionalElement("result-grade");
   private resultPersonalBest = optionalElement("result-pb");
+  private resultSeriesTitle = optionalElement("result-series-title");
+  private resultSeriesScore = optionalElement("result-series-score");
   private resultSectors = [
     optionalElement("result-sector-1"),
     optionalElement("result-sector-2"),
@@ -79,6 +88,7 @@ export class HudController {
   private renderedTrackName = "";
   private latestBest: PersonalBest | null = null;
   private latestUpdate: PersonalBestUpdate | null = null;
+  private latestSeriesResult: SeriesResultUpdate | null = null;
   private mapBounds = { minX: -1, maxX: 1, minZ: -1, maxZ: 1 };
 
   constructor() {
@@ -222,6 +232,10 @@ export class HudController {
     this.latestUpdate = update;
   }
 
+  setSeriesResult(update: SeriesResultUpdate | null) {
+    this.latestSeriesResult = update;
+  }
+
   private racecraftText(telemetry: RaceTelemetry) {
     if (telemetry.surfaceName === "Gravel") return `Gravel ${(telemetry.surfaceRumble * 100).toFixed(0)}%`;
     if (telemetry.surfaceName === "Runoff") return "Runoff";
@@ -358,5 +372,21 @@ export class HudController {
     this.resultSectors.forEach((sector, index) => {
       if (sector) sector.textContent = formatTime(telemetry.sectorSplits[index]);
     });
+
+    if (this.resultSeriesTitle) {
+      this.resultSeriesTitle.textContent = this.latestSeriesResult
+        ? `${this.latestSeriesResult.title} / ${this.latestSeriesResult.target}`
+        : "Free Run";
+    }
+
+    if (this.resultSeriesScore) {
+      if (!this.latestSeriesResult) {
+        this.resultSeriesScore.textContent = "No series score";
+      } else if (this.latestSeriesResult.scoreDelta > 0) {
+        this.resultSeriesScore.textContent = `+${this.latestSeriesResult.scoreDelta} pts`;
+      } else {
+        this.resultSeriesScore.textContent = `${this.latestSeriesResult.score}/4 pts`;
+      }
+    }
   }
 }

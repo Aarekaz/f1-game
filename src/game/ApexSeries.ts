@@ -56,6 +56,14 @@ export function sessionForSeriesEvent(event: ApexSeriesEvent): SessionConfig {
   };
 }
 
+export function findApexSeriesEvent(session: SessionConfig) {
+  return (
+    APEX_SERIES_EVENTS.find(
+      (event) => event.trackId === session.track.id && event.weatherId === session.weather.id && event.assistId === session.assist.id
+    ) ?? null
+  );
+}
+
 export function scorePersonalBest(best: PersonalBest | null) {
   if (!best) return 0;
   if (best.grade === "Apex") return 4;

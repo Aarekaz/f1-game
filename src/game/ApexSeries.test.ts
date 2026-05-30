@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { summarizeApexSeries } from "./ApexSeries";
+import { findApexSeriesEvent, summarizeApexSeries } from "./ApexSeries";
+import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 import type { PersonalBest } from "./PersonalBestStore";
 
 const apexBest: PersonalBest = {
@@ -36,5 +37,23 @@ describe("ApexSeries", () => {
       id: "northstar-storm",
       status: "Apex / P2"
     });
+  });
+
+  it("finds the authored series event for a selected session", () => {
+    expect(
+      findApexSeriesEvent({
+        track: findTrack("mirage"),
+        weather: findWeather("dusk"),
+        assist: findAssist("balanced")
+      })?.id
+    ).toBe("mirage-dusk");
+
+    expect(
+      findApexSeriesEvent({
+        track: findTrack("mirage"),
+        weather: findWeather("dusk"),
+        assist: findAssist("manual")
+      })
+    ).toBeNull();
   });
 });

@@ -499,6 +499,44 @@ body {
   line-height: 1.1;
 }
 
+.result-series {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  min-height: 54px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: rgba(243, 211, 72, 0.12);
+}
+
+.result-series span {
+  grid-column: 1 / -1;
+  color: #f3d348;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.result-series strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-series b {
+  justify-self: end;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-align: right;
+  text-transform: uppercase;
+}
+
 .topbar div {
   min-height: 58px;
   padding: 9px 11px;
