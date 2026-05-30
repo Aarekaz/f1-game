@@ -412,6 +412,7 @@ async function checkDesktop(browser) {
     surfaceRunoffReach: Number(document.querySelector("#game canvas")?.dataset.surfaceRunoffReach ?? 0),
     surfaceTechnicalZones: Number(document.querySelector("#game canvas")?.dataset.surfaceTechnicalZones ?? 0),
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
+    hudCameraPressure: document.querySelector(".hud")?.dataset.cameraPressure ?? "",
     sessionTrack: document.querySelector("#session-track")?.textContent ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
     streak: document.querySelector("#streak")?.textContent ?? "",
@@ -429,6 +430,7 @@ async function checkDesktop(browser) {
       return covered / viewportArea;
     })(),
     racingStatusWidth: document.querySelector(".status-panel")?.getBoundingClientRect().width ?? 0,
+    racingStatusOpacity: Number(getComputedStyle(document.querySelector(".status-panel")).opacity),
     racingTimingWidth: document.querySelector("#timing-tower")?.getBoundingClientRect().width ?? 0
   }));
 
@@ -738,6 +740,10 @@ async function checkDesktop(browser) {
   assert(state.surfaceRunoffReach >= 10 && state.surfaceRunoffReach <= 11, `desktop runoff apron was too wide for camera readability: ${state.surfaceRunoffReach}`);
   assert(state.surfaceTechnicalZones >= 3, `desktop trackside technical zones were missing: ${state.surfaceTechnicalZones}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
+  assert(/clear|left|right/.test(state.hudCameraPressure), `desktop HUD camera pressure state was missing: ${state.hudCameraPressure}`);
+  if (state.hudCameraPressure === "right") {
+    assert(state.racingStatusOpacity < 1, `desktop HUD did not begin yielding on right camera pressure: ${state.racingStatusOpacity}`);
+  }
   assert(state.hudCoverage < 0.12, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
   assert(state.racingStatusWidth <= 220, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);
   assert(state.racingTimingWidth <= 190, `desktop racing timing tower was too wide: ${state.racingTimingWidth}`);
