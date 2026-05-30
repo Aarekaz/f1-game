@@ -1175,7 +1175,8 @@ export class ThreeRaceRenderer {
 
   private syncHorizonTelemetry() {
     this.renderer.domElement.dataset.horizonRenderPolicy = String(this.horizon.userData.renderPolicy ?? "");
-    const sky = this.horizon.getObjectByName("background-sky-plane");
+    this.renderer.domElement.dataset.horizonSkySize = String(this.horizon.userData.skySize ?? "");
+    const sky = this.horizon.getObjectByName("background-sky-dome");
     const skyMesh = sky instanceof THREE.Mesh ? sky : null;
     const material = skyMesh?.material instanceof THREE.MeshBasicMaterial ? skyMesh.material : null;
     this.renderer.domElement.dataset.horizonSkyDepthWrite = material ? String(material.depthWrite) : "";
@@ -1203,6 +1204,10 @@ export class ThreeRaceRenderer {
           marbles: string[];
           wetSheen: string;
           edgeLines: string[];
+          terrainOuterReach: number;
+          terrainSkirtDrop: number;
+          terrainOpacity: number;
+          runoffOuterReach: number;
           flowCues: number;
           gridSlots: number;
           puddles: number;
@@ -1227,6 +1232,10 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.surfaceMarbles = surfaceStats.marbles.join(",");
       this.renderer.domElement.dataset.surfaceWetSheen = surfaceStats.wetSheen;
       this.renderer.domElement.dataset.surfaceEdgeLines = surfaceStats.edgeLines.join(",");
+      this.renderer.domElement.dataset.surfaceTerrainReach = surfaceStats.terrainOuterReach.toFixed(1);
+      this.renderer.domElement.dataset.surfaceTerrainSkirtDrop = surfaceStats.terrainSkirtDrop.toFixed(2);
+      this.renderer.domElement.dataset.surfaceTerrainOpacity = surfaceStats.terrainOpacity.toFixed(2);
+      this.renderer.domElement.dataset.surfaceRunoffReach = surfaceStats.runoffOuterReach.toFixed(1);
       this.renderer.domElement.dataset.surfaceFlowCues = String(surfaceStats.flowCues);
       this.renderer.domElement.dataset.surfaceGridSlots = String(surfaceStats.gridSlots);
       this.renderer.domElement.dataset.surfacePuddles = String(surfaceStats.puddles);
@@ -1318,7 +1327,7 @@ export class ThreeRaceRenderer {
       fog: false,
       depthTest: false,
       depthWrite: false,
-      side: THREE.DoubleSide
+      side: THREE.BackSide
     });
     const treelineMaterial = new THREE.MeshBasicMaterial({
       color: layout.treeColor,
@@ -1337,10 +1346,10 @@ export class ThreeRaceRenderer {
       side: THREE.DoubleSide
     });
 
-    const sky = new THREE.Mesh(new THREE.PlaneGeometry(2200, 540), skyMaterial);
-    sky.name = "background-sky-plane";
+    const skyDomeRadius = 6200;
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(skyDomeRadius, 48, 24), skyMaterial);
+    sky.name = "background-sky-dome";
     sky.renderOrder = -1000;
-    sky.position.set(0, 250, -760);
     horizon.add(sky);
 
     const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, layout.id === "northstar" ? 10 : 54), treelineMaterial);
@@ -1354,6 +1363,7 @@ export class ThreeRaceRenderer {
     }
     horizon.userData.materials = { sky: skyMaterial, treeline: treelineMaterial, relief: reliefMaterial };
     horizon.userData.renderPolicy = "background-depth-safe";
+    horizon.userData.skySize = `dome:${skyDomeRadius}`;
 
     return horizon;
   }

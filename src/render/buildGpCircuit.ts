@@ -495,11 +495,17 @@ export function buildGpCircuit() {
   const layout = getActiveTrackLayout();
   circuit.name = `${layout.id}-fictional-gp-circuit`;
   const dynamicPieces: DynamicPiece[] = [];
+  const terrainOuterReach = layout.id === "northstar" ? 16.4 : 56;
+  const terrainSkirtDrop = layout.id === "northstar" ? -18 : -0.55;
+  const runoffOuterReach = layout.id === "northstar" ? 10.4 : 15.6;
 
   const asphalt = makeAsphaltMaterial();
   const grass = new THREE.MeshBasicMaterial({
     color: layout.id === "northstar" ? "#5f7466" : layout.terrainColor,
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    transparent: layout.id === "northstar",
+    depthWrite: layout.id !== "northstar",
+    opacity: layout.id === "northstar" ? 0.14 : 1
   });
   const runoff = new THREE.MeshBasicMaterial({ color: layout.runoffColor, side: THREE.DoubleSide });
   const gravel = new THREE.MeshStandardMaterial({ color: "#9a8a70", roughness: 0.96 });
@@ -539,12 +545,12 @@ export function buildGpCircuit() {
     makeBoardMaterial("S3", "#e20e3b", "#ffffff")
   ];
 
-  const leftTerrain = makeTrackStrip("left-terrain-following-grass", grass, -88, -15.8, -0.18, 0, RENDERED_TRACK_LENGTH, 26);
-  const rightTerrain = makeTrackStrip("right-terrain-following-grass", grass, 15.8, 88, -0.18, 0, RENDERED_TRACK_LENGTH, 26);
+  const leftTerrain = makeTrackStrip("left-camera-safe-terrain-band", grass, -terrainOuterReach, -15.8, terrainSkirtDrop, 0, RENDERED_TRACK_LENGTH, 26);
+  const rightTerrain = makeTrackStrip("right-camera-safe-terrain-band", grass, 15.8, terrainOuterReach, terrainSkirtDrop, 0, RENDERED_TRACK_LENGTH, 26);
   circuit.add(leftTerrain, rightTerrain);
   const roadMesh = makeTrackStrip("continuous-asphalt-ribbon", asphalt, -6.7, 6.7, 0.022);
-  const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -15.6, -6.8, 0.006);
-  const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, 15.6, 0.006);
+  const leftRunoff = makeTrackStrip("left-continuous-runoff", runoff, -runoffOuterReach, -6.8, 0.006);
+  const rightRunoff = makeTrackStrip("right-continuous-runoff", runoff, 6.8, runoffOuterReach, 0.006);
   const racingLine = makeRacingLine();
   const racingGroove = makeSurfaceRibbon(
     "rubbered-racing-groove",
@@ -845,6 +851,10 @@ export function buildGpCircuit() {
     marbles: [leftMarbles.name, rightMarbles.name],
     wetSheen: wetSheen.name,
     edgeLines: [leftEdgeLine.name, rightEdgeLine.name],
+    terrainOuterReach,
+    terrainSkirtDrop,
+    terrainOpacity: grass.opacity,
+    runoffOuterReach,
     flowCues: flowCueCount,
     gridSlots: 10,
     puddles: puddlePlacements.length
