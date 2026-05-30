@@ -228,6 +228,10 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.trackRubber = telemetry.trackRubber.toFixed(3);
     this.renderer.domElement.dataset.dryingLine = telemetry.dryingLine.toFixed(3);
     this.renderer.domElement.dataset.trackEvolutionState = telemetry.trackEvolutionState;
+    this.renderer.domElement.dataset.rubberedLineGrip = telemetry.rubberedLineGrip.toFixed(3);
+    this.renderer.domElement.dataset.marbles = telemetry.marbles.toFixed(3);
+    this.renderer.domElement.dataset.dirtyTirePickup = telemetry.dirtyTirePickup.toFixed(3);
+    this.renderer.domElement.dataset.gripState = telemetry.gripState;
     this.renderer.domElement.dataset.draft = telemetry.draft.toFixed(3);
     this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
     this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);
@@ -1101,6 +1105,7 @@ export class ThreeRaceRenderer {
       | {
           terrainBands: number;
           racingGroove: string;
+          marbles: string[];
           wetSheen: string;
           edgeLines: string[];
           flowCues: number;
@@ -1121,6 +1126,7 @@ export class ThreeRaceRenderer {
     if (surfaceStats) {
       this.renderer.domElement.dataset.surfaceTerrainBands = String(surfaceStats.terrainBands);
       this.renderer.domElement.dataset.surfaceRacingGroove = surfaceStats.racingGroove;
+      this.renderer.domElement.dataset.surfaceMarbles = surfaceStats.marbles.join(",");
       this.renderer.domElement.dataset.surfaceWetSheen = surfaceStats.wetSheen;
       this.renderer.domElement.dataset.surfaceEdgeLines = surfaceStats.edgeLines.join(",");
       this.renderer.domElement.dataset.surfaceFlowCues = String(surfaceStats.flowCues);
@@ -1142,6 +1148,7 @@ export class ThreeRaceRenderer {
           fence: THREE.MeshBasicMaterial;
           glass: THREE.MeshStandardMaterial;
           groove: THREE.MeshBasicMaterial;
+          marbles: THREE.MeshBasicMaterial;
           wetSheen: THREE.MeshBasicMaterial;
           puddle: THREE.MeshBasicMaterial;
           gridPaint: THREE.MeshBasicMaterial;
@@ -1173,7 +1180,8 @@ export class ThreeRaceRenderer {
       weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
       weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
       weatherMaterials.glass.opacity = 0.62 + telemetry.roadWetness * 0.16;
-      weatherMaterials.groove.opacity = 0.14 + telemetry.roadWetness * 0.05 + telemetry.trackRubber * 0.16;
+      weatherMaterials.groove.opacity = 0.14 + telemetry.roadWetness * 0.05 + telemetry.trackRubber * 0.16 + telemetry.rubberedLineGrip * 0.72;
+      weatherMaterials.marbles.opacity = (0.04 + telemetry.trackRubber * 0.22 + telemetry.marbles * 0.28) * (1 - telemetry.roadWetness * 0.45);
       weatherMaterials.wetSheen.opacity = telemetry.roadWetness * (0.12 + telemetry.rainIntensity * 0.1) * (1 - telemetry.dryingLine * 0.28);
       weatherMaterials.puddle.opacity = telemetry.roadWetness * 0.28 * (1 - telemetry.dryingLine * 0.2);
       weatherMaterials.gridPaint.opacity = 0.82 - telemetry.roadWetness * 0.16;

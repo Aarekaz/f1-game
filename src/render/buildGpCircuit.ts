@@ -513,6 +513,7 @@ export function buildGpCircuit() {
   const accentMaterial = new THREE.MeshStandardMaterial({ color: layout.id === "mirage" ? "#20b7ff" : layout.id === "northstar" ? "#f3d348" : "#e20e3b", roughness: 0.42, metalness: 0.2 });
   const skidMaterial = new THREE.MeshBasicMaterial({ color: "#121514", transparent: true, opacity: 0.22, depthWrite: false });
   const grooveMaterial = new THREE.MeshBasicMaterial({ color: "#101413", transparent: true, opacity: 0.2, depthWrite: false });
+  const marblesMaterial = new THREE.MeshBasicMaterial({ color: "#151815", transparent: true, opacity: 0.08, depthWrite: false });
   const wetSheenMaterial = new THREE.MeshBasicMaterial({ color: "#c9dde1", transparent: true, opacity: 0, depthWrite: false });
   const puddleMaterial = new THREE.MeshBasicMaterial({ color: "#b9d3d9", transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const gridPaintMaterial = new THREE.MeshBasicMaterial({ color: "#f4f7ef", transparent: true, opacity: 0.74, depthWrite: false });
@@ -552,10 +553,12 @@ export function buildGpCircuit() {
     (sample) => (sample.brakingZone ? 2.2 : 1.55),
     0.047
   );
+  const leftMarbles = makeSurfaceRibbon("left-offline-marbles", marblesMaterial, (sample) => -sample.halfWidth * 0.58, () => 0.78, 0.052);
+  const rightMarbles = makeSurfaceRibbon("right-offline-marbles", marblesMaterial, (sample) => sample.halfWidth * 0.58, () => 0.78, 0.052);
   const wetSheen = makeSurfaceRibbon("wet-asphalt-sheen", wetSheenMaterial, () => 0, (sample) => sample.halfWidth * 1.78, 0.056, -80, RENDERED_TRACK_LENGTH, 22);
   const leftEdgeLine = makeSurfaceRibbon("painted-left-track-edge", edgePaintMaterial, (sample) => -sample.halfWidth + 0.42, () => 0.12, 0.069, -130, RENDERED_TRACK_LENGTH, 16);
   const rightEdgeLine = makeSurfaceRibbon("painted-right-track-edge", edgePaintMaterial, (sample) => sample.halfWidth - 0.42, () => 0.12, 0.069, -130, RENDERED_TRACK_LENGTH, 16);
-  circuit.add(roadMesh, leftRunoff, rightRunoff, racingGroove, wetSheen, leftEdgeLine, rightEdgeLine, racingLine);
+  circuit.add(roadMesh, leftRunoff, rightRunoff, racingGroove, leftMarbles, rightMarbles, wetSheen, leftEdgeLine, rightEdgeLine, racingLine);
 
   for (let index = 0; index < 10; index += 1) {
     const distance = 34 + index * 13.2;
@@ -788,6 +791,7 @@ export function buildGpCircuit() {
     accentMaterial,
     skidMaterial,
     grooveMaterial,
+    marblesMaterial,
     wetSheenMaterial,
     puddleMaterial,
     gridPaintMaterial,
@@ -810,6 +814,7 @@ export function buildGpCircuit() {
     fence: fenceMaterial,
     glass: glassMaterial,
     groove: grooveMaterial,
+    marbles: marblesMaterial,
     wetSheen: wetSheenMaterial,
     puddle: puddleMaterial,
     gridPaint: gridPaintMaterial,
@@ -827,6 +832,7 @@ export function buildGpCircuit() {
   circuit.userData.surfaceStats = {
     terrainBands: 2,
     racingGroove: racingGroove.name,
+    marbles: [leftMarbles.name, rightMarbles.name],
     wetSheen: wetSheen.name,
     edgeLines: [leftEdgeLine.name, rightEdgeLine.name],
     flowCues: flowCueCount,

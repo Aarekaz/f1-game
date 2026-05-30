@@ -13,6 +13,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A pre-race circuit briefing with selected-track outline, difficulty, grip, weather, and assist status.
 - A more readable track surface with a rubbered racing groove, wet sheen, standing water, painted grid slots, and braking marks.
 - The racing surface now evolves during a run: clean laps build rubber, damp sessions form a drying line, and both feed grip and wet-surface visuals.
+- Running the rubbered line now gives a small grip reward, while wandering offline can pick up marbles and make the tires feel dirty for the next few corners.
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
 - Nearby rival cars carry compact in-world driver/team/gap plates, so traffic is readable without staring at the timing tower.
 - Racing-style gear, RPM, shift-cut, traction-bite, and shift-light feedback in the HUD and handling model.

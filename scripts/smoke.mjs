@@ -269,6 +269,10 @@ async function checkDesktop(browser) {
     trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
     dryingLine: Number(document.querySelector("#game canvas")?.dataset.dryingLine ?? 0),
     trackEvolutionState: document.querySelector("#game canvas")?.dataset.trackEvolutionState ?? "",
+    rubberedLineGrip: Number(document.querySelector("#game canvas")?.dataset.rubberedLineGrip ?? 0),
+    marbles: Number(document.querySelector("#game canvas")?.dataset.marbles ?? 0),
+    dirtyTirePickup: Number(document.querySelector("#game canvas")?.dataset.dirtyTirePickup ?? 0),
+    gripState: document.querySelector("#game canvas")?.dataset.gripState ?? "",
     draft: Number(document.querySelector("#game canvas")?.dataset.draft ?? 0),
     dirtyAir: Number(document.querySelector("#game canvas")?.dataset.dirtyAir ?? 0),
     airWakeIntensity: Number(document.querySelector("#game canvas")?.dataset.airWakeIntensity ?? 0),
@@ -308,6 +312,7 @@ async function checkDesktop(browser) {
     circuitVenueHero: document.querySelector("#game canvas")?.dataset.circuitVenueHero ?? "",
     surfaceTerrainBands: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainBands ?? 0),
     surfaceRacingGroove: document.querySelector("#game canvas")?.dataset.surfaceRacingGroove ?? "",
+    surfaceMarbles: document.querySelector("#game canvas")?.dataset.surfaceMarbles ?? "",
     surfaceWetSheen: document.querySelector("#game canvas")?.dataset.surfaceWetSheen ?? "",
     surfaceEdgeLines: document.querySelector("#game canvas")?.dataset.surfaceEdgeLines ?? "",
     surfaceFlowCues: Number(document.querySelector("#game canvas")?.dataset.surfaceFlowCues ?? 0),
@@ -519,6 +524,10 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.trackRubber) && state.trackRubber >= 0, `desktop track rubber telemetry was missing: ${state.trackRubber}`);
   assert(Number.isFinite(state.dryingLine) && state.dryingLine >= 0, `desktop drying-line telemetry was missing: ${state.dryingLine}`);
   assert(state.trackEvolutionState.length > 0, "desktop track evolution state was missing");
+  assert(Number.isFinite(state.rubberedLineGrip) && state.rubberedLineGrip >= 0, `desktop rubbered-line grip telemetry was missing: ${state.rubberedLineGrip}`);
+  assert(Number.isFinite(state.marbles) && state.marbles >= 0, `desktop marble telemetry was missing: ${state.marbles}`);
+  assert(Number.isFinite(state.dirtyTirePickup) && state.dirtyTirePickup >= 0, `desktop dirty-tire telemetry was missing: ${state.dirtyTirePickup}`);
+  assert(/track|line|marbles|tires|surface/i.test(state.gripState), `desktop grip state was missing: ${state.gripState}`);
   assert(Number.isFinite(state.draft), "desktop draft telemetry was missing");
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
   assert(Number.isFinite(state.cameraBuffet), "desktop camera buffet telemetry was missing");
@@ -534,7 +543,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
@@ -562,6 +571,7 @@ async function checkDesktop(browser) {
   assert(/northstar-venue-hero/.test(state.circuitVenueHero), `desktop venue hero did not match selected track: ${state.circuitVenueHero}`);
   assert(state.surfaceTerrainBands >= 2, `desktop terrain was not split into road-safe bands: ${state.surfaceTerrainBands}`);
   assert(state.surfaceRacingGroove === "rubbered-racing-groove", `desktop rubbered racing groove was missing: ${state.surfaceRacingGroove}`);
+  assert(/offline-marbles/.test(state.surfaceMarbles), `desktop offline marbles were missing: ${state.surfaceMarbles}`);
   assert(state.surfaceWetSheen === "wet-asphalt-sheen", `desktop wet surface sheen was missing: ${state.surfaceWetSheen}`);
   assert(/painted-left-track-edge/.test(state.surfaceEdgeLines), `desktop painted edge lines were missing: ${state.surfaceEdgeLines}`);
   assert(state.surfaceFlowCues >= 20, `desktop apex flow cues were too sparse: ${state.surfaceFlowCues}`);

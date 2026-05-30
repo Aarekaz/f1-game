@@ -238,7 +238,7 @@ export class HudController {
     }
 
     if (this.shiftLights) {
-      const activeCount = telemetry.phase === "racing" ? Math.max(0, Math.min(5, Math.ceil((rpmRatio - 0.5) / 0.09))) : 0;
+      const activeCount = telemetry.phase === "racing" ? Math.max(0, Math.min(5, Math.ceil((rpmRatio - 0.43) / 0.1))) : 0;
       const redline = rpmRatio > 0.92;
       this.shiftLights.dataset.activeLights = String(activeCount);
       this.shiftLights.dataset.redline = redline ? "true" : "false";
@@ -355,6 +355,7 @@ export class HudController {
     if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
+    if (telemetry.dirtyTirePickup > 0.18 || telemetry.marbles > 0.12) return telemetry.gripState;
     if (telemetry.brakeFade > 0.2 || telemetry.brakeState === "Cold brakes") return telemetry.brakeState;
     if (telemetry.shiftCut > 0.2 || telemetry.tractionBite > 0.38) return telemetry.powerState;
     if (telemetry.fuelLoad < 0.7) return telemetry.fuelState;

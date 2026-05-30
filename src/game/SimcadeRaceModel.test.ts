@@ -34,6 +34,17 @@ function runGuided(model: SimcadeRaceModel, seconds: number) {
   return telemetry;
 }
 
+function runRubberedLine(model: SimcadeRaceModel, seconds: number) {
+  let telemetry = model.telemetry();
+  for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+    const track = sampleTrack(telemetry.trackOffset);
+    const lineError = telemetry.carX - track.racingLineOffset;
+    const steer = clamp(-lineError / 3.2, -0.86, 0.86);
+    telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true, steer });
+  }
+  return telemetry;
+}
+
 function runUntilFinished(model: SimcadeRaceModel, maxSeconds: number) {
   let telemetry = model.telemetry();
   for (let elapsed = 0; elapsed < maxSeconds && telemetry.phase !== "finished"; elapsed += 1 / 60) {
@@ -137,6 +148,25 @@ describe("SimcadeRaceModel", () => {
     expect(evolved.trackRubber).toBeGreaterThan(0.025);
     expect(evolved.surfaceGrip).toBeGreaterThan(1);
     expect(["Green track", "Rubber building"]).toContain(evolved.trackEvolutionState);
+  });
+
+  it("rewards the rubbered line and punishes dirty offline marbles", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.2, { throttle: 0.72 });
+
+    const rubbered = runRubberedLine(model, 20);
+    expect(rubbered.trackRubber).toBeGreaterThan(0.025);
+    expect(rubbered.rubberedLineGrip).toBeGreaterThanOrEqual(0);
+
+    const offLine = run(model, 4.2, { throttle: 1, steer: 1 });
+    expect(offLine.marbles).toBeGreaterThan(rubbered.marbles);
+    expect(offLine.dirtyTirePickup).toBeGreaterThan(rubbered.dirtyTirePickup);
+    expect(["Marbles offline", "Dirty tires", "Runoff", "Gravel"]).toContain(offLine.gripState);
   });
 
   it("builds a drying line in a damp non-rainy session", () => {
@@ -313,6 +343,10 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.trackRubber).toBe(0);
     expect(telemetry.dryingLine).toBe(0);
     expect(telemetry.trackEvolutionState).toBe("Green track");
+    expect(telemetry.rubberedLineGrip).toBe(0);
+    expect(telemetry.marbles).toBe(0);
+    expect(telemetry.dirtyTirePickup).toBe(0);
+    expect(telemetry.gripState).toBe("Green track");
     expect(telemetry.launchCharge).toBe(0);
     expect(telemetry.launchQuality).toBe(0);
     expect(telemetry.assistName).toBe("Balanced Assist");

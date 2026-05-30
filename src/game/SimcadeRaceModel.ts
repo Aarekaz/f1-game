@@ -35,6 +35,10 @@ export type RaceTelemetry = {
   trackRubber: number;
   dryingLine: number;
   trackEvolutionState: string;
+  rubberedLineGrip: number;
+  marbles: number;
+  dirtyTirePickup: number;
+  gripState: string;
   launchCharge: number;
   launchQuality: number;
   assistName: string;
@@ -248,6 +252,7 @@ export class SimcadeRaceModel {
   private brakeFade = 0;
   private trackRubber = 0;
   private dryingLine = 0;
+  private dirtyTirePickup = 0;
   private frontWingDamage = 0;
   private downforceLoss = 0;
   private lapTime = 0;
@@ -322,6 +327,7 @@ export class SimcadeRaceModel {
   telemetry(): RaceTelemetry {
     const delta = this.bestLap === null ? 0 : this.lapTime - this.bestLap;
     const track = sampleTrack(this.z);
+    const gripContext = this.trackGripContext(track);
     const director = this.director.snapshot(this.z);
     return {
       phase: this.phase,
@@ -342,6 +348,10 @@ export class SimcadeRaceModel {
       trackRubber: this.trackRubber,
       dryingLine: this.dryingLine,
       trackEvolutionState: this.trackEvolutionState(),
+      rubberedLineGrip: gripContext.rubberedLineGrip,
+      marbles: gripContext.marbles,
+      dirtyTirePickup: this.dirtyTirePickup,
+      gripState: this.gripState(gripContext),
       launchCharge: this.launchCharge,
       launchQuality: this.launchQuality,
       assistName: this.session.assist.name,
@@ -497,6 +507,7 @@ export class SimcadeRaceModel {
     this.brakeFade = 0;
     this.trackRubber = 0;
     this.dryingLine = 0;
+    this.dirtyTirePickup = 0;
     this.frontWingDamage = 0;
     this.downforceLoss = 0;
     this.lapTime = 0;
@@ -575,6 +586,8 @@ export class SimcadeRaceModel {
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     this.updateTrackEvolution(dt, speedRatio, onTrack, surface.roughness);
     const roadWetness = this.dynamicRoadWetness();
+    const gripContext = this.trackGripContext(track);
+    this.updateDirtyTirePickup(dt, gripContext, speedRatio, onTrack, surface.roughness, roadWetness);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     this.updateFuelLoad(dt, throttle, boost, speedRatio);
     this.updatePowertrainState(dt, throttle, brake, roadWetness, onTrack, surface.roughness);
@@ -622,13 +635,20 @@ export class SimcadeRaceModel {
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const wheelspinTarget = onTrack
-      ? clamp(throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) + tractionStress * overspeed * 0.35 + surface.roughness * throttle * 0.18, 0, 1)
+      ? clamp(
+          throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) +
+            tractionStress * overspeed * 0.35 +
+            surface.roughness * throttle * 0.18 +
+            (gripContext.marbles + this.dirtyTirePickup) * throttle * 0.18,
+          0,
+          1
+        )
       : clamp(throttle * (0.48 + surface.roughness * 0.34) + speedRatio * 0.18, 0, 1);
     const lockupTarget = onTrack
-      ? clamp(brake * speedRatio * (0.18 + overspeed * 0.9 + (1 - this.grip) * 0.75 + surface.roughness * 0.2), 0, 1)
+      ? clamp(brake * speedRatio * (0.18 + overspeed * 0.9 + (1 - this.grip) * 0.75 + surface.roughness * 0.2 + this.dirtyTirePickup * 0.18), 0, 1)
       : clamp(brake * (0.38 + surface.roughness * 0.26) + speedRatio * 0.18, 0, 1);
     const understeerTarget = clamp(
-      Math.abs(steer) * speedRatio * (track.section.difficulty * 0.24 + overspeed * 0.82 + (1 - this.grip) * 0.7),
+      Math.abs(steer) * speedRatio * (track.section.difficulty * 0.24 + overspeed * 0.82 + (1 - this.grip) * 0.7 + this.dirtyTirePickup * 0.2),
       0,
       1
     );
@@ -641,12 +661,12 @@ export class SimcadeRaceModel {
 
     const torqueCurve = this.engineTorqueCurve();
     const shiftInterruption = 1 - this.shiftCut * 0.54;
-    const tractionDelivery = 1 - this.tractionBite * 0.36;
+    const tractionDelivery = 1 - this.tractionBite * 0.22;
     const acceleration =
-      throttle * (114 - speedRatio * 50) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.28) * (1 - fuelWeightPenalty);
+      throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
     const braking = brake * 248 * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
-    const boostPower = boost * 72;
+    const boostPower = boost * 86;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
@@ -664,7 +684,11 @@ export class SimcadeRaceModel {
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const weatherGrip = this.evolvedWeatherGrip() * surface.grip;
     const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
-    const tireGripFactor = clamp(1 - tireTempPenalty - this.tireWear * 0.18, 0.76, 1.04);
+    const tireGripFactor = clamp(
+      1 - tireTempPenalty - this.tireWear * 0.18 + gripContext.rubberedLineGrip - gripContext.marbles * 0.07 - this.dirtyTirePickup * 0.14,
+      0.7,
+      1.08
+    );
     const damageGripFactor = clamp(1 - this.frontWingDamage * (0.12 + speedRatio * 0.18), 0.74, 1);
     const fuelGripFactor = clamp(1 - this.fuelLoad * 0.025, 0.96, 1);
     const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
@@ -687,7 +711,12 @@ export class SimcadeRaceModel {
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
     const steerAuthority =
-      (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35) * (1 - this.downforceLoss * 0.5) * (1 - this.fuelLoad * 0.035);
+      (0.78 - speedRatio * 0.44) *
+      this.grip *
+      (1 - this.understeer * 0.35) *
+      (1 - this.downforceLoss * 0.5) *
+      (1 - this.fuelLoad * 0.035) *
+      (1 - this.dirtyTirePickup * 0.08);
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
@@ -777,6 +806,33 @@ export class SimcadeRaceModel {
     return { name: "Gravel" as const, grip: 0.54, roughness: 0.82, drag: 112, trackLegal: false };
   }
 
+  private trackGripContext(track: ReturnType<typeof sampleTrack>) {
+    const lineError = Math.abs(this.x - track.center - track.racingLineOffset);
+    const lineQuality = clamp(1 - lineError / Math.max(2.8, track.halfWidth * 0.5), 0, 1);
+    const offLine = clamp((lineError - Math.max(2.1, track.halfWidth * 0.36)) / Math.max(1.8, track.halfWidth * 0.32), 0, 1);
+    const dryBias = 1 - this.dynamicRoadWetness() * 0.55;
+    const rubberedLineGrip = lineQuality * this.trackRubber * (0.035 + dryBias * 0.035);
+    const marbles = offLine * this.trackRubber * (0.42 + this.tireWear * 0.5) * dryBias;
+
+    return { lineError, lineQuality, offLine, rubberedLineGrip, marbles };
+  }
+
+  private updateDirtyTirePickup(
+    dt: number,
+    gripContext: ReturnType<SimcadeRaceModel["trackGripContext"]>,
+    speedRatio: number,
+    onTrack: boolean,
+    surfaceRoughness: number,
+    roadWetness: number
+  ) {
+    const pickup =
+      gripContext.marbles * speedRatio * (1 - gripContext.lineQuality * 0.72) * (0.18 + this.tireWear * 0.22) +
+      (onTrack ? 0 : surfaceRoughness * speedRatio * 0.09);
+    const cleanLineScrub = gripContext.lineQuality * speedRatio * (0.12 + roadWetness * 0.08);
+    const wetWash = roadWetness * 0.025;
+    this.dirtyTirePickup = clamp(this.dirtyTirePickup + pickup * dt - (cleanLineScrub + wetWash) * dt, 0, 1);
+  }
+
   private drivingAssist(track: ReturnType<typeof sampleTrack>, throttle: number, brake: number, steer: number) {
     const assist = this.session.assist;
     if (assist.steeringHelp === 0 && assist.throttleHelp === 0 && assist.brakeHelp === 0) {
@@ -846,7 +902,17 @@ export class SimcadeRaceModel {
     const paceScore = clamp(1 - paceError / (track.section.kind === "straight" ? 150 : 92), 0, 1);
     const lineError = Math.abs(this.x - track.center - track.racingLineOffset);
     const lineScore = clamp(1 - lineError / Math.max(3.8, track.halfWidth * 0.84), 0, 1);
-    const carCalm = clamp(1 - this.slip * 0.76 - this.lockup * 0.72 - this.wheelspin * 0.62 - this.understeer * 0.58 - this.frontWingDamage * 0.24, 0, 1);
+    const carCalm = clamp(
+      1 -
+        this.slip * 0.76 -
+        this.lockup * 0.72 -
+        this.wheelspin * 0.62 -
+        this.understeer * 0.58 -
+        this.frontWingDamage * 0.24 -
+        this.dirtyTirePickup * 0.18,
+      0,
+      1
+    );
     const raceRoom = clamp(1 - this.contactRisk * 0.68 - this.dirtyAir * 0.18, 0, 1);
     const sectionWeight = track.section.kind === "straight" ? 0.74 : 1;
     const target = onTrack
@@ -1186,6 +1252,13 @@ export class SimcadeRaceModel {
     if (this.tractionBite > 0.42) return "Traction limited";
     if (this.rpm() > 9200) return "Near redline";
     return "Power hooked";
+  }
+
+  private gripState(gripContext: ReturnType<SimcadeRaceModel["trackGripContext"]>) {
+    if (this.dirtyTirePickup > 0.12) return "Dirty tires";
+    if (gripContext.marbles > 0.005) return "Marbles offline";
+    if (gripContext.rubberedLineGrip > 0.01) return "Rubbered line";
+    return this.trackEvolutionState();
   }
 
   private trackEvolutionState() {
