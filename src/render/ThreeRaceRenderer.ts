@@ -156,6 +156,7 @@ export class ThreeRaceRenderer {
   private readonly desiredCameraPosition = new THREE.Vector3();
   private readonly desiredCameraTarget = new THREE.Vector3();
   private readonly carScreenPosition = new THREE.Vector3();
+  private readonly obstructionWorldPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly rivalSprays = new Map<number, THREE.Group>();
   private readonly rivalLabels = new Map<number, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
@@ -390,7 +391,7 @@ export class ThreeRaceRenderer {
       ? (telemetry.surfaceName === "Gravel" ? 1.45 : 1.08) + speedRatio * 0.58 + telemetry.surfaceRumble * 0.28 + rejoinFocus * 0.76
       : 0;
     const fovTarget =
-      (podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6) +
+      (podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 5.2 + telemetry.car.braking * 1.35) +
       Math.abs(apexDirection) * (podMode ? 1.2 : 2.4) +
       rejoinCameraLift * 1.1 +
       rejoinFocus * 3.4;
@@ -402,7 +403,7 @@ export class ThreeRaceRenderer {
     const rejoinCameraLag = rejoinCameraLift * (1.8 + speedRatio * 0.8);
     const cameraLag = podMode
       ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
-      : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2 + powertrainLurch + rejoinCameraLag;
+      : 4.35 + speedRatio * 2.4 + telemetry.car.throttle * 0.25 - telemetry.car.braking * 0.95 + powertrainLurch * 0.7 + rejoinCameraLag;
     const cameraStructureLift = podMode ? 0 : this.cameraStructureLift(telemetry.car.z, speedRatio);
     const lateralShoulder = podMode
       ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 - powertrainLateralKick * 0.08
@@ -435,10 +436,10 @@ export class ThreeRaceRenderer {
       this.desiredCameraPosition.set(
         cameraPoint.x,
         carY +
-          (podMode ? 1.34 : 2.74) -
-          telemetry.car.braking * (podMode ? 0.06 : 0.18) +
+          (podMode ? 1.34 : 3.08) -
+          telemetry.car.braking * (podMode ? 0.06 : 0.14) +
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
-          speedRatio * (podMode ? 0.12 : 0.16) +
+          speedRatio * (podMode ? 0.12 : 0.1) +
           cameraStructureLift +
           rejoinCameraLift +
           powertrainLurch * (podMode ? 0.018 : 0.055) +
@@ -449,7 +450,7 @@ export class ThreeRaceRenderer {
       this.desiredCameraTarget.set(
         targetPoint.x + Math.sin(performance.now() * 0.025) * airBuffet * (podMode ? 0.06 : 0.14),
         carY +
-          (podMode ? 0.82 : 0.68) +
+          (podMode ? 0.82 : 0.78) +
           cameraStructureLift * 0.18 +
           rejoinCameraLift * 0.34 +
           telemetry.car.slip * 0.18 +
@@ -461,8 +462,8 @@ export class ThreeRaceRenderer {
         this.cameraTarget.copy(this.desiredCameraTarget);
         this.cameraModeSnap = false;
       } else {
-        const positionFollow = (podMode ? 0.24 : 0.2) + speedRatio * (podMode ? 0.08 : 0.08) + telemetry.car.braking * 0.02;
-        const targetFollow = (podMode ? 0.28 : 0.22) + speedRatio * (podMode ? 0.08 : 0.07);
+        const positionFollow = (podMode ? 0.24 : 0.27) + speedRatio * (podMode ? 0.08 : 0.1) + telemetry.car.braking * 0.025;
+        const targetFollow = (podMode ? 0.28 : 0.26) + speedRatio * (podMode ? 0.08 : 0.08);
         this.cameraPosition.lerp(this.desiredCameraPosition, positionFollow);
         this.cameraTarget.lerp(this.desiredCameraTarget, targetFollow);
       }
@@ -479,11 +480,13 @@ export class ThreeRaceRenderer {
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
     this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
     this.updateWaterSpray(carX, carY, carZ, carWorldYaw, telemetry.roadWetness, speedRatio, telemetry.car.slip);
+    this.updateCameraObstructionCulling(carX, carZ);
     this.carScreenPosition.copy(this.car.position).project(this.camera);
     this.renderer.domElement.dataset.cameraWorldX = this.camera.position.x.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldY = this.camera.position.y.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
+    this.renderer.domElement.dataset.cameraChaseDistance = Math.hypot(this.camera.position.x - carX, this.camera.position.z - carZ).toFixed(2);
     this.renderer.domElement.dataset.cameraBuffet = airBuffet.toFixed(2);
     this.renderer.domElement.dataset.cameraLookAhead = lookAhead.toFixed(2);
     this.renderer.domElement.dataset.cameraApexBias = cameraApexBias.toFixed(3);
@@ -1284,6 +1287,47 @@ export class ThreeRaceRenderer {
     }
 
     return strongest * (0.58 + speedRatio * 0.44);
+  }
+
+  private updateCameraObstructionCulling(carX: number, carZ: number) {
+    const cameraX = this.camera.position.x;
+    const cameraZ = this.camera.position.z;
+    const segmentX = carX - cameraX;
+    const segmentZ = carZ - cameraZ;
+    const segmentLengthSq = segmentX * segmentX + segmentZ * segmentZ;
+    let hidden = 0;
+    let candidates = 0;
+
+    if (segmentLengthSq <= 0.001) return;
+
+    const scan = (root: THREE.Object3D) => {
+      root.traverse((object) => {
+        if (!this.isCameraObstructionCandidate(object.name)) return;
+
+        candidates += 1;
+        object.getWorldPosition(this.obstructionWorldPosition);
+        const toObjectX = this.obstructionWorldPosition.x - cameraX;
+        const toObjectZ = this.obstructionWorldPosition.z - cameraZ;
+        const t = clamp((toObjectX * segmentX + toObjectZ * segmentZ) / segmentLengthSq, 0, 1);
+        const closestX = cameraX + segmentX * t;
+        const closestZ = cameraZ + segmentZ * t;
+        const lineDistance = Math.hypot(this.obstructionWorldPosition.x - closestX, this.obstructionWorldPosition.z - closestZ);
+        const cameraDistance = Math.hypot(toObjectX, toObjectZ);
+        const shouldHide = t > 0.04 && t < 0.92 && lineDistance < 1.35 && cameraDistance < 42;
+
+        object.visible = !shouldHide;
+        if (shouldHide) hidden += 1;
+      });
+    };
+
+    scan(this.circuit);
+    scan(this.tracksideAssets);
+    this.renderer.domElement.dataset.cameraObstructionCandidates = String(candidates);
+    this.renderer.domElement.dataset.cameraObstructionCulled = String(hidden);
+  }
+
+  private isCameraObstructionCandidate(name: string) {
+    return name === "kenney-light-post" || name.endsWith("-post");
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
