@@ -4,6 +4,16 @@ A small browser racing game about getting into a fast rhythm on a fictional GP c
 
 This is not trying to be a licensed Formula 1 sim. The goal is a web game that feels sharp, readable, and a little stylish: a low camera, a quick car, clear braking references, simple race pressure, and enough feedback that you can feel when you are carrying speed well.
 
+## Screenshots
+
+| Clear practice | Runoff recovery |
+| --- | --- |
+| ![Aurelia GP front straight](readme-assets/screenshots/01-aurelia-front-straight.png) | ![Aurelia GP runoff recovery](readme-assets/screenshots/02-aurelia-kerb-recovery.png) |
+
+| Wet storm | Dusk racing pack |
+| --- | --- |
+| ![Northstar Ring wet storm](readme-assets/screenshots/03-northstar-wet-storm.png) | ![Mirage Bay GP dusk pack](readme-assets/screenshots/04-mirage-dusk-pack.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
