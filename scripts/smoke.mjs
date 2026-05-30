@@ -249,6 +249,9 @@ async function checkDesktop(browser) {
     cameraWorldY: Number(document.querySelector("#game canvas")?.dataset.cameraWorldY ?? 0),
     cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
     cameraMode: document.querySelector("#game canvas")?.dataset.cameraMode ?? "",
+    cameraChaseDistance: Number(document.querySelector("#game canvas")?.dataset.cameraChaseDistance ?? 0),
+    cameraObstructionCandidates: Number(document.querySelector("#game canvas")?.dataset.cameraObstructionCandidates ?? 0),
+    cameraObstructionCulled: Number(document.querySelector("#game canvas")?.dataset.cameraObstructionCulled ?? 0),
     cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
     cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
@@ -509,6 +512,12 @@ async function checkDesktop(browser) {
   assert(state.cameraMode === "chase", `desktop default camera mode was wrong: ${state.cameraMode}`);
   assert(Number.isFinite(state.cameraWorldY) && state.cameraWorldY > state.carWorldY, "desktop chase camera did not sit above the car");
   assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
+  assert(Number.isFinite(state.cameraChaseDistance), "desktop chase camera distance telemetry was missing");
+  if (state.surfaceName !== "Runoff" && state.surfaceName !== "Gravel") {
+    assert(state.cameraChaseDistance < 15, `desktop chase camera sat too far from the car: ${state.cameraChaseDistance}`);
+  }
+  assert(state.cameraObstructionCandidates > 12, `desktop camera obstruction pass did not scan trackside posts: ${state.cameraObstructionCandidates}`);
+  assert(Number.isFinite(state.cameraObstructionCulled), "desktop camera obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
@@ -723,9 +732,9 @@ async function checkDesktop(browser) {
   assert(state.surfaceRunoffReach >= 10 && state.surfaceRunoffReach <= 11, `desktop runoff apron was too wide for camera readability: ${state.surfaceRunoffReach}`);
   assert(state.surfaceTechnicalZones >= 3, `desktop trackside technical zones were missing: ${state.surfaceTechnicalZones}`);
   assert(state.hudPhase === "racing", `desktop HUD did not switch into racing phase: ${state.hudPhase}`);
-  assert(state.hudCoverage < 0.16, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
-  assert(state.racingStatusWidth <= 250, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);
-  assert(state.racingTimingWidth <= 216, `desktop racing timing tower was too wide: ${state.racingTimingWidth}`);
+  assert(state.hudCoverage < 0.12, `desktop racing HUD covered too much of the playfield: ${state.hudCoverage}`);
+  assert(state.racingStatusWidth <= 220, `desktop racing status panel was too wide: ${state.racingStatusWidth}`);
+  assert(state.racingTimingWidth <= 190, `desktop racing timing tower was too wide: ${state.racingTimingWidth}`);
   assert(state.sessionTrack === "Northstar Ring", `desktop session track missing: ${state.sessionTrack}`);
   assert(state.sessionWeather === "Wet Storm / Balanced", `desktop session weather and assist missing: ${state.sessionWeather}`);
   assert(state.mapPath.length > 100, "desktop minimap path was not drawn");
