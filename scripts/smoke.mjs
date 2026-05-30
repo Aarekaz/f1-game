@@ -419,6 +419,7 @@ async function checkMobile(browser) {
     const steer = document.querySelector(".steer-pad")?.getBoundingClientRect();
     const pedals = document.querySelector(".pedal-pad")?.getBoundingClientRect();
     const throttle = document.querySelector("[data-control=throttle]")?.getBoundingClientRect();
+    const camera = document.querySelector("[data-control=camera]")?.getBoundingClientRect();
     const pause = document.querySelector("#pause-race")?.getBoundingClientRect();
     return {
       controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display,
@@ -431,7 +432,8 @@ async function checkMobile(browser) {
       statusBottom: status?.bottom ?? 0,
       controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
       pauseTop: pause?.top ?? Infinity,
-      throttleWidth: throttle?.width ?? 0
+      throttleWidth: throttle?.width ?? 0,
+      cameraWidth: camera?.width ?? 0
     };
   });
 
@@ -447,6 +449,13 @@ async function checkMobile(browser) {
   const resumedState = await page.evaluate(() => ({
     paused: document.querySelector(".hud")?.dataset.paused ?? "",
     pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden")
+  }));
+
+  await page.locator("[data-control=camera]").dispatchEvent("pointerdown");
+  await page.locator("[data-control=camera]").dispatchEvent("pointerup");
+  await page.waitForTimeout(200);
+  const cameraState = await page.evaluate(() => ({
+    mode: document.querySelector("#game canvas")?.dataset.cameraMode ?? ""
   }));
 
   const finishedState = await page.evaluate(() => {
@@ -465,6 +474,7 @@ async function checkMobile(browser) {
   assert(pausedState.controlsDisplay === "none", "mobile driving controls stayed visible while paused");
   assert(resumedState.paused === "false", `mobile resume did not clear HUD paused state: ${resumedState.paused}`);
   assert(!resumedState.pauseVisible, "mobile pause panel stayed visible after resume");
+  assert(cameraState.mode === "pod", `mobile camera button did not toggle camera mode: ${cameraState.mode}`);
   assert(finishedState.controlsDisplay === "none", "mobile controls stayed visible after race finish");
   assert(state.racingTimingDisplay === "none", "mobile racing timing tower should collapse to protect the playfield");
   assertCanvasBox(state.canvasBox, "mobile");
@@ -473,6 +483,7 @@ async function checkMobile(browser) {
   assert(state.statusWidth <= 170, `mobile racing status panel was too wide: ${state.statusWidth}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
   assert(state.throttleWidth >= 56, "mobile throttle button is too small");
+  assert(state.cameraWidth >= 38, "mobile camera button is too small");
 }
 
 async function checkManualAssist(browser) {

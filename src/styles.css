@@ -1155,7 +1155,7 @@ body {
 
 .pedal-pad {
   right: max(14px, env(safe-area-inset-right));
-  grid-template-columns: 50px 50px 50px 70px;
+  grid-template-columns: 50px 50px 50px 50px 70px;
 }
 
 .touch-controls button {
@@ -1177,6 +1177,10 @@ body {
 
 .touch-controls [data-control="throttle"] {
   background: rgba(226, 14, 59, 0.9);
+}
+
+.touch-controls [data-control="camera"] {
+  background: rgba(246, 250, 238, 0.18);
 }
 
 @media (pointer: coarse), (max-width: 760px) {
@@ -1458,7 +1462,7 @@ body {
   }
 
   .pedal-pad {
-    grid-template-columns: 44px 44px 44px 64px;
+    grid-template-columns: 40px 40px 40px 40px 64px;
   }
 
   .steer-pad button {

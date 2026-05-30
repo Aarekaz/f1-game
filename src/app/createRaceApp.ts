@@ -13,7 +13,7 @@ import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
 import { DEFAULT_SESSION, findAssist, findTrack, findWeather, type SessionConfig } from "../world/FictionalGpWorld";
 
-type ControlName = "left" | "right" | "throttle" | "brake" | "boost" | "recover";
+type ControlName = "left" | "right" | "throttle" | "brake" | "boost" | "recover" | "camera";
 
 const MAX_DT = 1 / 20;
 
@@ -111,6 +111,7 @@ function createTouchBridge() {
   const cleanups: Array<() => void> = [];
   let launchPulse = false;
   let recoverPulse = false;
+  let cameraPulse = false;
 
   document.querySelectorAll<HTMLButtonElement>("[data-control]").forEach((button) => {
     const control = button.dataset.control;
@@ -121,6 +122,7 @@ function createTouchBridge() {
       activeControls.add(control);
       if (control === "throttle") launchPulse = true;
       if (control === "recover") recoverPulse = true;
+      if (control === "camera") cameraPulse = true;
     };
     const deactivate = (event: Event) => {
       event.preventDefault();
@@ -151,10 +153,11 @@ function createTouchBridge() {
         ers: actions.ers || activeControls.has("boost"),
         launch: actions.launch || launchPulse || activeControls.has("throttle"),
         recover: actions.recover || recoverPulse,
-        cameraToggle: actions.cameraToggle
+        cameraToggle: actions.cameraToggle || cameraPulse
       };
       launchPulse = false;
       recoverPulse = false;
+      cameraPulse = false;
       return merged;
     },
     destroy() {
@@ -166,7 +169,15 @@ function createTouchBridge() {
 }
 
 function isControlName(value: string | undefined): value is ControlName {
-  return value === "left" || value === "right" || value === "throttle" || value === "brake" || value === "boost" || value === "recover";
+  return (
+    value === "left" ||
+    value === "right" ||
+    value === "throttle" ||
+    value === "brake" ||
+    value === "boost" ||
+    value === "recover" ||
+    value === "camera"
+  );
 }
 
 export function createRaceApp() {
