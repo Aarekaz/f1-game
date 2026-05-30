@@ -319,6 +319,26 @@ describe("SimcadeRaceModel", () => {
     expect(overdriven.surfaceName).not.toBe("Asphalt");
   });
 
+  it("spends tire contact on hard steering instead of sliding without scrub", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    const settled = run(model, 5, { throttle: 1 });
+
+    let peakScrub = 0;
+    let lowestAdhesion = 1;
+    let telemetry = settled;
+    for (let elapsed = 0; elapsed < 1.4; elapsed += 1 / 60) {
+      telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 1 });
+      peakScrub = Math.max(peakScrub, telemetry.lateralScrub);
+      lowestAdhesion = Math.min(lowestAdhesion, telemetry.roadAdhesion);
+    }
+
+    expect(peakScrub).toBeGreaterThan(0.05);
+    expect(lowestAdhesion).toBeLessThan(settled.roadAdhesion);
+    expect(telemetry.speedKph).toBeLessThan(settled.speedKph + 35);
+    expect(Math.abs(telemetry.carX)).toBeLessThan(sampleTrack(telemetry.trackOffset).halfWidth + 2.7);
+  });
+
   it("keeps compatibility telemetry fields available", () => {
     const model = new SimcadeRaceModel();
     const telemetry = model.telemetry();
@@ -338,6 +358,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceName).toBe("Asphalt");
     expect(telemetry.surfaceGripModifier).toBe(1);
     expect(telemetry.surfaceRumble).toBe(0);
+    expect(telemetry.roadAdhesion).toBe(1);
+    expect(telemetry.lateralScrub).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.trackRubber).toBe(0);

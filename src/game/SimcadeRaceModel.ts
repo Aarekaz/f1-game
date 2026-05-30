@@ -30,6 +30,8 @@ export type RaceTelemetry = {
   surfaceName: TrackSurfaceName;
   surfaceGripModifier: number;
   surfaceRumble: number;
+  roadAdhesion: number;
+  lateralScrub: number;
   roadWetness: number;
   rainIntensity: number;
   trackRubber: number;
@@ -195,6 +197,12 @@ function approach(current: number, target: number, amount: number) {
   return current + (target - current) * clamp(amount, 0, 1);
 }
 
+function moveToward(current: number, target: number, maxDelta: number) {
+  const delta = target - current;
+  if (Math.abs(delta) <= maxDelta) return target;
+  return current + Math.sign(delta) * maxDelta;
+}
+
 function createRivals(): RivalState[] {
   const fieldSize = RIVAL_GRID.length;
   return RIVAL_GRID.map((rival, index) => ({
@@ -243,6 +251,8 @@ export class SimcadeRaceModel {
   private flowScore = 0.62;
   private surfaceRumble = 0;
   private grip = 1;
+  private roadAdhesion = 1;
+  private lateralScrub = 0;
   private ers = 1;
   private aeroBoostAvailable = false;
   private aeroBoostActive = 0;
@@ -354,6 +364,8 @@ export class SimcadeRaceModel {
       surfaceName: this.drivingSurface(track).name,
       surfaceGripModifier: this.drivingSurface(track).grip,
       surfaceRumble: this.surfaceRumble,
+      roadAdhesion: this.roadAdhesion,
+      lateralScrub: this.lateralScrub,
       roadWetness: this.dynamicRoadWetness(),
       rainIntensity: this.session.weather.rainIntensity,
       trackRubber: this.trackRubber,
@@ -524,6 +536,8 @@ export class SimcadeRaceModel {
     this.trackRubber = 0;
     this.dryingLine = 0;
     this.dirtyTirePickup = 0;
+    this.roadAdhesion = 1;
+    this.lateralScrub = 0;
     this.frontWingDamage = 0;
     this.downforceLoss = 0;
     this.lapTime = 0;
@@ -731,10 +745,20 @@ export class SimcadeRaceModel {
         )
       : 0.42 * weatherGrip;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
+    const contactDemand = clamp(
+      throttle * 0.08 + brake * 0.24 + boost * 0.08 + Math.abs(rawSteer) * speedRatio * 0.34 + this.wheelspin * 0.18 + this.lockup * 0.18,
+      0,
+      0.86
+    );
+    const roadCenterDistance = clamp(Math.abs(this.x - track.center) / Math.max(1, track.halfWidth + 2.65), 0, 1);
+    const contactTarget = onTrack
+      ? clamp(this.grip * surface.grip * (1 - contactDemand) + (1 - roadCenterDistance) * 0.1, 0.18, 1.08)
+      : clamp(this.grip * surface.grip * (0.42 + surface.grip * 0.34) * (1 - contactDemand * 0.44), 0.12, 0.72);
+    this.roadAdhesion = approach(this.roadAdhesion, contactTarget, dt * (onTrack ? 8 : 5.2));
 
     const steerAuthority =
       (0.78 - speedRatio * 0.44) *
-      this.grip *
+      this.roadAdhesion *
       (1 - this.understeer * 0.35) *
       (1 - this.downforceLoss * 0.5) *
       (1 - this.fuelLoad * 0.035) *
@@ -762,16 +786,42 @@ export class SimcadeRaceModel {
     );
 
     const metersPerSecond = this.speed * (1000 / 3600);
-    this.z += metersPerSecond * dt * 1.55;
     const steeringSlipLimit = clamp(this.grip - this.understeer * 0.24 - this.lockup * 0.12, 0.22, 1);
     const steeringLoad = 1 - clamp(speedRatio * 0.38 + this.wheelspin * 0.12, 0, 0.52);
+    const lineError = this.x - track.center - track.racingLineOffset * (onTrack ? 0.42 : 0.16);
+    const roadCentering =
+      -lineError * this.roadAdhesion * (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) * (1 - Math.abs(rawSteer));
+    const curveFollow = track.curve * metersPerSecond * 0.9;
+    const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (2.4 + speedRatio * 2.6);
     const lateralIntent =
       Math.sin(this.heading) * metersPerSecond * 0.28 +
-      steer * (1.25 + speedRatio * 1.7) * steeringSlipLimit * steeringLoad +
-      track.curve * metersPerSecond * 0.9 +
+      steer * (1.32 + speedRatio * 1.78) * steeringSlipLimit * steeringLoad * this.roadAdhesion +
+      curveFollow +
+      roadCentering +
+      steeringSaturationPush +
       racecraft.squeeze * this.contactRisk * 0.72;
-    const tireDamping = onTrack ? 4.6 + this.grip * 2.2 - this.slip * 1.4 : 2.2 + surface.grip * 1.4;
-    this.lateralVelocity = approach(this.lateralVelocity, lateralIntent, dt * tireDamping);
+    const lateralAccelLimit = (7.4 + speedRatio * 10.6) * this.roadAdhesion * (onTrack ? 1 : 0.5 + surface.grip * 0.34);
+    this.lateralVelocity = moveToward(this.lateralVelocity, lateralIntent, lateralAccelLimit * dt);
+    const slipVelocity = Math.abs(this.lateralVelocity - curveFollow);
+    const scrubDeadzone = onTrack ? 1.25 + this.roadAdhesion * 1.1 : 0.35;
+    const scrubTarget = clamp(
+      Math.max(0, slipVelocity - scrubDeadzone) / (8.2 + speedRatio * 21 + this.roadAdhesion * 5) + Math.max(0, 0.58 - this.roadAdhesion) * 0.42,
+      0,
+      1
+    );
+    this.lateralScrub = approach(this.lateralScrub, scrubTarget, dt * 9);
+    const scrubPenalty = Math.max(0, this.lateralScrub - 0.06);
+    this.dirtyTirePickup = clamp(
+      this.dirtyTirePickup + (scrubPenalty * Math.abs(rawSteer) * 0.46 + (onTrack ? 0 : surface.roughness * 0.16)) * speedRatio * dt,
+      0,
+      1
+    );
+    this.slip = Math.max(this.slip, scrubPenalty * 1.05);
+    this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
+    const rollingProgress = onTrack
+      ? clamp(1 - Math.abs(this.heading) * 0.03 - scrubPenalty * 0.04, 0.94, 1)
+      : clamp(1 - Math.abs(this.heading) * 0.08 - scrubPenalty * 0.12 - 0.08, 0.8, 1);
+    this.z += metersPerSecond * dt * 1.55 * rollingProgress;
     this.x += this.lateralVelocity * dt;
     if (!onTrack && this.session.assist.steeringHelp > 0) {
       const rejoinNeed = clamp((Math.abs(this.x - track.center) - track.halfWidth + 0.2) / 3.4, 0, 1);
@@ -818,6 +868,8 @@ export class SimcadeRaceModel {
     this.lockup = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
+    this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
+    this.lateralScrub = 0;
     this.cleanLap = false;
     this.positionGainLockout = Math.max(this.positionGainLockout, 2.8);
     this.offTrackTime = -2.4;
@@ -867,9 +919,9 @@ export class SimcadeRaceModel {
     roadWetness: number
   ) {
     const pickup =
-      gripContext.marbles * speedRatio * (1 - gripContext.lineQuality * 0.72) * (0.18 + this.tireWear * 0.22) +
-      (onTrack ? 0 : surfaceRoughness * speedRatio * 0.09);
-    const cleanLineScrub = gripContext.lineQuality * speedRatio * (0.12 + roadWetness * 0.08);
+      gripContext.marbles * speedRatio * (1 - gripContext.lineQuality * 0.72) * (0.8 + this.tireWear * 0.28) +
+      (onTrack ? 0 : surfaceRoughness * speedRatio * 0.55);
+    const cleanLineScrub = gripContext.lineQuality * (1 - gripContext.offLine) * speedRatio * (0.38 + roadWetness * 0.08);
     const wetWash = roadWetness * 0.025;
     this.dirtyTirePickup = clamp(this.dirtyTirePickup + pickup * dt - (cleanLineScrub + wetWash) * dt, 0, 1);
   }
@@ -1041,7 +1093,7 @@ export class SimcadeRaceModel {
 
     const cleanLoad = clamp(speedRatio * (1 - surfaceRoughness * 0.55) * (1 - this.slip * 0.35), 0, 1);
     const wetness = this.dynamicRoadWetness();
-    const rubberRate = cleanLoad * (0.0025 + speedRatio * 0.0035) * (1 - wetness * 0.62);
+    const rubberRate = cleanLoad * (0.0042 + speedRatio * 0.0048) * (1 - wetness * 0.62);
     const dryingRate = cleanLoad * this.session.weather.roadWetness * (0.01 + (1 - this.session.weather.rainIntensity) * 0.012);
     const rainWash = this.session.weather.rainIntensity * 0.0018;
 
