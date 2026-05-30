@@ -12,6 +12,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The active checkpoint gate is highlighted with a low-chrome in-world marker, so the next objective is readable without swallowing the driving view.
 - A pre-race circuit briefing with selected-track outline, difficulty, grip, weather, and assist status.
 - A more readable track surface with a rubbered racing groove, wet sheen, standing water, painted grid slots, and braking marks.
+- Track-following runoff and gravel zones replace old rectangular dressing planes, so escape areas read like part of the circuit instead of flat scenery cards.
 - A full-bleed sky dome plus camera-safe runoff and terrain bands keep the circuit broad without turning elevated side scenery into a foreground wall.
 - The racing surface now evolves during a run: clean laps build rubber, damp sessions form a drying line, and both feed grip and wet-surface visuals.
 - Running the rubbered line now gives a small grip reward, while wandering offline can pick up marbles and make the tires feel dirty for the next few corners.
