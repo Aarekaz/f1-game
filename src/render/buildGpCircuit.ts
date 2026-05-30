@@ -347,6 +347,33 @@ function makeCatchFence(name: string, length: number, material: THREE.Material, 
   return fence;
 }
 
+function makeSafetyBarrierModule(
+  name: string,
+  barrierMaterial: THREE.Material,
+  accentMaterial: THREE.Material,
+  shadowMaterial: THREE.Material
+) {
+  const barrier = new THREE.Group();
+  barrier.name = name;
+  const length = 13.4;
+
+  barrier.add(makeBox(`${name}-impact-wall`, [0.34, 0.56, length], [0, 0.28, 0], barrierMaterial));
+  barrier.add(makeBox(`${name}-top-rail`, [0.46, 0.11, length + 0.2], [0, 0.64, 0], barrierMaterial));
+  barrier.add(makeBox(`${name}-shadow-groove`, [0.38, 0.035, length + 0.1], [0, 0.47, 0], shadowMaterial));
+
+  for (const z of [-4.35, 0, 4.35]) {
+    for (const x of [-0.205, 0.205]) {
+      barrier.add(makeBox(`${name}-sponsor-panel`, [0.026, 0.28, 2.45], [x, 0.39, z], accentMaterial));
+    }
+  }
+
+  for (const z of [-6.25, -2.1, 2.1, 6.25]) {
+    barrier.add(makeBox(`${name}-vertical-joint`, [0.048, 0.62, 0.045], [0, 0.33, z], shadowMaterial));
+  }
+
+  return barrier;
+}
+
 function makeMarshalPost(name: string, material: THREE.Material, roofMaterial: THREE.Material) {
   const post = new THREE.Group();
   post.name = name;
@@ -528,6 +555,7 @@ export function buildGpCircuit() {
   const kerbRed = new THREE.MeshStandardMaterial({ color: "#d62b3a", roughness: 0.54 });
   const kerbWhite = new THREE.MeshStandardMaterial({ color: "#f5f7f4", roughness: 0.5 });
   const barrierMaterial = new THREE.MeshStandardMaterial({ color: "#dce3e8", roughness: 0.62, metalness: 0.08 });
+  const barrierShadowMaterial = new THREE.MeshStandardMaterial({ color: "#2d383b", roughness: 0.72, metalness: 0.12 });
   const bridgeMaterial = new THREE.MeshStandardMaterial({ color: "#303c40", roughness: 0.52, metalness: 0.18 });
   const fenceMaterial = new THREE.MeshBasicMaterial({ color: "#dce7e4", transparent: true, opacity: 0.26, side: THREE.DoubleSide });
   const paddockMaterial = new THREE.MeshStandardMaterial({ color: "#68736f", roughness: 0.6, metalness: 0.08 });
@@ -655,7 +683,7 @@ export function buildGpCircuit() {
       dynamicPieces.push({ object: kerb, ahead, lateral: side * 6.26, curveScale: 1.15 });
       circuit.add(kerb);
 
-      const barrier = makeBox("low-techpro-barrier", [0.34, 0.82, 14], [side * 15.1, 0.42, -ahead], barrierMaterial);
+      const barrier = makeSafetyBarrierModule("layered-gp-safety-barrier", barrierMaterial, accentMaterial, barrierShadowMaterial);
       dynamicPieces.push({ object: barrier, ahead, lateral: side * 15.1, curveScale: 1.15 });
       circuit.add(barrier);
 
@@ -830,6 +858,8 @@ export function buildGpCircuit() {
     grass,
     runoff,
     racingLine: racingLine.material,
+    barrier: barrierMaterial,
+    barrierShadow: barrierShadowMaterial,
     fence: fenceMaterial,
     glass: glassMaterial,
     groove: grooveMaterial,
@@ -842,6 +872,7 @@ export function buildGpCircuit() {
   };
   circuit.userData.dressingStats = {
     dynamicPieces: dynamicPieces.length,
+    safetyBarrierModules: dynamicPieces.filter((piece) => piece.object.name === "layered-gp-safety-barrier").length,
     catchFences: dynamicPieces.filter((piece) => piece.object.name === "catch-fence").length,
     pitWallModules: dynamicPieces.filter((piece) => piece.object.name === "fictional-pit-wall").length,
     marshalPosts: dynamicPieces.filter((piece) => piece.object.name === "marshal-post").length,

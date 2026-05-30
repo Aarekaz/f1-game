@@ -1193,6 +1193,7 @@ export class ThreeRaceRenderer {
     const stats = this.circuit.userData.dressingStats as
       | {
           dynamicPieces: number;
+          safetyBarrierModules: number;
           catchFences: number;
           pitWallModules: number;
           marshalPosts: number;
@@ -1223,6 +1224,7 @@ export class ThreeRaceRenderer {
 
     if (stats) {
       this.renderer.domElement.dataset.circuitDressingPieces = String(stats.dynamicPieces);
+      this.renderer.domElement.dataset.circuitSafetyBarriers = String(stats.safetyBarrierModules);
       this.renderer.domElement.dataset.circuitCatchFences = String(stats.catchFences);
       this.renderer.domElement.dataset.circuitPitWallModules = String(stats.pitWallModules);
       this.renderer.domElement.dataset.circuitMarshalPosts = String(stats.marshalPosts);
