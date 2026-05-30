@@ -123,6 +123,26 @@ describe("SimcadeRaceModel", () => {
     expect(rolling.trackOffset).toBeGreaterThan(firstRacing.trackOffset + 24);
   });
 
+  it("keeps full keyboard throttle launches moving even in storm conditions", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("storm"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+
+    let firstRacing = model.telemetry();
+    for (let elapsed = 0; elapsed < 3.4 && firstRacing.phase !== "racing"; elapsed += 1 / 60) {
+      firstRacing = model.update(1 / 60, { ...idle, throttle: 1 });
+    }
+    const rolling = run(model, 1.2, { throttle: 1 });
+
+    expect(firstRacing.launchQuality).toBeGreaterThan(0.3);
+    expect(firstRacing.car.wheelspin).toBeGreaterThan(0.5);
+    expect(firstRacing.speedKph).toBeGreaterThan(24);
+    expect(rolling.speedKph).toBeGreaterThan(firstRacing.speedKph + 42);
+  });
+
   it("requests a camera snap when the race launches", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
