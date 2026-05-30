@@ -1409,12 +1409,12 @@ export class ThreeRaceRenderer {
       fog: false
     });
 
-    for (let index = 0; index < 18; index += 1) {
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 8 + (index % 4) * 2.2), material);
+    for (let index = 0; index < 24; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.07 + (index % 3) * 0.018, 9.5 + (index % 5) * 2.6), material);
       mesh.name = "speed-streak";
       mesh.rotation.x = -Math.PI / 2;
-      mesh.rotation.z = (index % 3 - 1) * 0.1;
-      mesh.position.set(index % 2 === 0 ? -7.6 - (index % 5) * 0.9 : 7.6 + (index % 5) * 0.9, 0.09, -6 - index * 7.5);
+      mesh.rotation.z = (index % 3 - 1) * 0.08;
+      mesh.position.set(index % 2 === 0 ? -7.2 - (index % 6) * 0.78 : 7.2 + (index % 6) * 0.78, 0.092, -5 - index * 6.2);
       group.add(mesh);
     }
 
@@ -1434,16 +1434,21 @@ export class ThreeRaceRenderer {
     dirtyAir: number
   ) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
+    const speedCue = clamp(Math.max(0, speedRatio - 0.42) * 0.48 + slip * 0.1 + braking * 0.045 + draft * 0.18 + dirtyAir * 0.1, 0, 0.42);
     if (material) {
-      material.opacity = Math.max(0, speedRatio - 0.46) * 0.34 + slip * 0.08 + braking * 0.04 + draft * 0.16 + dirtyAir * 0.08;
+      material.opacity = speedCue;
       material.color.set(dirtyAir > 0.2 ? "#d8e0df" : draft > 0.03 ? "#c5fff4" : braking > 0.25 ? "#ffd7c8" : "#f6fff1");
     }
 
-    this.speedStreaks.position.z = carZ + (performance.now() * 0.035 * (0.4 + speedRatio)) % 15;
+    this.speedStreaks.position.z = carZ + (performance.now() * 0.052 * (0.42 + speedRatio)) % 17;
     this.speedStreaks.position.x = carX;
     this.speedStreaks.position.y = carY;
     this.speedStreaks.rotation.y = worldYaw;
-    this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
+    this.speedStreaks.scale.z = 0.86 + speedRatio * 1.7;
+    this.speedStreaks.scale.x = 1 + speedRatio * 0.08;
+    this.renderer.domElement.dataset.speedStreaks = "peripheral-ground-rush";
+    this.renderer.domElement.dataset.speedStreakOpacity = speedCue.toFixed(3);
+    this.renderer.domElement.dataset.speedStreakCount = String(this.speedStreaks.children.length);
   }
 
   private buildAirWake() {
@@ -1898,12 +1903,15 @@ export class ThreeRaceRenderer {
     const sprayStrength = Math.min(1, roadWetness * (speedRatio * 0.92 + slip * 0.36));
     this.waterSpray.visible = sprayStrength > 0.03;
     if (material) {
-      material.opacity = sprayStrength * 0.3;
+      material.opacity = sprayStrength * 0.34;
     }
 
     this.waterSpray.position.set(carX, carY + 0.02, carZ + 0.25);
     this.waterSpray.rotation.y = heading;
-    this.waterSpray.scale.set(0.8 + sprayStrength * 0.9, 0.8 + sprayStrength * 0.8, 0.9 + speedRatio * 1.4);
+    this.waterSpray.scale.set(0.82 + sprayStrength * 1.0, 0.82 + sprayStrength * 0.9, 0.95 + speedRatio * 1.72);
+    this.renderer.domElement.dataset.playerWaterSpray = this.waterSpray.visible ? "active" : "idle";
+    this.renderer.domElement.dataset.playerWaterSprayStrength = sprayStrength.toFixed(3);
+    this.renderer.domElement.dataset.playerWaterSprayPlumes = String(this.waterSpray.children.length);
   }
 
   private updateRivalSpray(
