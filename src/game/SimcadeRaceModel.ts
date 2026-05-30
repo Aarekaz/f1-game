@@ -855,7 +855,10 @@ export class SimcadeRaceModel {
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14 + this.surfaceEdgeLoad * 6 + this.tireSaturation * 10) * driverDemand;
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
-    const settledRecoveryInput = throttle * (1 - clamp(Math.abs(rawSteer) * 1.6, 0, 1));
+    const recoverySteerTowardRoad = clamp(-rawSteer * offTrackSide, -1, 1);
+    const recoverySteerPenalty =
+      recoverySteerTowardRoad >= 0 ? clamp(Math.abs(rawSteer) * 0.22, 0, 0.34) : clamp(Math.abs(rawSteer) * 1.75, 0, 1);
+    const settledRecoveryInput = throttle * (1 - recoverySteerPenalty);
     const lowSpeedRecoveryWindow = clamp((92 - this.speed) / 92, 0.35, 1);
     const looseSurfaceRecoveryRelief = onTrack
       ? 0
