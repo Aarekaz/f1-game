@@ -445,6 +445,30 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(after.car.roll)).toBeGreaterThan(0.005);
   });
 
+  it("changes tire load over crests and compressions in the road profile", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.5, { throttle: 1 });
+
+    let lightest = model.telemetry();
+    let heaviest = model.telemetry();
+    for (let elapsed = 0; elapsed < 18; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true });
+      if (telemetry.roadLoad < lightest.roadLoad) lightest = telemetry;
+      if (telemetry.roadLoad > heaviest.roadLoad) heaviest = telemetry;
+    }
+
+    expect(lightest.roadLoad).toBeLessThan(0.995);
+    expect(heaviest.roadLoad).toBeGreaterThan(1.005);
+    expect(heaviest.suspensionLoad).toBeGreaterThan(lightest.suspensionLoad);
+    expect(Math.abs(lightest.roadCompression)).toBeGreaterThan(0.002);
+    expect(Math.abs(heaviest.car.pitch - lightest.car.pitch)).toBeGreaterThan(0.004);
+  });
+
   it("reduces forward bite when the car is not aligned with the road", () => {
     const misaligned = new SimcadeRaceModel();
     misaligned.update(1 / 60, { ...idle, launch: true });
@@ -571,6 +595,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
+    expect(telemetry.roadLoad).toBe(1);
+    expect(telemetry.roadCompression).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
