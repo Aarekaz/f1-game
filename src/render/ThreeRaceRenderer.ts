@@ -553,15 +553,18 @@ export class ThreeRaceRenderer {
     }
     let visibleRivalLabels = 0;
     let rivalLabelSample = "";
+    let largestRivalLabelScale = 0;
     for (const label of this.rivalLabels.values()) {
       if (!label.visible) continue;
       visibleRivalLabels += 1;
       if (!rivalLabelSample) rivalLabelSample = String(label.userData.labelText ?? "");
+      largestRivalLabelScale = Math.max(largestRivalLabelScale, label.scale.x);
     }
     this.renderer.domElement.dataset.wetRivalSprays = String(visibleWetRivalSprays);
     this.renderer.domElement.dataset.wetRivalSprayStrength = strongestWetRivalSpray.toFixed(2);
     this.renderer.domElement.dataset.rivalLabelsVisible = String(visibleRivalLabels);
     this.renderer.domElement.dataset.rivalLabelSample = rivalLabelSample;
+    this.renderer.domElement.dataset.rivalLabelMaxScale = largestRivalLabelScale.toFixed(2);
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -676,7 +679,7 @@ export class ThreeRaceRenderer {
       fog: false,
       side: THREE.DoubleSide
     });
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 1.28), material);
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(4.7, 1.08), material);
     label.name = `rival-${id}-label`;
     label.renderOrder = 8;
     label.userData.canvas = canvas;
@@ -705,11 +708,12 @@ export class ThreeRaceRenderer {
     }
 
     const distanceFade = clamp(1 - Math.abs(gapMeters) / 280, 0.16, 1);
+    const closeTrafficFade = clamp((Math.abs(gapMeters) - 6) / 28, 0.22, 1);
     label.visible = true;
-    label.position.set(carX, carY + 2.95 + distanceFade * 0.55, carZ);
+    label.position.set(carX, carY + 3.15 + distanceFade * 0.42, carZ);
     label.lookAt(this.camera.position);
-    label.scale.setScalar(0.96 + distanceFade * 0.54);
-    label.material.opacity = 0.52 + distanceFade * 0.42;
+    label.scale.setScalar((0.54 + distanceFade * 0.34) * closeTrafficFade);
+    label.material.opacity = (0.44 + distanceFade * 0.38) * closeTrafficFade;
   }
 
   private drawRivalLabel(label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>, text: string) {
@@ -1313,7 +1317,17 @@ export class ThreeRaceRenderer {
         const closestZ = cameraZ + segmentZ * t;
         const lineDistance = Math.hypot(this.obstructionWorldPosition.x - closestX, this.obstructionWorldPosition.z - closestZ);
         const cameraDistance = Math.hypot(toObjectX, toObjectZ);
-        const shouldHide = t > 0.04 && t < 0.92 && lineDistance < 1.35 && cameraDistance < 42;
+        const lineBlocked = t > 0.04 && t < 0.92 && lineDistance < 1.35 && cameraDistance < 42;
+        const screenPosition = this.obstructionWorldPosition.project(this.camera);
+        const gateInPlayfield =
+          this.isGateObstructionCandidate(object.name) &&
+          screenPosition.z > -1 &&
+          screenPosition.z < 1 &&
+          Math.abs(screenPosition.x) < 0.96 &&
+          screenPosition.y > -0.5 &&
+          screenPosition.y < 0.62 &&
+          cameraDistance < 118;
+        const shouldHide = lineBlocked || gateInPlayfield;
 
         object.visible = !shouldHide;
         if (shouldHide) hidden += 1;
@@ -1327,7 +1341,20 @@ export class ThreeRaceRenderer {
   }
 
   private isCameraObstructionCandidate(name: string) {
-    return name === "kenney-light-post" || name.endsWith("-post");
+    return (
+      name === "kenney-light-post" ||
+      name.endsWith("-post") ||
+      (this.isGateObstructionCandidate(name) &&
+        (name.endsWith("-crossbar") ||
+          name.endsWith("-left-upright") ||
+          name.endsWith("-right-upright") ||
+          name.includes("-panel-") ||
+          name.endsWith("-sector-lamp")))
+    );
+  }
+
+  private isGateObstructionCandidate(name: string) {
+    return name.includes("checkpoint-gate") || name.includes("sector-timing-gate") || name.includes("timing-bridge");
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
