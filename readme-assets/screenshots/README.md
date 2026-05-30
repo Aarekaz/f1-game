@@ -1,8 +1,9 @@
 # README screenshots
 
 These images are captured from the local game at 1600x900 for the project README.
+The current set was refreshed on 2026-05-30 from live gameplay rather than staged stills.
 
-- `01-aurelia-front-straight.png`: clear Aurelia GP chase-camera speed shot.
-- `02-aurelia-kerb-recovery.png`: runoff and rejoin framing.
-- `03-northstar-wet-storm.png`: wet storm conditions on Northstar Ring.
-- `04-mirage-dusk-pack.png`: dusk pack racing on Mirage Bay GP.
+- `01-aurelia-front-straight.png`: Aurelia GP chase-camera speed shot with traffic ahead.
+- `02-aurelia-kerb-recovery.png`: gravel and runoff recovery framing with the road still visible.
+- `03-northstar-wet-storm.png`: Northstar Ring in storm conditions with spray and rain-light feedback.
+- `04-mirage-dusk-pack.png`: Mirage Bay GP at dusk with the field stretching down the straight.
