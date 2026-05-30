@@ -226,6 +226,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rivalProximity).toBe(0);
     expect(telemetry.sideBySide).toBe(0);
     expect(telemetry.contactRisk).toBe(0);
+    expect(telemetry.frontWingDamage).toBe(0);
+    expect(telemetry.downforceLoss).toBe(0);
+    expect(telemetry.damageState).toBe("Wing clean");
     expect(telemetry.defensiveRivals).toBe(0);
     expect(telemetry.nearestRivalGapMeters).toBeGreaterThan(0);
     expect(telemetry.skyColor).toBe("#c7d8df");
@@ -598,6 +601,7 @@ describe("SimcadeRaceModel", () => {
     let peakProximity = 0;
     let peakSideBySide = 0;
     let peakContactRisk = 0;
+    let peakDamage = 0;
     let state = model.telemetry();
 
     for (let elapsed = 0; elapsed < 15; elapsed += 1 / 60) {
@@ -605,12 +609,15 @@ describe("SimcadeRaceModel", () => {
       peakProximity = Math.max(peakProximity, state.rivalProximity);
       peakSideBySide = Math.max(peakSideBySide, state.sideBySide);
       peakContactRisk = Math.max(peakContactRisk, state.contactRisk);
+      peakDamage = Math.max(peakDamage, state.frontWingDamage);
     }
 
     expect(peakProximity).toBeGreaterThan(0.2);
     expect(peakSideBySide).toBeGreaterThan(0.1);
     expect(peakContactRisk).toBeGreaterThan(0.03);
-    expect(["Closing rival", "Wheel to wheel", "Contact risk", "Slipstream", "Dirty air", "Clean air"]).toContain(state.racecraftState);
+    expect(peakDamage).toBeGreaterThan(0);
+    expect(["Wing damage", "Closing rival", "Wheel to wheel", "Contact risk", "Slipstream", "Dirty air", "Clean air"]).toContain(state.racecraftState);
+    expect(state.downforceLoss).toBeGreaterThan(0);
   });
 
   it("invalidates the clean lap after sustained track limits abuse", () => {

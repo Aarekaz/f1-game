@@ -355,6 +355,7 @@ export class HudController {
     if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
+    if (telemetry.frontWingDamage > 0.04) return `${telemetry.damageState} ${(telemetry.frontWingDamage * 100).toFixed(0)}%`;
     if (telemetry.contactRisk > 0.54) return `Contact risk ${(telemetry.contactRisk * 100).toFixed(0)}%`;
     if (telemetry.sideBySide > 0.22) return `Wheel to wheel ${(telemetry.sideBySide * 100).toFixed(0)}%`;
     if (telemetry.defensiveRivals > 0 && telemetry.rivalProximity > 0.12) return "Defensive car ahead";

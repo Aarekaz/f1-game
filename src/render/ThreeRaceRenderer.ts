@@ -230,6 +230,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);
     this.renderer.domElement.dataset.sideBySide = telemetry.sideBySide.toFixed(3);
     this.renderer.domElement.dataset.contactRisk = telemetry.contactRisk.toFixed(3);
+    this.renderer.domElement.dataset.frontWingDamage = telemetry.frontWingDamage.toFixed(3);
+    this.renderer.domElement.dataset.downforceLoss = telemetry.downforceLoss.toFixed(3);
+    this.renderer.domElement.dataset.damageState = telemetry.damageState;
     this.renderer.domElement.dataset.defensiveRivals = String(telemetry.defensiveRivals);
     this.renderer.domElement.dataset.nearestRivalGap = telemetry.nearestRivalGapMeters === null ? "" : telemetry.nearestRivalGapMeters.toFixed(1);
     this.renderer.domElement.dataset.racecraftState = telemetry.racecraftState;
@@ -277,7 +280,8 @@ export class ThreeRaceRenderer {
       wheelspin: telemetry.car.wheelspin,
       rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
       ersDeploy: telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0,
-      aeroOpen: telemetry.aeroBoostActive
+      aeroOpen: telemetry.aeroBoostActive,
+      frontWingDamage: telemetry.frontWingDamage
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
     this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65, 0, 1).toFixed(2);
@@ -412,7 +416,8 @@ export class ThreeRaceRenderer {
         wheelspin: 0,
         rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0,
         ersDeploy: 0,
-        aeroOpen: 0
+        aeroOpen: 0,
+        frontWingDamage: 0
       });
       const sprayStrength = this.updateRivalSpray(
         rival.id,
@@ -881,6 +886,7 @@ export class ThreeRaceRenderer {
       rainLight: number;
       ersDeploy: number;
       aeroOpen: number;
+      frontWingDamage: number;
     }
   ) {
     const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
@@ -892,7 +898,9 @@ export class ThreeRaceRenderer {
     const ersDeploy = clamp(state.ersDeploy, 0, 1);
     const ersPulse = ersDeploy * (0.72 + Math.sin(performance.now() * 0.018 + state.distance * 0.032) * 0.28);
     const aeroOpen = clamp(state.aeroOpen, 0, 1);
+    const frontWingDamage = clamp(state.frontWingDamage, 0, 1);
     const rearFlap = root.getObjectByName("rear-wing-upper-plane");
+    const frontWing = root.getObjectByName("front-wing");
 
     for (const wheelName of ["front-left-wheel", "front-right-wheel", "rear-left-wheel", "rear-right-wheel"]) {
       const wheel = root.getObjectByName(wheelName);
@@ -905,6 +913,15 @@ export class ThreeRaceRenderer {
     if (rearFlap) {
       rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13 + aeroOpen * 0.24;
     }
+
+    if (frontWing) {
+      frontWing.position.y = 0.16 - frontWingDamage * 0.055;
+      frontWing.rotation.x = frontWingDamage * 0.13;
+      frontWing.rotation.z = Math.sin(state.distance * 0.07) * frontWingDamage * 0.035;
+      frontWing.scale.x = 1 - frontWingDamage * 0.075;
+    }
+
+    this.renderer.domElement.dataset.frontWingVisualDamage = frontWingDamage.toFixed(3);
 
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;

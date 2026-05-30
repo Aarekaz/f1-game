@@ -62,6 +62,9 @@ export type RaceTelemetry = {
   rivalProximity: number;
   sideBySide: number;
   contactRisk: number;
+  frontWingDamage: number;
+  downforceLoss: number;
+  damageState: string;
   defensiveRivals: number;
   nearestRivalGapMeters: number | null;
   onTrack: boolean;
@@ -211,6 +214,7 @@ export class SimcadeRaceModel {
   private sideBySide = 0;
   private contactRisk = 0;
   private racecraftCooldown = 0;
+  private damageMessageCooldown = 0;
   private raceControlCooldown = 0;
   private positionGainLockout = 0;
   private cameraSnapTimer = 0;
@@ -223,6 +227,8 @@ export class SimcadeRaceModel {
   private aeroDragReduction = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
+  private frontWingDamage = 0;
+  private downforceLoss = 0;
   private lapTime = 0;
   private bestLap: number | null = null;
   private splitDelta: number | null = null;
@@ -342,6 +348,9 @@ export class SimcadeRaceModel {
       rivalProximity: this.rivalProximity,
       sideBySide: this.sideBySide,
       contactRisk: this.contactRisk,
+      frontWingDamage: this.frontWingDamage,
+      downforceLoss: this.downforceLoss,
+      damageState: this.damageState(),
       defensiveRivals: this.defensiveRivalCount(),
       nearestRivalGapMeters: this.nearestRivalGapMeters(),
       onTrack: Math.abs(this.x - track.center) <= track.halfWidth,
@@ -434,6 +443,7 @@ export class SimcadeRaceModel {
     this.sideBySide = 0;
     this.contactRisk = 0;
     this.racecraftCooldown = 0;
+    this.damageMessageCooldown = 0;
     this.raceControlCooldown = 0;
     this.positionGainLockout = 0;
     this.cameraSnapTimer = 0;
@@ -446,6 +456,8 @@ export class SimcadeRaceModel {
     this.aeroDragReduction = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
+    this.frontWingDamage = 0;
+    this.downforceLoss = 0;
     this.lapTime = 0;
     this.bestLap = null;
     this.splitDelta = null;
@@ -542,11 +554,23 @@ export class SimcadeRaceModel {
     this.sideBySide = approach(this.sideBySide, racecraft.sideBySide, dt * 8.2);
     this.contactRisk = approach(this.contactRisk, racecraft.contactRisk, dt * 9.5);
     this.racecraftCooldown = Math.max(0, this.racecraftCooldown - dt);
+    this.damageMessageCooldown = Math.max(0, this.damageMessageCooldown - dt);
     if (this.contactRisk > 0.7 && this.racecraftCooldown === 0) {
       this.message = this.contactRisk > 0.88 ? "Avoid contact" : "Wheel to wheel";
       this.messageTimer = 0.85;
       this.racecraftCooldown = 2.1;
     }
+    const contactImpact = clamp((this.contactRisk - 0.62) / 0.38, 0, 1) * clamp((this.speed - 80) / 170, 0, 1) * (0.35 + this.sideBySide * 0.65);
+    if (contactImpact > 0.04) {
+      const previousDamage = this.frontWingDamage;
+      this.frontWingDamage = clamp(this.frontWingDamage + contactImpact * dt * 0.18, 0, 1);
+      if (this.frontWingDamage > Math.max(0.16, previousDamage + 0.04) && this.damageMessageCooldown === 0) {
+        this.message = this.frontWingDamage > 0.45 ? "Front wing damage" : "Front wing scrape";
+        this.messageTimer = 1.2;
+        this.damageMessageCooldown = 4;
+      }
+    }
+    this.downforceLoss = this.frontWingDamage * (0.06 + speedRatio * 0.18);
 
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
@@ -576,7 +600,7 @@ export class SimcadeRaceModel {
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
-    const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6;
+    const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
     const offTrackDrag = surface.drag * (onTrack ? 1 : 1.18 + this.session.weather.roadWetness * 0.34);
     this.surfaceRumble = approach(this.surfaceRumble, surface.roughness * clamp(0.25 + speedRatio, 0, 1), dt * 12);
 
@@ -588,6 +612,7 @@ export class SimcadeRaceModel {
     const weatherGrip = this.session.weather.gripMultiplier * surface.grip;
     const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
     const tireGripFactor = clamp(1 - tireTempPenalty - this.tireWear * 0.18, 0.76, 1.04);
+    const damageGripFactor = clamp(1 - this.frontWingDamage * (0.12 + speedRatio * 0.18), 0.74, 1);
     const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
@@ -596,6 +621,7 @@ export class SimcadeRaceModel {
           (1 - brake * 0.08 - speedRatio * Math.abs(steer) * 0.23 - cornerLoad - overspeed * track.section.difficulty * 0.32) *
             weatherGrip *
             tireGripFactor *
+            damageGripFactor *
             bankingSupport -
             wetPenalty -
             dirtyAirPenalty,
@@ -605,7 +631,7 @@ export class SimcadeRaceModel {
       : 0.42 * weatherGrip;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
-    const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35);
+    const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35) * (1 - this.downforceLoss * 0.5);
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
@@ -763,7 +789,7 @@ export class SimcadeRaceModel {
     const paceScore = clamp(1 - paceError / (track.section.kind === "straight" ? 150 : 92), 0, 1);
     const lineError = Math.abs(this.x - track.center - track.racingLineOffset);
     const lineScore = clamp(1 - lineError / Math.max(3.8, track.halfWidth * 0.84), 0, 1);
-    const carCalm = clamp(1 - this.slip * 0.76 - this.lockup * 0.72 - this.wheelspin * 0.62 - this.understeer * 0.58, 0, 1);
+    const carCalm = clamp(1 - this.slip * 0.76 - this.lockup * 0.72 - this.wheelspin * 0.62 - this.understeer * 0.58 - this.frontWingDamage * 0.24, 0, 1);
     const raceRoom = clamp(1 - this.contactRisk * 0.68 - this.dirtyAir * 0.18, 0, 1);
     const sectionWeight = track.section.kind === "straight" ? 0.74 : 1;
     const target = onTrack
@@ -994,6 +1020,7 @@ export class SimcadeRaceModel {
   }
 
   private racecraftState() {
+    if (this.frontWingDamage > 0.24) return "Wing damage";
     if (this.contactRisk > 0.64) return "Contact risk";
     if (this.sideBySide > 0.32) return "Wheel to wheel";
     if (this.rivalProximity > 0.24) return "Closing rival";
@@ -1013,6 +1040,13 @@ export class SimcadeRaceModel {
     if (this.tireTemp < 0.38) return "Cold tires";
     if (this.tireTemp > 0.62 && this.tireTemp < 0.84) return "Tires ready";
     return "Tires stable";
+  }
+
+  private damageState() {
+    if (this.frontWingDamage > 0.42) return "Wing damaged";
+    if (this.frontWingDamage > 0.16) return "Wing wounded";
+    if (this.frontWingDamage > 0.025) return "Wing scraped";
+    return "Wing clean";
   }
 
   private trackCue(track: ReturnType<typeof sampleTrack>) {
