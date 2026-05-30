@@ -9,3 +9,4 @@ The current set was refreshed on 2026-05-30 from live gameplay rather than stage
 - `04-mirage-dusk-pack.png`: Mirage Bay GP at dusk with the field stretching down the straight.
 - `05-aurelia-loose-surface-crawl.png`: low-speed runoff crawl after a mistake, with the road and rejoin line still visible.
 - `06-northstar-physical-launch.png`: wet launch pickup with wheelspin, rain, and the car still close to the line.
+- `07-aurelia-progressive-runoff-drag.png`: high-speed runoff entry with the car still moving while scrub, rumble, and gravel drag build.
