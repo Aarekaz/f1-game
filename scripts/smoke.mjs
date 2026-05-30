@@ -339,6 +339,8 @@ async function checkDesktop(browser) {
     roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadCamber: Number(document.querySelector("#game canvas")?.dataset.roadCamber ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
+    roadLoad: Number(document.querySelector("#game canvas")?.dataset.roadLoad ?? 0),
+    roadCompression: Number(document.querySelector("#game canvas")?.dataset.roadCompression ?? 0),
     suspensionLoad: Number(document.querySelector("#game canvas")?.dataset.suspensionLoad ?? 0),
     suspensionTravel: Number(document.querySelector("#game canvas")?.dataset.suspensionTravel ?? 0),
     chassisPitch: Number(document.querySelector("#game canvas")?.dataset.chassisPitch ?? 0),
@@ -676,6 +678,8 @@ async function checkDesktop(browser) {
   assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadCamber), "desktop road camber telemetry was missing");
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
+  assert(state.roadLoad > 0.65 && state.roadLoad < 1.35, `desktop road load telemetry was invalid: ${state.roadLoad}`);
+  assert(state.roadCompression >= -0.3 && state.roadCompression <= 0.3, `desktop road compression telemetry was invalid: ${state.roadCompression}`);
   assert(state.suspensionLoad > 0.45 && state.suspensionLoad < 1.7, `desktop suspension load telemetry was invalid: ${state.suspensionLoad}`);
   assert(state.suspensionTravel > -0.35 && state.suspensionTravel < 0.45, `desktop suspension travel telemetry was invalid: ${state.suspensionTravel}`);
   assert(Number.isFinite(state.chassisPitch), "desktop chassis pitch telemetry was missing");
