@@ -296,6 +296,7 @@ async function checkDesktop(browser) {
     playerWaterSprayPlumes: Number(document.querySelector("#game canvas")?.dataset.playerWaterSprayPlumes ?? 0),
     rivalLabelsVisible: Number(document.querySelector("#game canvas")?.dataset.rivalLabelsVisible ?? 0),
     rivalLabelSample: document.querySelector("#game canvas")?.dataset.rivalLabelSample ?? "",
+    rivalLabelMaxScale: Number(document.querySelector("#game canvas")?.dataset.rivalLabelMaxScale ?? 0),
     lensRainDroplets: Number(document.querySelector("#game canvas")?.dataset.lensRainDroplets ?? 0),
     lensRainOpacity: Number(document.querySelector("#game canvas")?.dataset.lensRainOpacity ?? 0),
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
@@ -604,6 +605,7 @@ async function checkDesktop(browser) {
   assert(state.playerWaterSprayPlumes >= 12, `desktop player spray plume count was too sparse: ${state.playerWaterSprayPlumes}`);
   assert(state.rivalLabelsVisible > 0, `desktop in-world rival labels did not render: ${state.rivalLabelsVisible}`);
   assert(/[A-Z]{3}.*[+-]\d/.test(state.rivalLabelSample), `desktop rival label sample was not readable: ${state.rivalLabelSample}`);
+  assert(state.rivalLabelMaxScale > 0 && state.rivalLabelMaxScale <= 0.9, `desktop rival labels were too large in camera view: ${state.rivalLabelMaxScale}`);
   assert(state.lensRainDroplets >= 8, `desktop rain lens droplets were missing in storm weather: ${state.lensRainDroplets}`);
   assert(state.lensRainOpacity > 0.1, `desktop rain lens opacity stayed too faint: ${state.lensRainOpacity}`);
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
