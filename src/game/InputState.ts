@@ -2,6 +2,7 @@ import type { RaceActions } from "./SimcadeRaceModel";
 
 export type InputActions = RaceActions & {
   cameraToggle: boolean;
+  pauseToggle: boolean;
 };
 
 type KeyMap = {
@@ -41,6 +42,7 @@ export class InputState {
   private launchPulse = false;
   private recoverPulse = false;
   private cameraPulse = false;
+  private pausePulse = false;
   private restartPulse = false;
 
   attach(target: Window = window) {
@@ -48,6 +50,8 @@ export class InputState {
     target.addEventListener("keyup", this.onKeyUp);
     document.getElementById("start-race")?.addEventListener("click", this.onLaunchClick);
     document.getElementById("restart-race")?.addEventListener("click", this.onRestartClick);
+    document.getElementById("pause-race")?.addEventListener("click", this.onPauseClick);
+    document.getElementById("resume-race")?.addEventListener("click", this.onPauseClick);
   }
 
   detach(target: Window = window) {
@@ -55,6 +59,8 @@ export class InputState {
     target.removeEventListener("keyup", this.onKeyUp);
     document.getElementById("start-race")?.removeEventListener("click", this.onLaunchClick);
     document.getElementById("restart-race")?.removeEventListener("click", this.onRestartClick);
+    document.getElementById("pause-race")?.removeEventListener("click", this.onPauseClick);
+    document.getElementById("resume-race")?.removeEventListener("click", this.onPauseClick);
     this.reset();
   }
 
@@ -74,11 +80,13 @@ export class InputState {
       launch: this.launchPulse || this.keys.launch || this.keys.throttle || gamepad.launch,
       recover: this.recoverPulse || gamepad.recover,
       cameraToggle: this.cameraPulse || gamepad.camera,
+      pauseToggle: this.pausePulse || gamepad.pause,
       restart: this.restartPulse || this.keys.restart || gamepad.restart
     };
     this.launchPulse = false;
     this.recoverPulse = false;
     this.cameraPulse = false;
+    this.pausePulse = false;
     this.restartPulse = false;
     return actions;
   }
@@ -100,6 +108,7 @@ export class InputState {
     this.launchPulse = false;
     this.recoverPulse = false;
     this.cameraPulse = false;
+    this.pausePulse = false;
     this.restartPulse = false;
   }
 
@@ -113,6 +122,12 @@ export class InputState {
 
     if (event.code === "KeyC" && !event.repeat) {
       this.cameraPulse = true;
+      event.preventDefault();
+      return;
+    }
+
+    if ((event.code === "Escape" || event.code === "KeyP") && !event.repeat) {
+      this.pausePulse = true;
       event.preventDefault();
       return;
     }
@@ -134,6 +149,10 @@ export class InputState {
 
   private onRestartClick = () => {
     this.restartPulse = true;
+  };
+
+  private onPauseClick = () => {
+    this.pausePulse = true;
   };
 
   private setKey(code: string, active: boolean) {
@@ -170,7 +189,7 @@ export class InputState {
   private readGamepad() {
     const gamepad = navigator.getGamepads?.().find(Boolean);
     if (!gamepad) {
-      return { steer: 0, throttle: 0, brake: 0, ers: false, launch: false, recover: false, camera: false, restart: false };
+      return { steer: 0, throttle: 0, brake: 0, ers: false, launch: false, recover: false, camera: false, pause: false, restart: false };
     }
 
     const axisSteer = Math.abs(gamepad.axes[0] ?? 0) > 0.08 ? gamepad.axes[0] ?? 0 : 0;
@@ -185,6 +204,7 @@ export class InputState {
       launch: rightTrigger > 0.1 || faceDown,
       recover: gamepad.buttons[2]?.pressed ?? false,
       camera: gamepad.buttons[4]?.pressed ?? false,
+      pause: gamepad.buttons[9]?.pressed ?? false,
       restart: gamepad.buttons[3]?.pressed ?? false
     };
   }

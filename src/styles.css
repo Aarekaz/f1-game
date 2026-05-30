@@ -177,6 +177,34 @@ body {
   display: none;
 }
 
+.pause-button {
+  position: fixed;
+  top: clamp(14px, 2vw, 22px);
+  right: clamp(14px, 2vw, 22px);
+  z-index: 3;
+  display: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  color: #ffffff;
+  background: rgba(18, 27, 26, 0.5);
+  font-size: 20px;
+  font-weight: 900;
+  backdrop-filter: blur(14px) saturate(1.15);
+}
+
+.hud[data-phase="countdown"] .pause-button,
+.hud[data-phase="racing"] .pause-button {
+  display: grid;
+}
+
+.hud[data-paused="true"] .pause-button,
+.hud[data-paused="true"] .touch-controls {
+  display: none;
+}
+
 .panel-kicker {
   color: #e20e3b;
   font-size: 12px;

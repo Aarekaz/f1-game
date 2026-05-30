@@ -29,9 +29,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - `A/D` or `ArrowLeft/ArrowRight`: steer
 - `Shift`: ERS
 - `Enter` or `Space`: start
+- `Esc` or `P`: pause and resume
 - `R`: restart after the race
 
-Touch controls appear on mobile-sized screens.
+Touch controls appear on mobile-sized screens, with a small pause button kept away from the driving controls.
 
 ## Run it
 

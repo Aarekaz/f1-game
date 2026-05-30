@@ -179,10 +179,40 @@ export function createRaceApp() {
   const renderer = new ThreeRaceRenderer(container);
   const hud = new HudController();
   const audio = new RaceAudioController();
+  const hudRoot = document.querySelector<HTMLElement>(".hud");
+  const pausePanel = document.getElementById("pause-panel");
+  const pauseButton = document.getElementById("pause-race");
   let last = performance.now();
   let frame = 0;
   let session = readSessionConfig();
-  let lastPhase = model.telemetry().phase;
+  let latestTelemetry = model.telemetry();
+  let lastPhase = latestTelemetry.phase;
+  let paused = false;
+
+  function setPaused(nextPaused: boolean) {
+    paused = nextPaused;
+    if (hudRoot) {
+      hudRoot.dataset.paused = paused ? "true" : "false";
+    }
+    pausePanel?.classList.toggle("hidden", !paused);
+    pauseButton?.setAttribute("aria-pressed", paused ? "true" : "false");
+  }
+
+  function pausedAudioTelemetry(telemetry: typeof latestTelemetry) {
+    return {
+      ...telemetry,
+      phase: "ready" as const,
+      speedKph: 0,
+      car: {
+        ...telemetry.car,
+        braking: 0,
+        throttle: 0,
+        wheelspin: 0,
+        understeer: 0,
+        lockup: 0
+      }
+    };
+  }
 
   function selectSeriesEvent(event: ApexSeriesEventSummary) {
     setSelectValue("track-select", event.trackId);
@@ -201,7 +231,9 @@ export function createRaceApp() {
     hud.setPersonalBestUpdate(null);
     model.configure(session);
     renderer.configure(session);
-    lastPhase = model.telemetry().phase;
+    latestTelemetry = model.telemetry();
+    lastPhase = latestTelemetry.phase;
+    setPaused(false);
   };
 
   document.getElementById("track-select")?.addEventListener("change", refreshSession);
@@ -219,7 +251,21 @@ export function createRaceApp() {
     if (actions.cameraToggle) {
       renderer.toggleCameraMode();
     }
+    if (actions.pauseToggle && (latestTelemetry.phase === "countdown" || latestTelemetry.phase === "racing")) {
+      setPaused(!paused);
+    }
+
+    if (paused) {
+      audio.update(pausedAudioTelemetry(latestTelemetry));
+      frame = requestAnimationFrame(tick);
+      return;
+    }
+
     const telemetry = model.update(dt, actions);
+    latestTelemetry = telemetry;
+    if (telemetry.phase === "finished") {
+      setPaused(false);
+    }
     if (telemetry.phase === "finished" && lastPhase !== "finished") {
       const update = mergePersonalBest(readPersonalBest(session), resultFromTelemetry(telemetry));
       savePersonalBest(session, update.best);

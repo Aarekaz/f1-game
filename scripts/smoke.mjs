@@ -238,6 +238,24 @@ async function checkDesktop(browser) {
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0)
   }));
 
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+  const pausedState = await page.evaluate(() => ({
+    paused: document.querySelector(".hud")?.dataset.paused ?? "",
+    pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden"),
+    carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0)
+  }));
+  await page.waitForTimeout(550);
+  const stillPaused = await page.evaluate(() => ({
+    carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0)
+  }));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+  const resumedState = await page.evaluate(() => ({
+    paused: document.querySelector(".hud")?.dataset.paused ?? "",
+    pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden")
+  }));
+
   await page.close();
   assert(state.canvas, "desktop canvas did not render");
   assertCanvasBox(state.canvasBox, "desktop");
@@ -256,6 +274,11 @@ async function checkDesktop(browser) {
       Math.hypot(state.cameraWorldX - state.carWorldX, state.cameraWorldZ - state.carWorldZ),
     "desktop pod camera did not move closer to the car"
   );
+  assert(pausedState.paused === "true", `desktop pause did not set HUD paused state: ${pausedState.paused}`);
+  assert(pausedState.pauseVisible, "desktop pause panel did not become visible");
+  assert(Math.abs(stillPaused.carDistance - pausedState.carDistance) < 0.05, "desktop car kept moving while paused");
+  assert(resumedState.paused === "false", `desktop resume did not clear HUD paused state: ${resumedState.paused}`);
+  assert(!resumedState.pauseVisible, "desktop pause panel stayed visible after resume");
   assert(
     Math.hypot(state.carScreenX - ready.carScreenX, state.carScreenY - ready.carScreenY) > 0.025,
     "desktop car stayed visually pinned to the same screen position"
@@ -367,8 +390,10 @@ async function checkMobile(browser) {
     const steer = document.querySelector(".steer-pad")?.getBoundingClientRect();
     const pedals = document.querySelector(".pedal-pad")?.getBoundingClientRect();
     const throttle = document.querySelector("[data-control=throttle]")?.getBoundingClientRect();
+    const pause = document.querySelector("#pause-race")?.getBoundingClientRect();
     return {
       controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display,
+      pauseDisplay: getComputedStyle(document.querySelector("#pause-race")).display,
       racingTimingDisplay: getComputedStyle(document.querySelector("#timing-tower")).display,
       speed: Number(document.querySelector("#speed")?.textContent ?? 0),
       objective: document.querySelector("#objective")?.textContent ?? "",
@@ -376,9 +401,24 @@ async function checkMobile(browser) {
       statusWidth: status?.width ?? 0,
       statusBottom: status?.bottom ?? 0,
       controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
+      pauseTop: pause?.top ?? Infinity,
       throttleWidth: throttle?.width ?? 0
     };
   });
+
+  await page.locator("#pause-race").click();
+  await page.waitForTimeout(200);
+  const pausedState = await page.evaluate(() => ({
+    paused: document.querySelector(".hud")?.dataset.paused ?? "",
+    pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden"),
+    controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display
+  }));
+  await page.locator("#resume-race").click();
+  await page.waitForTimeout(200);
+  const resumedState = await page.evaluate(() => ({
+    paused: document.querySelector(".hud")?.dataset.paused ?? "",
+    pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden")
+  }));
 
   const finishedState = await page.evaluate(() => {
     document.querySelector(".hud").dataset.phase = "finished";
@@ -389,6 +429,13 @@ async function checkMobile(browser) {
 
   await page.close();
   assert(state.controlsDisplay === "grid", "mobile controls were not visible");
+  assert(state.pauseDisplay === "grid", "mobile pause button was not visible during racing");
+  assert(state.pauseTop < state.controlsTop, "mobile pause button overlapped driving controls");
+  assert(pausedState.paused === "true", `mobile pause did not set HUD paused state: ${pausedState.paused}`);
+  assert(pausedState.pauseVisible, "mobile pause panel did not become visible");
+  assert(pausedState.controlsDisplay === "none", "mobile driving controls stayed visible while paused");
+  assert(resumedState.paused === "false", `mobile resume did not clear HUD paused state: ${resumedState.paused}`);
+  assert(!resumedState.pauseVisible, "mobile pause panel stayed visible after resume");
   assert(finishedState.controlsDisplay === "none", "mobile controls stayed visible after race finish");
   assert(state.racingTimingDisplay === "none", "mobile racing timing tower should collapse to protect the playfield");
   assertCanvasBox(state.canvasBox, "mobile");
