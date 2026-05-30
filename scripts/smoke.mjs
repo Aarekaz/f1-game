@@ -352,6 +352,10 @@ async function checkDesktop(browser) {
     messageTitle: document.querySelector("#message strong")?.textContent ?? "",
     messageTone: document.querySelector("#message")?.getAttribute("data-tone") ?? "",
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
+    renderPipeline: document.querySelector("#game canvas")?.dataset.renderPipeline ?? "",
+    renderToneMapping: document.querySelector("#game canvas")?.dataset.renderToneMapping ?? "",
+    renderShadowType: document.querySelector("#game canvas")?.dataset.renderShadowType ?? "",
+    renderShadowMap: document.querySelector("#game canvas")?.dataset.renderShadowMap ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     tracksideGrandstands: Number(document.querySelector("#game canvas")?.dataset.tracksideGrandstands ?? 0),
     tracksideLightPosts: Number(document.querySelector("#game canvas")?.dataset.tracksideLightPosts ?? 0),
@@ -656,6 +660,10 @@ async function checkDesktop(browser) {
   assert(state.shiftLightCount === 5, `desktop shift-light cluster was incomplete: ${state.shiftLightCount}`);
   assert(state.shiftLightsActive > 0, `desktop shift lights did not react to RPM: ${state.shiftLightsActive}`);
   assert(state.assetCar === "apex-procedural-f25", `desktop fictional formula car did not load, asset=${state.assetCar}`);
+  assert(state.renderPipeline === "srgb-aces-soft-shadows", `desktop render pipeline was not configured: ${state.renderPipeline}`);
+  assert(state.renderToneMapping === "aces", `desktop tone mapping was not filmic: ${state.renderToneMapping}`);
+  assert(state.renderShadowType === "pcf-soft", `desktop soft shadows were not configured: ${state.renderShadowType}`);
+  assert(state.renderShadowMap === "2048x2048", `desktop shadow map resolution was wrong: ${state.renderShadowMap}`);
   assert(state.tracksideAssets === "kenney", `desktop free trackside assets did not load, assets=${state.tracksideAssets}`);
   assert(state.tracksideGrandstands >= 4, `desktop free grandstand assets did not load, grandstands=${state.tracksideGrandstands}`);
   assert(state.tracksideLightPosts >= 4, `desktop free light-post assets did not load, lights=${state.tracksideLightPosts}`);
