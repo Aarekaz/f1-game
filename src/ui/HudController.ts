@@ -330,7 +330,7 @@ export class HudController {
       cleanLap: telemetry.cleanLap
     });
     this.resultTotal.textContent = formatTime(telemetry.totalTime);
-    this.resultBest.textContent = formatTime(telemetry.bestLap);
+    this.resultBest.textContent = telemetry.bestLap === null ? "No clean" : formatTime(telemetry.bestLap);
 
     if (this.resultOvertakes) {
       this.resultOvertakes.textContent = String(telemetry.overtakeStreak);

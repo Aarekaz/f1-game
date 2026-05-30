@@ -369,8 +369,16 @@ async function checkMobile(browser) {
     };
   });
 
+  const finishedState = await page.evaluate(() => {
+    document.querySelector(".hud").dataset.phase = "finished";
+    return {
+      controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display
+    };
+  });
+
   await page.close();
   assert(state.controlsDisplay === "grid", "mobile controls were not visible");
+  assert(finishedState.controlsDisplay === "none", "mobile controls stayed visible after race finish");
   assert(state.racingTimingDisplay === "none", "mobile racing timing tower should collapse to protect the playfield");
   assertCanvasBox(state.canvasBox, "mobile");
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);

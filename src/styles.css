@@ -167,6 +167,16 @@ body {
   display: none;
 }
 
+.hud[data-phase="finished"] .results-panel {
+  box-shadow:
+    0 28px 80px rgba(2, 10, 8, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.hud[data-phase="finished"] .touch-controls {
+  display: none;
+}
+
 .panel-kicker {
   color: #e20e3b;
   font-size: 12px;
@@ -1041,6 +1051,10 @@ body {
     display: grid;
   }
 
+  .hud[data-phase="finished"] .touch-controls {
+    display: none;
+  }
+
   .hud {
     padding: 10px;
   }
@@ -1307,5 +1321,12 @@ body {
 
   .steer-pad button {
     font-size: 28px;
+  }
+}
+
+@media (min-width: 900px) {
+  .hud[data-phase="finished"] .results-panel {
+    left: clamp(288px, 32vw, 430px);
+    top: 50%;
   }
 }
