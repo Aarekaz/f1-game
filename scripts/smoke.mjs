@@ -227,6 +227,8 @@ async function checkDesktop(browser) {
     rearRainLightGlow: Number(document.querySelector("#game canvas")?.dataset.rearRainLightGlow ?? 0),
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
+    lensRainDroplets: Number(document.querySelector("#game canvas")?.dataset.lensRainDroplets ?? 0),
+    lensRainOpacity: Number(document.querySelector("#game canvas")?.dataset.lensRainOpacity ?? 0),
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
     flowState: document.querySelector("#game canvas")?.dataset.flowState ?? "",
     flowMeter: document.querySelector("#flow")?.style.getPropertyValue("--value") ?? "",
@@ -407,6 +409,8 @@ async function checkDesktop(browser) {
   assert(state.rearRainLightGlow > 0.6, `desktop rear rain light glow did not activate in storm weather: ${state.rearRainLightGlow}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
+  assert(state.lensRainDroplets >= 8, `desktop rain lens droplets were missing in storm weather: ${state.lensRainDroplets}`);
+  assert(state.lensRainOpacity > 0.1, `desktop rain lens opacity stayed too faint: ${state.lensRainOpacity}`);
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
   assert(state.flowState.length > 0, "desktop flow state was missing");
   assert(/%/.test(state.flowMeter), `desktop flow meter did not update: ${state.flowMeter}`);

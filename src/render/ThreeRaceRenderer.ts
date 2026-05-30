@@ -69,6 +69,38 @@ function makeSoftMistTexture() {
   return texture;
 }
 
+function makeRainDropletTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 96;
+  canvas.height = 160;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const body = ctx.createLinearGradient(48, 18, 48, 150);
+    body.addColorStop(0, "rgba(255, 255, 255, 0.62)");
+    body.addColorStop(0.32, "rgba(224, 239, 242, 0.34)");
+    body.addColorStop(0.72, "rgba(196, 220, 224, 0.18)");
+    body.addColorStop(1, "rgba(196, 220, 224, 0)");
+
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(48, 58, 16, 38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(42, 64, 12, 70);
+
+    const highlight = ctx.createRadialGradient(42, 36, 1, 42, 36, 22);
+    highlight.addColorStop(0, "rgba(255, 255, 255, 0.74)");
+    highlight.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = highlight;
+    ctx.beginPath();
+    ctx.ellipse(42, 38, 7, 17, -0.18, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -88,6 +120,7 @@ export class ThreeRaceRenderer {
   private readonly tireSmoke = this.buildTireSmoke();
   private readonly rainStreaks = this.buildRainStreaks();
   private readonly waterSpray = this.buildWaterSpray();
+  private readonly lensRain = this.buildLensRain();
   private readonly proximityMarkers = this.buildProximityMarkers();
   private readonly racingLineAssist = this.buildRacingLineAssist();
   private readonly cameraPosition = new THREE.Vector3(0, 5.8, 22.5);
@@ -117,6 +150,8 @@ export class ThreeRaceRenderer {
     this.sun.position.set(-12, 30, -22);
     this.sun.castShadow = true;
     this.scene.add(this.sun);
+    this.camera.add(this.lensRain);
+    this.scene.add(this.camera);
 
     this.scene.add(this.circuit);
     this.tracksideAssets.name = "loaded-trackside-assets";
@@ -297,6 +332,7 @@ export class ThreeRaceRenderer {
     this.camera.lookAt(this.cameraTarget);
     this.camera.updateProjectionMatrix();
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
+    this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
     this.updateWaterSpray(carX, carY, carZ, carWorldYaw, telemetry.roadWetness, speedRatio, telemetry.car.slip);
     this.carScreenPosition.copy(this.car.position).project(this.camera);
     this.renderer.domElement.dataset.cameraWorldX = this.camera.position.x.toFixed(2);
@@ -997,6 +1033,81 @@ export class ThreeRaceRenderer {
       streak.position.z = -18 - phase;
       streak.position.y = 3 + ((index * 17 + phase * 0.45) % 24);
     }
+  }
+
+  private buildLensRain() {
+    const group = new THREE.Group();
+    group.name = "camera-rain-lens";
+    const texture = makeRainDropletTexture();
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#dfeef1",
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    const placements = [
+      [-0.58, 0.28, 0.055, 0.145],
+      [-0.42, -0.1, 0.038, 0.112],
+      [-0.24, 0.18, 0.044, 0.126],
+      [-0.08, -0.24, 0.032, 0.1],
+      [0.1, 0.32, 0.046, 0.132],
+      [0.28, -0.06, 0.034, 0.106],
+      [0.46, 0.17, 0.052, 0.14],
+      [0.62, -0.22, 0.036, 0.116],
+      [-0.68, -0.28, 0.03, 0.092],
+      [0.68, 0.3, 0.034, 0.1]
+    ];
+
+    placements.forEach(([x, y, width, height], index) => {
+      const droplet = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+      droplet.name = "rain-lens-droplet";
+      droplet.position.set(x, y, -1.12 - (index % 3) * 0.01);
+      droplet.rotation.z = (index % 2 === 0 ? -1 : 1) * (0.06 + (index % 4) * 0.018);
+      droplet.renderOrder = 20;
+      droplet.userData.baseX = x;
+      droplet.userData.baseY = y;
+      droplet.userData.speed = 0.08 + (index % 5) * 0.027;
+      droplet.userData.phase = index * 0.37;
+      group.add(droplet);
+    });
+
+    group.userData.material = material;
+    group.userData.texture = texture;
+    group.userData.dropletCount = placements.length;
+    return group;
+  }
+
+  private updateLensRain(rainIntensity: number, roadWetness: number, speedRatio: number) {
+    const material = this.lensRain.userData.material as THREE.MeshBasicMaterial | undefined;
+    const strength = clamp(rainIntensity * (0.2 + roadWetness * 0.7) * (0.76 + speedRatio * 0.34), 0, 1);
+    this.lensRain.visible = strength > 0.04;
+    if (material) {
+      material.opacity = strength * 0.24;
+    }
+
+    const time = performance.now() * 0.001;
+    let visibleDroplets = 0;
+    for (const child of this.lensRain.children) {
+      const baseX = Number(child.userData.baseX ?? child.position.x);
+      const baseY = Number(child.userData.baseY ?? child.position.y);
+      const speed = Number(child.userData.speed ?? 0.1);
+      const phase = Number(child.userData.phase ?? 0);
+      const slide = ((time * speed * (0.9 + speedRatio * 1.4) + phase) % 0.74) - 0.37;
+      child.position.x = baseX + Math.sin(time * 1.3 + phase) * 0.006 * strength;
+      child.position.y = baseY - slide * strength;
+      child.scale.setScalar(0.82 + strength * 0.36 + speedRatio * 0.08);
+      child.visible = strength > 0.04;
+      if (child.visible) visibleDroplets += 1;
+    }
+
+    this.renderer.domElement.dataset.lensRainDroplets = String(visibleDroplets);
+    this.renderer.domElement.dataset.lensRainOpacity = (material?.opacity ?? 0).toFixed(2);
   }
 
   private buildWaterSpray() {
