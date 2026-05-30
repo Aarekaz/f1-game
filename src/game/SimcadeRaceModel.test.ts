@@ -289,19 +289,45 @@ describe("SimcadeRaceModel", () => {
 
     const sampledSurfaces = new Set<string>();
     let peakRumble = 0;
+    let peakEdgeLoad = 0;
     let lowestSurfaceGrip = 1;
 
     for (let elapsed = 0; elapsed < 3; elapsed += 1 / 60) {
       const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 1 });
       sampledSurfaces.add(telemetry.surfaceName);
       peakRumble = Math.max(peakRumble, telemetry.surfaceRumble);
+      peakEdgeLoad = Math.max(peakEdgeLoad, telemetry.surfaceEdgeLoad);
       lowestSurfaceGrip = Math.min(lowestSurfaceGrip, telemetry.surfaceGripModifier);
     }
 
     expect([...sampledSurfaces]).toEqual(expect.arrayContaining(["Kerb"]));
     expect([...sampledSurfaces].some((surface) => surface === "Runoff" || surface === "Gravel")).toBe(true);
     expect(peakRumble).toBeGreaterThan(0.25);
+    expect(peakEdgeLoad).toBeGreaterThan(0.08);
     expect(lowestSurfaceGrip).toBeLessThan(0.8);
+  });
+
+  it("loads the tire contact patch when crossing the asphalt edge", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const cruise = run(model, 4.6, { throttle: 1 });
+
+    let peakEdgeLoad = 0;
+    let lowestAdhesion = 1;
+    let loaded = cruise;
+    for (let elapsed = 0; elapsed < 1.8; elapsed += 1 / 60) {
+      loaded = model.update(1 / 60, { ...idle, throttle: 1, steer: 0.95 });
+      peakEdgeLoad = Math.max(peakEdgeLoad, loaded.surfaceEdgeLoad);
+      lowestAdhesion = Math.min(lowestAdhesion, loaded.roadAdhesion);
+    }
+
+    expect(peakEdgeLoad).toBeGreaterThan(0.12);
+    expect(lowestAdhesion).toBeLessThan(cruise.roadAdhesion);
+    expect(loaded.suspensionTravel).toBeGreaterThan(cruise.suspensionTravel);
   });
 
   it("smooths keyboard steering into a recoverable tire response", () => {
@@ -443,6 +469,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceName).toBe("Asphalt");
     expect(telemetry.surfaceGripModifier).toBe(1);
     expect(telemetry.surfaceRumble).toBe(0);
+    expect(telemetry.surfaceEdgeLoad).toBe(0);
     expect(telemetry.roadAdhesion).toBe(1);
     expect(telemetry.lateralScrub).toBe(0);
     expect(telemetry.forwardBite).toBe(1);

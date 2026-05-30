@@ -30,6 +30,7 @@ export type RaceTelemetry = {
   surfaceName: TrackSurfaceName;
   surfaceGripModifier: number;
   surfaceRumble: number;
+  surfaceEdgeLoad: number;
   roadAdhesion: number;
   lateralScrub: number;
   forwardBite: number;
@@ -271,6 +272,7 @@ export class SimcadeRaceModel {
   private cameraSnapTimer = 0;
   private flowScore = 0.62;
   private surfaceRumble = 0;
+  private surfaceEdgeLoad = 0;
   private grip = 1;
   private roadAdhesion = 1;
   private lateralScrub = 0;
@@ -393,6 +395,7 @@ export class SimcadeRaceModel {
       surfaceName: this.drivingSurface(track).name,
       surfaceGripModifier: this.drivingSurface(track).grip,
       surfaceRumble: this.surfaceRumble,
+      surfaceEdgeLoad: this.surfaceEdgeLoad,
       roadAdhesion: this.roadAdhesion,
       lateralScrub: this.lateralScrub,
       forwardBite: this.forwardBite,
@@ -557,6 +560,7 @@ export class SimcadeRaceModel {
     this.cameraSnapTimer = 0;
     this.flowScore = 0.62;
     this.surfaceRumble = 0;
+    this.surfaceEdgeLoad = 0;
     this.grip = 1;
     this.ers = 1;
     this.aeroBoostAvailable = false;
@@ -666,6 +670,8 @@ export class SimcadeRaceModel {
       this.positionGainLockout = Math.max(this.positionGainLockout, 3.4);
     }
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
+    const edgeTarget = this.trackEdgeLoad(track, surface, speedRatio);
+    this.surfaceEdgeLoad = approach(this.surfaceEdgeLoad, edgeTarget, dt * (edgeTarget > this.surfaceEdgeLoad ? 18 : 7));
     this.updateTrackEvolution(dt, speedRatio, onTrack, surface.roughness);
     const roadWetness = this.dynamicRoadWetness();
     const gripContext = this.trackGripContext(track);
@@ -721,6 +727,7 @@ export class SimcadeRaceModel {
           throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) +
             tractionStress * overspeed * 0.35 +
             surface.roughness * throttle * 0.18 +
+            this.surfaceEdgeLoad * throttle * 0.12 +
             (gripContext.marbles + this.dirtyTirePickup) * throttle * 0.18,
           0,
           1
@@ -755,10 +762,10 @@ export class SimcadeRaceModel {
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
     this.roadGrade = approach(this.roadGrade, grade, dt * 7);
     const gradeForce = -grade * (78 + speedRatio * 44);
-    const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
+    const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14 + this.surfaceEdgeLoad * 6) * driverDemand;
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
     const offTrackDrag = surface.drag * (onTrack ? 1 : 1.18 + roadWetness * 0.34);
-    this.surfaceRumble = approach(this.surfaceRumble, surface.roughness * clamp(0.25 + speedRatio, 0, 1), dt * 12);
+    this.surfaceRumble = approach(this.surfaceRumble, clamp(surface.roughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42, 0, 1), dt * 12);
 
     this.speed += (acceleration + boostPower + aeroPower + draftPower + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
@@ -775,6 +782,7 @@ export class SimcadeRaceModel {
         camberLoad +
         cornerLoad * 0.08 +
         surface.roughness * 0.1 +
+        this.surfaceEdgeLoad * 0.16 +
         suspensionOscillation -
         roadWetness * 0.035,
       0.62,
@@ -783,7 +791,7 @@ export class SimcadeRaceModel {
     this.suspensionLoad = approach(this.suspensionLoad, loadTarget, dt * (surface.roughness > 0.2 ? 11 : 7));
     this.suspensionTravel = approach(
       this.suspensionTravel,
-      clamp((this.suspensionLoad - 1) * 0.44 + surface.roughness * speedRatio * 0.12 + brake * 0.035 - throttle * 0.02, -0.2, 0.32),
+      clamp((this.suspensionLoad - 1) * 0.44 + surface.roughness * speedRatio * 0.12 + this.surfaceEdgeLoad * 0.08 + brake * 0.035 - throttle * 0.02, -0.2, 0.32),
       dt * 9
     );
     const weatherGrip = this.evolvedWeatherGrip() * surface.grip;
@@ -816,7 +824,7 @@ export class SimcadeRaceModel {
       : 0.42 * weatherGrip;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
     const contactDemand = clamp(
-      throttle * 0.08 + brake * 0.24 + boost * 0.08 + Math.abs(rawSteer) * speedRatio * 0.34 + this.wheelspin * 0.18 + this.lockup * 0.18,
+      throttle * 0.08 + brake * 0.24 + boost * 0.08 + Math.abs(rawSteer) * speedRatio * 0.34 + this.wheelspin * 0.18 + this.lockup * 0.18 + this.surfaceEdgeLoad * 0.2,
       0,
       0.86
     );
@@ -877,7 +885,9 @@ export class SimcadeRaceModel {
     const slipVelocity = Math.abs(this.lateralVelocity - curveFollow);
     const scrubDeadzone = onTrack ? 1.25 + this.roadAdhesion * 1.1 : 0.35;
     const scrubTarget = clamp(
-      Math.max(0, slipVelocity - scrubDeadzone) / (8.2 + speedRatio * 21 + this.roadAdhesion * 5) + Math.max(0, 0.58 - this.roadAdhesion) * 0.42,
+      Math.max(0, slipVelocity - scrubDeadzone) / (8.2 + speedRatio * 21 + this.roadAdhesion * 5) +
+        Math.max(0, 0.58 - this.roadAdhesion) * 0.42 +
+        this.surfaceEdgeLoad * 0.12,
       0,
       1
     );
@@ -961,6 +971,7 @@ export class SimcadeRaceModel {
     this.lockup = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
+    this.surfaceEdgeLoad = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
     this.forwardBite = Math.max(this.forwardBite, 0.82);
@@ -996,6 +1007,17 @@ export class SimcadeRaceModel {
     }
 
     return { name: "Gravel" as const, grip: 0.54, roughness: 0.82, drag: 112, trackLegal: false };
+  }
+
+  private trackEdgeLoad(track: ReturnType<typeof sampleTrack>, surface: ReturnType<SimcadeRaceModel["drivingSurface"]>, speedRatio: number) {
+    const lateral = Math.abs(this.x - track.center);
+    const asphaltEdge = track.halfWidth - 0.55;
+    const kerbOuterEdge = track.halfWidth + 0.35;
+    const asphaltStrike = clamp(1 - Math.abs(lateral - asphaltEdge) / 0.62, 0, 1);
+    const kerbDrop = clamp(1 - Math.abs(lateral - kerbOuterEdge) / 0.78, 0, 1);
+    const crossingSpeed = clamp(Math.abs(this.lateralVelocity) / 7.2, 0, 1);
+    const surfaceBite = surface.name === "Kerb" ? 0.18 : surface.name === "Runoff" ? 0.1 : surface.name === "Gravel" ? 0.14 : 0;
+    return clamp((asphaltStrike * 0.72 + kerbDrop * 0.54) * (0.25 + speedRatio * 0.75) * (0.35 + crossingSpeed * 0.65) + surfaceBite * speedRatio, 0, 1);
   }
 
   private trackGripContext(track: ReturnType<typeof sampleTrack>) {
