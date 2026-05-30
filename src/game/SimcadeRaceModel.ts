@@ -959,6 +959,7 @@ export class SimcadeRaceModel {
       this.roadAdhesion *
       (1 - this.understeer * 0.35) *
       (1 - this.tireSaturation * 0.24) *
+      (1 - clamp(brake * speedRatio * (0.44 + this.lockup * 0.82 + this.tireSaturation * 0.28), 0, 0.82)) *
       (1 - this.downforceLoss * 0.5) *
       (1 - this.fuelLoad * 0.035) *
       (1 - this.dirtyTirePickup * 0.08);
@@ -1005,9 +1006,11 @@ export class SimcadeRaceModel {
     const roadRecoveryPull = -offTrackSide * roadRecoveryNeed * (0.78 + speedRatio * 1.84) * (1 - Math.abs(rawSteer) * 0.32) * rollingRoadForce;
     const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5) * rollingRoadForce;
     const splitGripPull = tireContact.sideBias * speedRatio * (0.42 + contactRoughness * 0.6) * (1 - Math.abs(rawSteer) * 0.35) * rollingRoadForce;
-    const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8) * rollingSteerFactor;
+    const brakeSteeringRelease = 1 - clamp(brake * speedRatio * (0.48 + this.lockup * 0.86 + this.tireSaturation * 0.32), 0, 0.84);
+    const steeringSaturationPush =
+      Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8) * rollingSteerFactor * brakeSteeringRelease;
     const chassisTravelBlend = (0.36 + this.roadAdhesion * 0.18) * (onTrack ? 1 : 0.58 + this.tireContactGrip * 0.28);
-    const steeringSideForce = steer * (0.86 + speedRatio * 1.18) * steeringSlipLimit * steeringLoad * this.roadAdhesion * rollingSteerFactor;
+    const steeringSideForce = steer * (0.86 + speedRatio * 1.18) * steeringSlipLimit * steeringLoad * this.roadAdhesion * rollingSteerFactor * brakeSteeringRelease;
     const lateralIntent =
       Math.sin(this.heading) * metersPerSecond * chassisTravelBlend +
       steeringSideForce +
