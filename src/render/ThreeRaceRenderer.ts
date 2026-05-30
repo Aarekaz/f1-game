@@ -166,11 +166,18 @@ export class ThreeRaceRenderer {
   constructor(private readonly parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.04;
     this.renderer.setClearColor("#c7d8df");
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.domElement.className = "race-canvas";
     this.renderer.domElement.dataset.assetCar = "apex-procedural-f25";
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
+    this.renderer.domElement.dataset.renderPipeline = "srgb-aces-soft-shadows";
+    this.renderer.domElement.dataset.renderToneMapping = "aces";
+    this.renderer.domElement.dataset.renderShadowType = "pcf-soft";
     this.parent.appendChild(this.renderer.domElement);
     this.syncHorizonTelemetry();
 
@@ -178,6 +185,15 @@ export class ThreeRaceRenderer {
     this.scene.add(this.hemi);
     this.sun.position.set(-12, 30, -22);
     this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.normalBias = 0.025;
+    this.sun.shadow.camera.near = 1;
+    this.sun.shadow.camera.far = 90;
+    this.sun.shadow.camera.left = -42;
+    this.sun.shadow.camera.right = 42;
+    this.sun.shadow.camera.top = 42;
+    this.sun.shadow.camera.bottom = -42;
+    this.renderer.domElement.dataset.renderShadowMap = `${this.sun.shadow.mapSize.width}x${this.sun.shadow.mapSize.height}`;
     this.scene.add(this.sun);
     this.camera.add(this.lensRain);
     this.camera.add(this.cockpitFrame);
