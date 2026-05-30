@@ -344,6 +344,7 @@ export function createRaceApp() {
     hud.setSeriesResult(null);
     setPaused(false);
     renderer.update(latestTelemetry);
+    syncHudCameraPressure();
     hud.update(latestTelemetry);
     audio.update(pausedAudioTelemetry(latestTelemetry));
     haptics.stop();
@@ -371,6 +372,25 @@ export function createRaceApp() {
       resultNextEventButton.textContent = event ? `Next: ${event.round}` : "Next Event";
       resultNextEventButton.setAttribute("aria-label", event ? `Load ${event.round} ${event.title}` : "Next event");
     }
+  }
+
+  function syncHudCameraPressure() {
+    if (!hudRoot) return;
+
+    const canvas = document.querySelector<HTMLCanvasElement>("#game canvas");
+    const carScreenX = Number(canvas?.dataset.carScreenX ?? 0);
+    const rejoinFocus = Number(canvas?.dataset.cameraRejoinFocus ?? 0);
+    const cameraMode = canvas?.dataset.cameraMode ?? "chase";
+    const shouldYieldRight =
+      latestTelemetry.phase === "racing" &&
+      cameraMode === "chase" &&
+      (carScreenX > 0.3 || (rejoinFocus > 0.08 && carScreenX > 0.18));
+    const shouldYieldLeft =
+      latestTelemetry.phase === "racing" &&
+      cameraMode === "chase" &&
+      (carScreenX < -0.58 || (rejoinFocus > 0.08 && carScreenX < -0.42));
+
+    hudRoot.dataset.cameraPressure = shouldYieldRight ? "right" : shouldYieldLeft ? "left" : "clear";
   }
 
   function selectSeriesEvent(event: ApexSeriesEvent) {
@@ -414,6 +434,7 @@ export function createRaceApp() {
     latestTelemetry = model.telemetry();
     lastPhase = latestTelemetry.phase;
     setPaused(false);
+    syncHudCameraPressure();
   };
 
   document.getElementById("track-select")?.addEventListener("change", refreshSession);
@@ -493,6 +514,7 @@ export function createRaceApp() {
     }
 
     renderer.update(telemetry);
+    syncHudCameraPressure();
     hud.update(telemetry);
     audio.update(telemetry);
     haptics.update(telemetry);
