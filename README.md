@@ -72,6 +72,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Balanced recovery keeps forced-wide moments on the visible runoff apron, so the car does not spend the camera view floating through empty grass.
 - Longitudinal grip now gates throttle and braking, so running wide over kerbs/runoff costs drive and stopping power instead of only changing the scenery label.
 - Loose-surface mistakes now crawl back when the driver releases full-lock steering, so runoff and gravel cost time without turning the car into a dead stop.
+- Stranded runoff recovery now rewards steering back toward the circuit while steering away still bogs the car, making low-speed rejoin control feel intentional instead of stuck.
 - High-speed full-lock steering now eats into the same tire budget before the car leaves the track, so the front tires scrub and the engine stops pulling like it is still on a straight.
 - Steering now needs rolling speed before it can yaw or sidestep the car, so turning the wheel at a full stop no longer rotates the chassis in place.
 - Road centering, camber, and rejoin pull now need rolling speed or active throttle, so a stopped off-line car stays planted instead of being dragged sideways by invisible forces.
