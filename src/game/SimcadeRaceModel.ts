@@ -46,6 +46,9 @@ export type RaceTelemetry = {
   gear: number;
   rpm: number;
   ers: number;
+  aeroBoostAvailable: boolean;
+  aeroBoostActive: number;
+  aeroDragReduction: number;
   grip: number;
   flowScore: number;
   flowState: string;
@@ -212,6 +215,9 @@ export class SimcadeRaceModel {
   private surfaceRumble = 0;
   private grip = 1;
   private ers = 1;
+  private aeroBoostAvailable = false;
+  private aeroBoostActive = 0;
+  private aeroDragReduction = 0;
   private lapTime = 0;
   private bestLap: number | null = null;
   private splitDelta: number | null = null;
@@ -315,6 +321,9 @@ export class SimcadeRaceModel {
       gear: this.gear(),
       rpm: this.rpm(),
       ers: this.ers,
+      aeroBoostAvailable: this.aeroBoostAvailable,
+      aeroBoostActive: this.aeroBoostActive,
+      aeroDragReduction: this.aeroDragReduction,
       grip: this.grip,
       flowScore: this.flowScore,
       flowState: this.flowState(),
@@ -424,6 +433,9 @@ export class SimcadeRaceModel {
     this.surfaceRumble = 0;
     this.grip = 1;
     this.ers = 1;
+    this.aeroBoostAvailable = false;
+    this.aeroBoostActive = 0;
+    this.aeroDragReduction = 0;
     this.lapTime = 0;
     this.bestLap = null;
     this.splitDelta = null;
@@ -500,6 +512,18 @@ export class SimcadeRaceModel {
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
+    this.aeroBoostAvailable =
+      onTrack &&
+      track.section.kind === "straight" &&
+      !track.brakingZone &&
+      Math.abs(track.curve) < 0.018 &&
+      this.speed > 150 &&
+      throttle > 0.52 &&
+      brake < 0.08 &&
+      this.grip > 0.56;
+    const aeroTarget = this.aeroBoostAvailable && boost ? 1 : 0;
+    this.aeroBoostActive = approach(this.aeroBoostActive, aeroTarget, dt * (aeroTarget > this.aeroBoostActive ? 18 : 5));
+    this.aeroDragReduction = this.aeroBoostActive * (8 + speedRatio * speedRatio * 26);
     const air = this.raceAirEffect(track);
     this.draft = approach(this.draft, air.draft, dt * 4.2);
     this.dirtyAir = approach(this.dirtyAir, air.dirtyAir, dt * 5.4);
@@ -535,6 +559,7 @@ export class SimcadeRaceModel {
     const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34);
     const braking = brake * 248 * (1 - this.lockup * 0.22);
     const boostPower = boost * 72;
+    const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
@@ -544,9 +569,9 @@ export class SimcadeRaceModel {
     const offTrackDrag = surface.drag * (onTrack ? 1 : 1.18 + this.session.weather.roadWetness * 0.34);
     this.surfaceRumble = approach(this.surfaceRumble, surface.roughness * clamp(0.25 + speedRatio, 0, 1), dt * 12);
 
-    this.speed += (acceleration + boostPower + draftPower + gradeForce - braking - drag - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
+    this.speed += (acceleration + boostPower + aeroPower + draftPower + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
-    this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt, 0, 1);
+    this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const weatherGrip = this.session.weather.gripMultiplier * surface.grip;
@@ -958,6 +983,11 @@ export class SimcadeRaceModel {
 
     if (this.dirtyAir > 0.28 && track.section.kind !== "straight") {
       return "Washout risk";
+    }
+
+    if (track.section.kind === "straight") {
+      if (this.aeroBoostActive > 0.45) return "Aero open";
+      if (this.aeroBoostAvailable && this.ers > 0.18) return "Aero ready";
     }
 
     if (this.draft > 0.03 && track.section.kind === "straight") {

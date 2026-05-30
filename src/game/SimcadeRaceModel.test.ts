@@ -241,6 +241,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.sectorSplits).toEqual([null, null, null]);
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);
     expect(telemetry.rpm).toBeGreaterThan(0);
+    expect(telemetry.aeroBoostAvailable).toBe(false);
+    expect(telemetry.aeroBoostActive).toBe(0);
+    expect(telemetry.aeroDragReduction).toBe(0);
     expect(telemetry.flowScore).toBeGreaterThan(0);
     expect(telemetry.flowState).toBe("Good rhythm");
     expect(telemetry.cameraSnap).toBe(false);
@@ -377,6 +380,25 @@ describe("SimcadeRaceModel", () => {
     expect(controlledTurn.grip).toBeGreaterThan(lateTurn.grip);
     expect(controlledTurn.car.slip).toBeLessThan(lateTurn.car.slip);
     expect(controlledTurn.car.understeer).toBeLessThan(lateTurn.car.understeer);
+  });
+
+  it("opens the aero boost flap on committed straight-line ERS runs", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+
+    let peakAero = 0;
+    let peakDragReduction = 0;
+    let aeroCue = "";
+    for (let elapsed = 0; elapsed < 7; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true });
+      peakAero = Math.max(peakAero, telemetry.aeroBoostActive);
+      peakDragReduction = Math.max(peakDragReduction, telemetry.aeroDragReduction);
+      if (/Aero/.test(telemetry.trackCue)) aeroCue = telemetry.trackCue;
+    }
+
+    expect(peakAero).toBeGreaterThan(0.45);
+    expect(peakDragReduction).toBeGreaterThan(0);
+    expect(aeroCue).toMatch(/Aero/);
   });
 
   it("settles casual throttle driving better with balanced assists than manual inputs", () => {

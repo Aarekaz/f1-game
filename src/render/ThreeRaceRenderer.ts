@@ -237,6 +237,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
     this.renderer.domElement.dataset.launchCharge = telemetry.launchCharge.toFixed(2);
     this.renderer.domElement.dataset.launchQuality = telemetry.launchQuality.toFixed(2);
+    this.renderer.domElement.dataset.aeroBoostAvailable = String(telemetry.aeroBoostAvailable);
+    this.renderer.domElement.dataset.aeroBoostActive = telemetry.aeroBoostActive.toFixed(2);
+    this.renderer.domElement.dataset.aeroDragReduction = telemetry.aeroDragReduction.toFixed(2);
     this.renderer.domElement.dataset.assistSteer = telemetry.assistSteer.toFixed(3);
     this.renderer.domElement.dataset.assistBrake = telemetry.assistBrake.toFixed(3);
     this.renderer.domElement.dataset.assistThrottleTrim = telemetry.assistThrottleTrim.toFixed(3);
@@ -270,7 +273,8 @@ export class ThreeRaceRenderer {
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
       rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
-      ersDeploy: telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0
+      ersDeploy: telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0,
+      aeroOpen: telemetry.aeroBoostActive
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
     this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65, 0, 1).toFixed(2);
@@ -289,6 +293,7 @@ export class ThreeRaceRenderer {
       0,
       1
     ).toFixed(2);
+    this.renderer.domElement.dataset.rearAeroFlap = telemetry.aeroBoostActive.toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
     const airBuffet = clamp(telemetry.dirtyAir * 0.48 + telemetry.draft * 0.18 + telemetry.contactRisk * 0.22, 0, 1);
@@ -403,7 +408,8 @@ export class ThreeRaceRenderer {
         throttle: 0.72,
         wheelspin: 0,
         rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0,
-        ersDeploy: 0
+        ersDeploy: 0,
+        aeroOpen: 0
       });
       const sprayStrength = this.updateRivalSpray(
         rival.id,
@@ -871,6 +877,7 @@ export class ThreeRaceRenderer {
       wheelspin: number;
       rainLight: number;
       ersDeploy: number;
+      aeroOpen: number;
     }
   ) {
     const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
@@ -881,6 +888,7 @@ export class ThreeRaceRenderer {
     const rainPulse = rainLight * (0.72 + Math.sin(performance.now() * 0.011 + state.distance * 0.025) * 0.28);
     const ersDeploy = clamp(state.ersDeploy, 0, 1);
     const ersPulse = ersDeploy * (0.72 + Math.sin(performance.now() * 0.018 + state.distance * 0.032) * 0.28);
+    const aeroOpen = clamp(state.aeroOpen, 0, 1);
     const rearFlap = root.getObjectByName("rear-wing-upper-plane");
 
     for (const wheelName of ["front-left-wheel", "front-right-wheel", "rear-left-wheel", "rear-right-wheel"]) {
@@ -892,7 +900,7 @@ export class ThreeRaceRenderer {
     }
 
     if (rearFlap) {
-      rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13;
+      rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13 + aeroOpen * 0.24;
     }
 
     root.traverse((object) => {

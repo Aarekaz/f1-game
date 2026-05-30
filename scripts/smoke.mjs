@@ -232,6 +232,10 @@ async function checkDesktop(browser) {
     rearRainLight: Number(document.querySelector("#game canvas")?.dataset.rearRainLight ?? 0),
     rearRainLightGlow: Number(document.querySelector("#game canvas")?.dataset.rearRainLightGlow ?? 0),
     ersDeployGlow: Number(document.querySelector("#game canvas")?.dataset.ersDeployGlow ?? 0),
+    aeroBoostAvailable: document.querySelector("#game canvas")?.dataset.aeroBoostAvailable ?? "",
+    aeroBoostActive: Number(document.querySelector("#game canvas")?.dataset.aeroBoostActive ?? 0),
+    aeroDragReduction: Number(document.querySelector("#game canvas")?.dataset.aeroDragReduction ?? 0),
+    rearAeroFlap: Number(document.querySelector("#game canvas")?.dataset.rearAeroFlap ?? 0),
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
     rivalLabelsVisible: Number(document.querySelector("#game canvas")?.dataset.rivalLabelsVisible ?? 0),
@@ -451,6 +455,10 @@ async function checkDesktop(browser) {
   assert(state.rearRainLight > 0.6, `desktop rear rain light did not activate in storm weather: ${state.rearRainLight}`);
   assert(state.rearRainLightGlow > 0.6, `desktop rear rain light glow did not activate in storm weather: ${state.rearRainLightGlow}`);
   assert(state.ersDeployGlow > 0.6, `desktop ERS deploy glow did not activate while boost was held: ${state.ersDeployGlow}`);
+  assert(state.aeroBoostAvailable === "true", `desktop aero boost window did not open: ${state.aeroBoostAvailable}`);
+  assert(state.aeroBoostActive > 0.35, `desktop aero boost did not activate: ${state.aeroBoostActive}`);
+  assert(state.aeroDragReduction > 0, `desktop aero drag reduction stayed inactive: ${state.aeroDragReduction}`);
+  assert(state.rearAeroFlap > 0.35, `desktop rear aero flap did not open: ${state.rearAeroFlap}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.rivalLabelsVisible > 0, `desktop in-world rival labels did not render: ${state.rivalLabelsVisible}`);
