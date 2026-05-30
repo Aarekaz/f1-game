@@ -59,6 +59,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Forward bite and road alignment now reduce track progress when the car is crossed up or sliding, so speed only becomes useful when the car is actually pointed and planted.
 - Suspension load, road grade, chassis pitch, and chassis roll are now part of the sim state, so braking, banking, rough surfaces, and runoff visibly and physically load the car.
 - Car and rival ride height now follows the lateral surface, so banking and runoff edges move the chassis instead of rendering every vehicle at the centerline elevation.
+- Road camber now feeds the handling model, giving banked surfaces a subtle downhill pull and chassis response instead of being only visual scenery.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
 - High-speed runs now get peripheral ground-rush streaks and stronger player spray, so speed reads through the world instead of only through the speedometer.
