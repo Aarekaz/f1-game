@@ -193,6 +193,9 @@ async function checkDesktop(browser) {
     surfacePuddles: Number(document.querySelector("#game canvas")?.dataset.surfacePuddles ?? 0),
     surfaceWetSheenOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceWetSheenOpacity ?? 0),
     surfacePuddleOpacity: Number(document.querySelector("#game canvas")?.dataset.surfacePuddleOpacity ?? 0),
+    racingLineAssist: document.querySelector("#game canvas")?.dataset.racingLineAssist ?? "",
+    dynamicRacingLineSegments: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLineSegments ?? 0),
+    racingLineCue: document.querySelector("#game canvas")?.dataset.racingLineCue ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
@@ -307,6 +310,9 @@ async function checkDesktop(browser) {
   assert(state.surfacePuddles >= 5, `desktop standing water details were missing: ${state.surfacePuddles}`);
   assert(state.surfaceWetSheenOpacity > 0.1, `desktop wet sheen did not react to storm weather: ${state.surfaceWetSheenOpacity}`);
   assert(state.surfacePuddleOpacity > 0.2, `desktop puddles did not react to storm weather: ${state.surfacePuddleOpacity}`);
+  assert(state.racingLineAssist === "dynamic", `desktop dynamic racing line did not activate: ${state.racingLineAssist}`);
+  assert(state.dynamicRacingLineSegments >= 24, `desktop dynamic racing line segments missing: ${state.dynamicRacingLineSegments}`);
+  assert(["brake", "apex", "exit", "commit"].includes(state.racingLineCue), `desktop racing line cue was missing: ${state.racingLineCue}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);

@@ -16,6 +16,8 @@ import { RacingAssetLibrary } from "./RacingAssetLibrary";
 
 type CameraMode = "chase" | "pod";
 
+const RACING_LINE_SEGMENTS = 30;
+
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
   const textures = new Set<{ dispose: () => void }>();
@@ -86,6 +88,7 @@ export class ThreeRaceRenderer {
   private readonly rainStreaks = this.buildRainStreaks();
   private readonly waterSpray = this.buildWaterSpray();
   private readonly proximityMarkers = this.buildProximityMarkers();
+  private readonly racingLineAssist = this.buildRacingLineAssist();
   private readonly cameraPosition = new THREE.Vector3(0, 5.8, 22.5);
   private readonly cameraTarget = new THREE.Vector3(0, 0.72, -16.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
@@ -122,6 +125,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.rainStreaks);
     this.scene.add(this.waterSpray);
     this.scene.add(this.proximityMarkers);
+    this.scene.add(this.racingLineAssist);
     this.scene.add(this.car);
     void this.loadRaceAssets();
     this.resize();
@@ -225,6 +229,7 @@ export class ThreeRaceRenderer {
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateTireSmoke(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
     this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
+    this.updateRacingLineAssist(telemetry);
     const podMode = this.cameraMode === "pod";
     this.camera.fov = podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
 
@@ -776,6 +781,72 @@ export class ThreeRaceRenderer {
     this.proximityMarkers.position.set(carX, carY + 0.01, carZ);
     this.proximityMarkers.rotation.y = heading;
     this.proximityMarkers.scale.setScalar(0.9 + strength * 0.28);
+  }
+
+  private buildRacingLineAssist() {
+    const group = new THREE.Group();
+    group.name = "dynamic-racing-line-assist";
+
+    for (let index = 0; index < RACING_LINE_SEGMENTS; index += 1) {
+      const taper = 1 - index / RACING_LINE_SEGMENTS;
+      const material = new THREE.MeshBasicMaterial({
+        color: "#42f56f",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        fog: false,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.56 + taper * 0.2, 3.8 + taper * 1.6), material);
+      mesh.name = "dynamic-racing-line-segment";
+      mesh.rotation.x = -Math.PI / 2;
+      group.add(mesh);
+    }
+
+    return group;
+  }
+
+  private updateRacingLineAssist(telemetry: RaceTelemetry) {
+    const visible = telemetry.phase === "countdown" || telemetry.phase === "racing";
+    this.racingLineAssist.visible = visible;
+    if (!visible) {
+      this.renderer.domElement.dataset.racingLineAssist = "hidden";
+      this.renderer.domElement.dataset.dynamicRacingLineSegments = "0";
+      this.renderer.domElement.dataset.racingLineCue = "";
+      return;
+    }
+
+    let visibleSegments = 0;
+    let nearestCue = "commit";
+    for (let index = 0; index < this.racingLineAssist.children.length; index += 1) {
+      const mesh = this.racingLineAssist.children[index];
+      if (!(mesh instanceof THREE.Mesh) || !(mesh.material instanceof THREE.MeshBasicMaterial)) continue;
+
+      const lookAhead = 13 + index * 7.2;
+      const distance = telemetry.car.z + lookAhead;
+      const sample = sampleTrack(distance);
+      const lateral = clamp(sample.racingLineOffset, -sample.halfWidth + 1.1, sample.halfWidth - 1.1);
+      const point = trackWorldPointAt(distance, lateral);
+      const pacePressure = telemetry.speedKph - sample.targetSpeedKph;
+      const near = Math.max(0, 1 - index / this.racingLineAssist.children.length);
+      const brakingPressure = sample.brakingZone || (pacePressure > 22 && sample.cornerPhase !== "exit" && sample.cornerPhase !== "flat");
+      const apexPressure = sample.cornerPhase === "apex" || sample.cornerPhase === "turn-in";
+      const exitPressure = sample.cornerPhase === "exit" || sample.cornerPhase === "flat";
+      const cue = brakingPressure ? "brake" : apexPressure ? "apex" : exitPressure ? "exit" : "commit";
+      if (index < 5) nearestCue = cue;
+
+      mesh.visible = true;
+      mesh.position.set(point.x, sample.elevation + 0.082, point.z);
+      mesh.rotation.set(-Math.PI / 2, trackWorldHeadingAt(distance), 0);
+      mesh.scale.set(1, 1 + telemetry.roadWetness * 0.08, 1);
+      mesh.material.color.set(cue === "brake" ? "#ff3b33" : cue === "apex" ? "#f3d348" : cue === "exit" ? "#42f56f" : "#20b7ff");
+      mesh.material.opacity = (0.1 + near * 0.22) * (cue === "brake" ? 1.18 : 1) + telemetry.roadWetness * 0.04;
+      visibleSegments += 1;
+    }
+
+    this.renderer.domElement.dataset.racingLineAssist = "dynamic";
+    this.renderer.domElement.dataset.dynamicRacingLineSegments = String(visibleSegments);
+    this.renderer.domElement.dataset.racingLineCue = nearestCue;
   }
 
   private buildRainStreaks() {
