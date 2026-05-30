@@ -447,6 +447,22 @@ describe("SimcadeRaceModel", () => {
     expect(crawled.speedKph).toBeGreaterThan(28);
   });
 
+  it("spends tire budget when the driver asks for full steering at high speed", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const straight = run(model, 4, { throttle: 1 });
+    const loaded = run(model, 0.9, { throttle: 1, steer: 1 });
+
+    expect(loaded.tireSaturation).toBeGreaterThan(0.35);
+    expect(loaded.lateralScrub).toBeGreaterThan(0.18);
+    expect(loaded.forwardBite).toBeLessThan(straight.forwardBite - 0.35);
+    expect(loaded.speedKph).toBeLessThan(straight.speedKph + 35);
+  });
+
   it("rides the lateral road surface instead of the centerline height", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
@@ -1123,7 +1139,11 @@ describe("SimcadeRaceModel", () => {
   });
 
   it("invalidates the clean lap after sustained track limits abuse", () => {
-    const model = new SimcadeRaceModel();
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
     model.update(1 / 60, { ...idle, launch: true });
     run(model, 4, { throttle: 1 });
 
