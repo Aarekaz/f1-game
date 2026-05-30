@@ -17,6 +17,7 @@ type MaterialSet = {
   wheelBlur: THREE.MeshBasicMaterial;
   sensor: THREE.MeshStandardMaterial;
   rainLight: THREE.MeshStandardMaterial;
+  rainLightGlow: THREE.MeshBasicMaterial;
 };
 
 function makeBox(
@@ -262,6 +263,13 @@ export function buildFormulaCarProxy(color = "#e72436") {
       emissiveIntensity: 1.8,
       roughness: 0.18,
       metalness: 0.08
+    }),
+    rainLightGlow: new THREE.MeshBasicMaterial({
+      color: "#ff1238",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide
     })
   };
 
@@ -338,6 +346,12 @@ export function buildFormulaCarProxy(color = "#e72436") {
   car.add(makeBox("rear-wing-pylon", [0.16, 0.56, 0.16], [0, 0.54, 1.36], materials.carbon));
   car.add(makeBox("rear-crash-structure", [0.36, 0.2, 0.52], [0, 0.35, 1.94], materials.carbon));
   car.add(makeBox("rear-rain-light", [0.16, 0.08, 0.045], [0, 0.48, 2.21], materials.rainLight));
+  const rainLightGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.38), materials.rainLightGlow);
+  rainLightGlow.name = "rear-rain-light-glow";
+  rainLightGlow.position.set(0, 0.48, 2.245);
+  rainLightGlow.visible = false;
+  rainLightGlow.renderOrder = 6;
+  car.add(rainLightGlow);
 
   for (const x of [-0.96, 0.96]) {
     car.add(makeWheel(x < 0 ? "front-left-wheel" : "front-right-wheel", x, -1.5, materials));

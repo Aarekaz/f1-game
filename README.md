@@ -32,7 +32,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.
 - A small persistent audio toggle for quiet play sessions.
-- Wet sessions pulse rear rain lights on the fictional formula cars so storm traffic has clearer depth and race presence.
+- Wet sessions pulse rear rain lights and soft red glows on the fictional formula cars so storm traffic has clearer depth and race presence.
 - Keyboard, touch, and gamepad controls, with held pedals, edge-safe command inputs, and browser-safe controller rumble for kerbs, wet road, and traction mistakes.
 - Unit tests for the race model and a Playwright smoke test for the playable browser build.
 

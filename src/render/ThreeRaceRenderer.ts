@@ -233,6 +233,11 @@ export class ThreeRaceRenderer {
       0,
       1
     ).toFixed(2);
+    this.renderer.domElement.dataset.rearRainLightGlow = clamp(
+      telemetry.phase === "racing" ? telemetry.roadWetness * (0.36 + telemetry.rainIntensity * 0.42 + speedRatio * 0.22) : 0,
+      0,
+      1
+    ).toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
@@ -399,6 +404,15 @@ export class ThreeRaceRenderer {
         const material = object.material;
         if (material instanceof THREE.MeshStandardMaterial) {
           material.emissiveIntensity = 0.7 + rainPulse * 3.6;
+        }
+      }
+
+      if (object.name === "rear-rain-light-glow") {
+        object.visible = rainLight > 0.04;
+        object.scale.setScalar(0.68 + rainPulse * 0.74);
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = rainPulse * 0.48;
         }
       }
     });
