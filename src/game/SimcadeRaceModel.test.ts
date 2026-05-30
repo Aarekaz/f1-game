@@ -765,6 +765,26 @@ describe("SimcadeRaceModel", () => {
     expect(loaded.speedKph).toBeLessThan(straight.speedKph);
   });
 
+  it("sheds speed on asphalt when high-speed steering saturates the front tires", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const fast = run(model, 4.5, { throttle: 1, ers: true });
+    let loaded = fast;
+
+    for (let index = 0; index < 4; index += 1) {
+      loaded = run(model, 1 / 6, { throttle: 1, steer: 1, ers: true });
+    }
+
+    expect(loaded.surfaceName).toBe("Asphalt");
+    expect(loaded.tireSaturation).toBeGreaterThan(0.85);
+    expect(loaded.lateralScrub).toBeGreaterThan(0.22);
+    expect(loaded.speedKph).toBeLessThan(fast.speedKph - 8);
+  });
+
   it("rides the lateral road surface instead of the centerline height", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
