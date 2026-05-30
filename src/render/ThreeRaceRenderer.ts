@@ -1274,6 +1274,7 @@ export class ThreeRaceRenderer {
     const horizonMaterials = this.horizon.userData.materials as
       | { sky: THREE.MeshBasicMaterial; treeline: THREE.MeshBasicMaterial; relief?: THREE.MeshBasicMaterial }
       | undefined;
+    const stormLightningMaterials = this.horizon.userData.stormLightningMaterials as THREE.MeshBasicMaterial[] | undefined;
     const weatherMaterials = this.circuit.userData.weatherMaterials as
       | {
           asphalt: THREE.MeshStandardMaterial;
@@ -1291,12 +1292,25 @@ export class ThreeRaceRenderer {
           flowPaint: THREE.MeshBasicMaterial;
         }
       | undefined;
+    const stormCharge = clamp((telemetry.rainIntensity - 0.55) / 0.45, 0, 1);
+    const lightningPulse =
+      Math.pow(Math.max(0, Math.sin(performance.now() * 0.0017 + telemetry.roadWetness * 3.4)), 18) +
+      Math.pow(Math.max(0, Math.sin(performance.now() * 0.0026 + 1.7)), 26) * 0.58;
+    const lightningFlash = stormCharge * (0.045 + lightningPulse * 0.36);
+
     this.renderer.setClearColor(telemetry.skyColor);
     this.scene.fog = new THREE.Fog(telemetry.fogColor, 150 - telemetry.roadWetness * 35, 880 - telemetry.rainIntensity * 250);
     this.hemi.color.set(telemetry.skyColor);
     this.hemi.groundColor.set(telemetry.grassColor);
-    this.hemi.intensity = 1.25 + telemetry.lightIntensity * 0.18;
-    this.sun.intensity = telemetry.lightIntensity;
+    this.hemi.intensity = 1.25 + telemetry.lightIntensity * 0.18 + lightningFlash * 0.24;
+    this.sun.intensity = telemetry.lightIntensity + lightningFlash * 1.1;
+    if (stormLightningMaterials) {
+      stormLightningMaterials.forEach((material, index) => {
+        material.opacity = lightningFlash * (index % 3 === 0 ? 0.9 : 0.62);
+      });
+    }
+    this.renderer.domElement.dataset.stormLightningBolts = String(this.horizon.userData.stormLightningBolts ?? 0);
+    this.renderer.domElement.dataset.stormLightningFlash = lightningFlash.toFixed(3);
     horizonMaterials?.sky.color.set(telemetry.skyColor);
     horizonMaterials?.treeline.color.set(telemetry.grassColor);
     if (horizonMaterials?.relief) {
@@ -1361,6 +1375,7 @@ export class ThreeRaceRenderer {
     sky.name = "background-sky-dome";
     sky.renderOrder = -1000;
     horizon.add(sky);
+    this.addStormLightning(horizon);
 
     const treeline = new THREE.Mesh(new THREE.PlaneGeometry(2200, layout.id === "northstar" ? 10 : 54), treelineMaterial);
     treeline.position.set(0, layout.id === "northstar" ? 3 : 22, layout.id === "northstar" ? -930 : -780);
@@ -1376,6 +1391,49 @@ export class ThreeRaceRenderer {
     horizon.userData.skySize = `dome:${skyDomeRadius}`;
 
     return horizon;
+  }
+
+  private addStormLightning(horizon: THREE.Group) {
+    const group = new THREE.Group();
+    group.name = "distant-storm-lightning";
+    group.position.set(0, 0, -1700);
+    const materials: THREE.MeshBasicMaterial[] = [];
+    const bolts = [
+      { x: -420, y: 510, scale: 1 },
+      { x: 180, y: 560, scale: 0.78 },
+      { x: 520, y: 465, scale: 0.64 }
+    ];
+
+    for (const [boltIndex, bolt] of bolts.entries()) {
+      const material = new THREE.MeshBasicMaterial({
+        color: "#e9fbff",
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        fog: false,
+        side: THREE.DoubleSide
+      });
+      materials.push(material);
+      const segments = [
+        { x: 0, y: 0, h: 120, r: -0.16 },
+        { x: -22, y: -88, h: 86, r: 0.34 },
+        { x: 20, y: -148, h: 62, r: -0.48 }
+      ];
+
+      for (const [segmentIndex, segment] of segments.entries()) {
+        const branch = new THREE.Mesh(new THREE.PlaneGeometry(5.5 * bolt.scale, segment.h * bolt.scale), material);
+        branch.name = `storm-lightning-${boltIndex + 1}-${segmentIndex + 1}`;
+        branch.position.set(bolt.x + segment.x * bolt.scale, bolt.y + segment.y * bolt.scale, 0);
+        branch.rotation.z = segment.r;
+        branch.renderOrder = -950;
+        group.add(branch);
+      }
+    }
+
+    horizon.add(group);
+    horizon.userData.stormLightningMaterials = materials;
+    horizon.userData.stormLightningBolts = bolts.length;
   }
 
   private addVenueSilhouette(horizon: THREE.Group, layoutId: string, material: THREE.Material) {
