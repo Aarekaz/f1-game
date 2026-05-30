@@ -223,10 +223,16 @@ export class ThreeRaceRenderer {
       steering: telemetry.car.yawRate * 0.9,
       braking: telemetry.car.braking + telemetry.car.lockup * 0.65,
       throttle: telemetry.car.throttle,
-      wheelspin: telemetry.car.wheelspin
+      wheelspin: telemetry.car.wheelspin,
+      rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
     this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65, 0, 1).toFixed(2);
+    this.renderer.domElement.dataset.rearRainLight = clamp(
+      telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
+      0,
+      1
+    ).toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
@@ -320,7 +326,8 @@ export class ThreeRaceRenderer {
         steering: rival.heading * -0.7,
         braking: 0,
         throttle: 0.72,
-        wheelspin: 0
+        wheelspin: 0,
+        rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0
       });
     }
 
@@ -345,12 +352,14 @@ export class ThreeRaceRenderer {
 
   private animateFormulaCar(
     root: ReturnType<typeof buildFormulaCarProxy>,
-    state: { distance: number; speedKph: number; steering: number; braking: number; throttle: number; wheelspin: number }
+    state: { distance: number; speedKph: number; steering: number; braking: number; throttle: number; wheelspin: number; rainLight: number }
   ) {
     const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
     const steerAngle = clamp(state.steering, -0.42, 0.42);
     const brakeGlow = clamp(state.braking * clamp(state.speedKph / 180, 0, 1), 0, 1);
     const wheelBlur = clamp((state.speedKph - 72) / 165 + state.wheelspin * 0.3, 0, 1);
+    const rainLight = clamp(state.rainLight, 0, 1);
+    const rainPulse = rainLight * (0.72 + Math.sin(performance.now() * 0.011 + state.distance * 0.025) * 0.28);
     const rearFlap = root.getObjectByName("rear-wing-upper-plane");
 
     for (const wheelName of ["front-left-wheel", "front-right-wheel", "rear-left-wheel", "rear-right-wheel"]) {
@@ -382,6 +391,14 @@ export class ThreeRaceRenderer {
         const material = object.material;
         if (material instanceof THREE.MeshBasicMaterial) {
           material.opacity = wheelBlur * 0.42;
+        }
+      }
+
+      if (object.name === "rear-rain-light") {
+        object.visible = rainLight > 0.04;
+        const material = object.material;
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.emissiveIntensity = 0.7 + rainPulse * 3.6;
         }
       }
     });
