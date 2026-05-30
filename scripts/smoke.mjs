@@ -330,6 +330,8 @@ async function checkDesktop(browser) {
     surfaceEdgeLoad: Number(document.querySelector("#game canvas")?.dataset.surfaceEdgeLoad ?? 0),
     roadAdhesion: Number(document.querySelector("#game canvas")?.dataset.roadAdhesion ?? 0),
     lateralScrub: Number(document.querySelector("#game canvas")?.dataset.lateralScrub ?? 0),
+    slipAngle: Number(document.querySelector("#game canvas")?.dataset.slipAngle ?? 0),
+    velocityYaw: Number(document.querySelector("#game canvas")?.dataset.velocityYaw ?? 0),
     forwardBite: Number(document.querySelector("#game canvas")?.dataset.forwardBite ?? 0),
     longitudinalGrip: Number(document.querySelector("#game canvas")?.dataset.longitudinalGrip ?? 0),
     tireContactGrip: Number(document.querySelector("#game canvas")?.dataset.tireContactGrip ?? 0),
@@ -669,6 +671,8 @@ async function checkDesktop(browser) {
   assert(state.surfaceEdgeLoad >= 0 && state.surfaceEdgeLoad <= 1, `desktop surface edge-load telemetry was invalid: ${state.surfaceEdgeLoad}`);
   assert(state.roadAdhesion > 0 && state.roadAdhesion <= 1.1, `desktop road adhesion telemetry was invalid: ${state.roadAdhesion}`);
   assert(state.lateralScrub >= 0 && state.lateralScrub <= 1, `desktop lateral scrub telemetry was invalid: ${state.lateralScrub}`);
+  assert(Number.isFinite(state.slipAngle) && Math.abs(state.slipAngle) <= 0.75, `desktop slip-angle telemetry was invalid: ${state.slipAngle}`);
+  assert(Number.isFinite(state.velocityYaw) && Math.abs(state.velocityYaw) <= 0.75, `desktop velocity-yaw telemetry was invalid: ${state.velocityYaw}`);
   assert(state.forwardBite > 0.25 && state.forwardBite <= 1.1, `desktop forward bite telemetry was invalid: ${state.forwardBite}`);
   assert(state.longitudinalGrip > 0.18 && state.longitudinalGrip <= 1.1, `desktop longitudinal grip telemetry was invalid: ${state.longitudinalGrip}`);
   assert(state.tireContactGrip > 0.2 && state.tireContactGrip <= 1.1, `desktop tire contact grip telemetry was invalid: ${state.tireContactGrip}`);
