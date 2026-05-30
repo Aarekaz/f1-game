@@ -7,6 +7,7 @@ export type SeriesResultUpdate = {
   title: string;
   target: string;
   targetMet: boolean;
+  targetCleared: boolean;
   targetDetail: string;
   score: number;
   scoreDelta: number;
@@ -510,9 +511,12 @@ export class HudController {
       if (!this.latestSeriesResult) {
         this.resultSeriesScore.textContent = "No series score";
         this.resultSeriesScore.dataset.state = "free";
-      } else if (!this.latestSeriesResult.targetMet) {
+      } else if (!this.latestSeriesResult.targetCleared) {
         this.resultSeriesScore.textContent = `Target missed / ${this.latestSeriesResult.targetDetail}`;
         this.resultSeriesScore.dataset.state = "missed";
+      } else if (!this.latestSeriesResult.targetMet) {
+        this.resultSeriesScore.textContent = `Already cleared / ${this.latestSeriesResult.score}/4 pts`;
+        this.resultSeriesScore.dataset.state = "cleared";
       } else if (this.latestSeriesResult.scoreDelta > 0) {
         this.resultSeriesScore.textContent = `Target met / +${this.latestSeriesResult.scoreDelta} pts`;
         this.resultSeriesScore.dataset.state = "met";

@@ -736,6 +736,10 @@ body {
   color: #d7eb8f;
 }
 
+.result-series b[data-state="cleared"] {
+  color: #d7eb8f;
+}
+
 .result-series b[data-state="missed"] {
   color: #ffb4b4;
 }

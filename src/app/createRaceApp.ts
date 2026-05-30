@@ -454,18 +454,19 @@ export function createRaceApp() {
       const seriesEvent = findApexSeriesEvent(session);
       const targetEvaluation = seriesEvent ? evaluateApexSeriesTarget(seriesEvent, result) : null;
       const previousTargetMet = previousBest?.seriesTargetMet === true;
-      const targetMet = previousTargetMet || (targetEvaluation?.passed ?? false);
+      const targetMet = targetEvaluation?.passed ?? false;
+      const targetCleared = previousTargetMet || targetMet;
       const bestToSave: PersonalBest = seriesEvent
         ? {
             ...update.best,
-            seriesTargetMet: targetMet,
-            seriesTargetMetAt: previousBest?.seriesTargetMetAt ?? (targetEvaluation?.passed ? update.best.updatedAt : undefined)
+            seriesTargetMet: targetCleared,
+            seriesTargetMetAt: previousBest?.seriesTargetMetAt ?? (targetMet ? update.best.updatedAt : undefined)
           }
         : update.best;
       const previousSeriesScore = previousTargetMet ? scorePersonalBest(previousBest) : 0;
-      const seriesScore = targetMet ? scorePersonalBest(bestToSave) : 0;
+      const seriesScore = targetCleared ? scorePersonalBest(bestToSave) : 0;
       const adjustedUpdate = { ...update, best: bestToSave };
-      queuedNextSeriesEvent = seriesEvent && targetMet ? nextApexSeriesEvent(seriesEvent) : null;
+      queuedNextSeriesEvent = seriesEvent && targetCleared ? nextApexSeriesEvent(seriesEvent) : null;
       savePersonalBest(session, bestToSave);
       syncSessionBest(bestToSave);
       syncSeriesProgress(session, selectSeriesEvent);
@@ -478,6 +479,7 @@ export function createRaceApp() {
               title: `${seriesEvent.round} ${seriesEvent.title}`,
               target: seriesEvent.target,
               targetMet,
+              targetCleared,
               targetDetail: targetMet ? (targetEvaluation?.summary ?? "already cleared") : (targetEvaluation?.misses.join(" / ") ?? ""),
               score: seriesScore,
               scoreDelta: Math.max(0, seriesScore - previousSeriesScore)
