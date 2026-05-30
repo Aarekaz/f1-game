@@ -367,21 +367,28 @@ export class ThreeRaceRenderer {
     const apexSample = sampleTrack(apexSampleDistance);
     const apexDirection = clamp(apexSample.curve * 28 + apexSample.racingLineOffset * 0.1, -1, 1);
     const cameraApexBias = apexDirection * (podMode ? 1.6 + speedRatio * 1.1 : 3.2 + speedRatio * 2.2);
+    const rejoinCameraLift = !podMode && (telemetry.surfaceName === "Runoff" || telemetry.surfaceName === "Gravel")
+      ? (telemetry.surfaceName === "Gravel" ? 1.45 : 1.08) + speedRatio * 0.58 + telemetry.surfaceRumble * 0.28
+      : 0;
     const fovTarget =
       (podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6) +
-      Math.abs(apexDirection) * (podMode ? 1.2 : 2.4);
+      Math.abs(apexDirection) * (podMode ? 1.2 : 2.4) +
+      rejoinCameraLift * 1.1;
     this.camera.fov = fovTarget;
 
     const lookAhead = (podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18) + Math.abs(apexDirection) * (podMode ? 8 : 16);
     const powertrainLurch = telemetry.shiftCut * 0.9 + telemetry.tractionBite * 0.42;
     const powertrainLateralKick = telemetry.tractionBite * clamp(telemetry.car.heading * 2.2 + telemetry.car.yawRate * 0.9, -1, 1);
+    const rejoinCameraLag = rejoinCameraLift * (1.8 + speedRatio * 0.8);
     const cameraLag = podMode
       ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
-      : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2 + powertrainLurch;
+      : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2 + powertrainLurch + rejoinCameraLag;
     const cameraStructureLift = podMode ? 0 : this.cameraStructureLift(telemetry.car.z, speedRatio);
     const lateralShoulder = podMode
       ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 - powertrainLateralKick * 0.08
-      : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62 - powertrainLateralKick * 0.55;
+      : carLateral * (0.18 + speedRatio * 0.06) * (1 - clamp(rejoinCameraLift * 0.18, 0, 0.34)) -
+        telemetry.car.yawRate * 0.62 -
+        powertrainLateralKick * 0.55;
     const targetLateral =
       (podMode ? carLateral * 0.08 + telemetry.car.yawRate * 0.34 - telemetry.curve * 0.4 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85) +
       apexSample.racingLineOffset * (podMode ? 0.28 : 0.46) +
@@ -412,6 +419,7 @@ export class ThreeRaceRenderer {
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
           speedRatio * (podMode ? 0.12 : 0.16) +
           cameraStructureLift +
+          rejoinCameraLift +
           powertrainLurch * (podMode ? 0.018 : 0.055) +
           telemetry.surfaceRumble * 0.08 +
           Math.sin(performance.now() * 0.02) * airBuffet * (podMode ? 0.04 : 0.08),
@@ -419,7 +427,12 @@ export class ThreeRaceRenderer {
       );
       this.desiredCameraTarget.set(
         targetPoint.x + Math.sin(performance.now() * 0.025) * airBuffet * (podMode ? 0.06 : 0.14),
-        carY + (podMode ? 0.82 : 0.68) + cameraStructureLift * 0.18 + telemetry.car.slip * 0.18 + Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
+        carY +
+          (podMode ? 0.82 : 0.68) +
+          cameraStructureLift * 0.18 +
+          rejoinCameraLift * 0.34 +
+          telemetry.car.slip * 0.18 +
+          Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
         targetPoint.z
       );
       if (telemetry.cameraSnap || this.cameraModeSnap) {
@@ -454,6 +467,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraLookAhead = lookAhead.toFixed(2);
     this.renderer.domElement.dataset.cameraApexBias = cameraApexBias.toFixed(3);
     this.renderer.domElement.dataset.cameraStructureLift = cameraStructureLift.toFixed(3);
+    this.renderer.domElement.dataset.cameraRejoinLift = rejoinCameraLift.toFixed(3);
     this.renderer.domElement.dataset.cameraRoll = cameraRoll.toFixed(3);
     this.renderer.domElement.dataset.cameraFov = this.camera.fov.toFixed(2);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
