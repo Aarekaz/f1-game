@@ -699,6 +699,9 @@ export class SimcadeRaceModel {
     const surface = this.drivingSurface(track);
     const onTrack = surface.trackLegal;
     const carLateral = this.x - track.center;
+    const offTrackDistance = Math.max(0, Math.abs(carLateral) - track.halfWidth);
+    const offTrackSide = Math.sign(carLateral) || 1;
+    const roadRecoveryNeed = clamp((offTrackDistance - 0.12) / 2.7, 0, 1);
     const tireContact = this.tireContactPatch(carLateral);
     this.tireContactGrip = approach(this.tireContactGrip, tireContact.grip, dt * (tireContact.grip < this.tireContactGrip ? 12 : 6));
     this.tireRunoffShare = approach(this.tireRunoffShare, tireContact.runoffShare, dt * 12);
@@ -840,10 +843,18 @@ export class SimcadeRaceModel {
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14 + this.surfaceEdgeLoad * 6 + this.tireSaturation * 10) * driverDemand;
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
-    const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : 1.18 + roadWetness * 0.34);
+    const settledRecoveryInput = throttle * (1 - clamp(Math.abs(rawSteer) * 1.6, 0, 1));
+    const lowSpeedRecoveryWindow = clamp((92 - this.speed) / 92, 0.35, 1);
+    const looseSurfaceRecoveryRelief = onTrack
+      ? 0
+      : clamp((72 - this.speed) / 72, 0, 1) * settledRecoveryInput * (surface.name === "Gravel" ? 0.32 : 0.58);
+    const looseSurfaceRecoveryDrive = onTrack
+      ? 0
+      : settledRecoveryInput * (surface.name === "Gravel" ? 54 : 82) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
+    const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief));
     this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42, 0, 1), dt * 12);
 
-    this.speed += (acceleration + boostPower + aeroPower + draftPower + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
+    this.speed += (acceleration + boostPower + aeroPower + draftPower + looseSurfaceRecoveryDrive + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
     this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
@@ -975,9 +986,6 @@ export class SimcadeRaceModel {
     const steeringSlipLimit = clamp(this.grip - this.understeer * 0.24 - this.lockup * 0.12 - this.tireSaturation * 0.2 - slipAngleLoad * 0.16, 0.2, 1);
     const steeringLoad = 1 - clamp(speedRatio * 0.38 + this.wheelspin * 0.12, 0, 0.52);
     const lineError = this.x - track.center - track.racingLineOffset * (onTrack ? 0.42 : 0.16);
-    const offTrackDistance = Math.max(0, Math.abs(carLateral) - track.halfWidth);
-    const offTrackSide = Math.sign(carLateral) || 1;
-    const roadRecoveryNeed = clamp((offTrackDistance - 0.12) / 2.7, 0, 1);
     const roadCentering =
       -lineError * this.roadAdhesion * (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) * (1 - Math.abs(rawSteer));
     const roadRecoveryPull = -offTrackSide * roadRecoveryNeed * (0.78 + speedRatio * 1.84) * (1 - Math.abs(rawSteer) * 0.32);
