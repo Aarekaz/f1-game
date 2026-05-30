@@ -271,6 +271,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.surfaceEdgeLoad = telemetry.surfaceEdgeLoad.toFixed(3);
     this.renderer.domElement.dataset.roadAdhesion = telemetry.roadAdhesion.toFixed(3);
     this.renderer.domElement.dataset.lateralScrub = telemetry.lateralScrub.toFixed(3);
+    this.renderer.domElement.dataset.slipAngle = telemetry.slipAngle.toFixed(3);
+    this.renderer.domElement.dataset.velocityYaw = telemetry.velocityYaw.toFixed(3);
     this.renderer.domElement.dataset.forwardBite = telemetry.forwardBite.toFixed(3);
     this.renderer.domElement.dataset.longitudinalGrip = telemetry.longitudinalGrip.toFixed(3);
     this.renderer.domElement.dataset.tireContactGrip = telemetry.tireContactGrip.toFixed(3);

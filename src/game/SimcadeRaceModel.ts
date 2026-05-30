@@ -33,6 +33,8 @@ export type RaceTelemetry = {
   surfaceEdgeLoad: number;
   roadAdhesion: number;
   lateralScrub: number;
+  slipAngle: number;
+  velocityYaw: number;
   forwardBite: number;
   longitudinalGrip: number;
   tireContactGrip: number;
@@ -283,6 +285,8 @@ export class SimcadeRaceModel {
   private grip = 1;
   private roadAdhesion = 1;
   private lateralScrub = 0;
+  private slipAngle = 0;
+  private velocityYaw = 0;
   private forwardBite = 1;
   private longitudinalGrip = 1;
   private tireContactGrip = 1;
@@ -412,6 +416,8 @@ export class SimcadeRaceModel {
       surfaceEdgeLoad: this.surfaceEdgeLoad,
       roadAdhesion: this.roadAdhesion,
       lateralScrub: this.lateralScrub,
+      slipAngle: this.slipAngle,
+      velocityYaw: this.velocityYaw,
       forwardBite: this.forwardBite,
       longitudinalGrip: this.longitudinalGrip,
       tireContactGrip: this.tireContactGrip,
@@ -600,6 +606,8 @@ export class SimcadeRaceModel {
     this.dirtyTirePickup = 0;
     this.roadAdhesion = 1;
     this.lateralScrub = 0;
+    this.slipAngle = 0;
+    this.velocityYaw = 0;
     this.forwardBite = 1;
     this.longitudinalGrip = 1;
     this.tireContactGrip = 1;
@@ -948,19 +956,31 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.45,
         this.lockup * 0.55,
         this.understeer * 0.62,
-        this.tireSaturation * 0.42
+        this.tireSaturation * 0.42,
+        Math.abs(this.slipAngle) * 0.78
       ),
       0,
       1
     );
 
     const metersPerSecond = this.speed * (1000 / 3600);
-    const steeringSlipLimit = clamp(this.grip - this.understeer * 0.24 - this.lockup * 0.12 - this.tireSaturation * 0.2, 0.2, 1);
+    const curveFollow = track.curve * metersPerSecond * 0.9;
+    const roadRelativeVelocityYaw = Math.atan2(this.lateralVelocity - curveFollow, Math.max(6, metersPerSecond));
+    this.velocityYaw = approach(this.velocityYaw, roadRelativeVelocityYaw, dt * 10);
+    const slipAngleTarget = clamp(this.heading - this.velocityYaw, -0.72, 0.72);
+    this.slipAngle = approach(this.slipAngle, slipAngleTarget, dt * (Math.abs(slipAngleTarget) > Math.abs(this.slipAngle) ? 12 : 7));
+    const slipAngleLoad = clamp((Math.abs(this.slipAngle) - 0.085) / 0.395, 0, 1);
+    this.slip = Math.max(this.slip, slipAngleLoad * 0.5);
+
+    const steeringSlipLimit = clamp(this.grip - this.understeer * 0.24 - this.lockup * 0.12 - this.tireSaturation * 0.2 - slipAngleLoad * 0.16, 0.2, 1);
     const steeringLoad = 1 - clamp(speedRatio * 0.38 + this.wheelspin * 0.12, 0, 0.52);
     const lineError = this.x - track.center - track.racingLineOffset * (onTrack ? 0.42 : 0.16);
+    const offTrackDistance = Math.max(0, Math.abs(carLateral) - track.halfWidth);
+    const offTrackSide = Math.sign(carLateral) || 1;
+    const roadRecoveryNeed = clamp((offTrackDistance - 0.12) / 2.7, 0, 1);
     const roadCentering =
       -lineError * this.roadAdhesion * (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) * (1 - Math.abs(rawSteer));
-    const curveFollow = track.curve * metersPerSecond * 0.9;
+    const roadRecoveryPull = -offTrackSide * roadRecoveryNeed * (0.78 + speedRatio * 1.84) * (1 - Math.abs(rawSteer) * 0.32);
     const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5);
     const splitGripPull = tireContact.sideBias * speedRatio * (0.42 + contactRoughness * 0.6) * (1 - Math.abs(rawSteer) * 0.35);
     const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8);
@@ -971,6 +991,7 @@ export class SimcadeRaceModel {
       camberForce +
       splitGripPull +
       roadCentering +
+      roadRecoveryPull +
       steeringSaturationPush +
       racecraft.squeeze * this.contactRisk * 0.72;
     const lateralAccelLimit = (7.4 + speedRatio * 10.6) * this.roadAdhesion * (onTrack ? 1 : 0.5 + this.tireContactGrip * 0.34);
@@ -981,6 +1002,7 @@ export class SimcadeRaceModel {
       Math.max(0, slipVelocity - scrubDeadzone) / (8.2 + speedRatio * 21 + this.roadAdhesion * 5) +
         Math.max(0, 0.58 - this.roadAdhesion) * 0.42 +
         this.tireSaturation * 0.1 +
+        slipAngleLoad * 0.12 +
         this.surfaceEdgeLoad * 0.12,
       0,
       1
@@ -996,13 +1018,13 @@ export class SimcadeRaceModel {
     this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
     const alignmentSlip = Math.abs(this.lateralVelocity - curveFollow);
     const alignmentTarget = clamp(
-      Math.cos(this.heading) - alignmentSlip / Math.max(12, metersPerSecond * 0.9) - scrubPenalty * 0.34 - (onTrack ? 0 : 0.08),
+      Math.cos(this.heading) - alignmentSlip / Math.max(12, metersPerSecond * 0.9) - scrubPenalty * 0.34 - slipAngleLoad * 0.18 - (onTrack ? 0 : 0.08),
       0.32,
       1
     );
     this.roadAlignment = approach(this.roadAlignment, alignmentTarget, dt * (onTrack ? 8 : 5.5));
     const biteTarget = clamp(
-      this.roadAlignment * (0.54 + this.roadAdhesion * 0.46) - scrubPenalty * 0.28 - this.wheelspin * 0.1 - this.lockup * 0.08 - this.tireSaturation * 0.12,
+      this.roadAlignment * (0.54 + this.roadAdhesion * 0.46) - scrubPenalty * 0.28 - slipAngleLoad * 0.1 - this.wheelspin * 0.1 - this.lockup * 0.08 - this.tireSaturation * 0.12,
       0.28,
       1.04
     );
@@ -1014,6 +1036,7 @@ export class SimcadeRaceModel {
         Math.max(0, 1 - this.roadLoad) * 0.16 +
         Math.max(0, this.roadLoad - 1) * 0.04 -
         this.tireSaturation * 0.12 -
+        slipAngleLoad * 0.1 -
         this.wheelspin * 0.08 -
         this.lockup * 0.06 -
         roadWetness * (onTrack ? 0.025 : 0.075),
@@ -1033,9 +1056,10 @@ export class SimcadeRaceModel {
     );
     this.chassisPitch = approach(this.chassisPitch, pitchTarget, dt * 8);
     this.chassisRoll = approach(this.chassisRoll, rollTarget, dt * 9);
+    const slipAngleProgressLoss = slipAngleLoad * (onTrack ? 0.05 : 0.1);
     const rollingProgress = onTrack
-      ? clamp(0.76 + this.forwardBite * 0.24 - Math.abs(this.heading) * 0.018 - scrubPenalty * 0.04, 0.74, 1.02)
-      : clamp(0.42 + this.forwardBite * 0.32 - Math.abs(this.heading) * 0.06 - scrubPenalty * 0.14, 0.32, 0.82);
+      ? clamp(0.76 + this.forwardBite * 0.24 - Math.abs(this.heading) * 0.018 - scrubPenalty * 0.04 - slipAngleProgressLoss, 0.74, 1.02)
+      : clamp(0.42 + this.forwardBite * 0.32 - Math.abs(this.heading) * 0.06 - scrubPenalty * 0.14 - slipAngleProgressLoss, 0.32, 0.82);
     this.z += metersPerSecond * dt * 1.55 * rollingProgress;
     this.x += this.lateralVelocity * dt;
     if (this.session.assist.steeringHelp > 0) {
@@ -1087,6 +1111,8 @@ export class SimcadeRaceModel {
     this.surfaceEdgeLoad = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
+    this.slipAngle = 0;
+    this.velocityYaw = 0;
     this.forwardBite = Math.max(this.forwardBite, 0.82);
     this.longitudinalGrip = Math.max(this.longitudinalGrip, 0.82);
     this.tireContactGrip = Math.max(this.tireContactGrip, 0.82);
