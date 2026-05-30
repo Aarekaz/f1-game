@@ -117,6 +117,7 @@ export class ThreeRaceRenderer {
   private readonly tracksideAssets = new THREE.Group();
   private horizon = this.buildHorizon();
   private readonly speedStreaks = this.buildSpeedStreaks();
+  private readonly airWake = this.buildAirWake();
   private readonly tireSmoke = this.buildTireSmoke();
   private readonly rainStreaks = this.buildRainStreaks();
   private readonly waterSpray = this.buildWaterSpray();
@@ -158,6 +159,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.tracksideAssets);
     this.scene.add(this.horizon);
     this.scene.add(this.speedStreaks);
+    this.scene.add(this.airWake);
     this.scene.add(this.tireSmoke);
     this.scene.add(this.rainStreaks);
     this.scene.add(this.waterSpray);
@@ -276,7 +278,9 @@ export class ThreeRaceRenderer {
     ).toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
+    const airBuffet = clamp(telemetry.dirtyAir * 0.48 + telemetry.draft * 0.18 + telemetry.contactRisk * 0.22, 0, 1);
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
+    this.updateAirWake(carX, carY, carZ, carWorldYaw, telemetry.draft, telemetry.dirtyAir, speedRatio);
     this.updateTireSmoke(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
     this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
     this.updateRacingLineAssist(telemetry);
@@ -313,10 +317,15 @@ export class ThreeRaceRenderer {
           telemetry.car.braking * (podMode ? 0.06 : 0.18) +
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
           speedRatio * (podMode ? 0.12 : 0.16) +
-          telemetry.surfaceRumble * 0.08,
+          telemetry.surfaceRumble * 0.08 +
+          Math.sin(performance.now() * 0.02) * airBuffet * (podMode ? 0.04 : 0.08),
         cameraPoint.z
       );
-      this.desiredCameraTarget.set(targetPoint.x, carY + (podMode ? 0.98 : 0.68) + telemetry.car.slip * 0.18, targetPoint.z);
+      this.desiredCameraTarget.set(
+        targetPoint.x + Math.sin(performance.now() * 0.025) * airBuffet * (podMode ? 0.06 : 0.14),
+        carY + (podMode ? 0.98 : 0.68) + telemetry.car.slip * 0.18 + Math.cos(performance.now() * 0.018) * airBuffet * 0.05,
+        targetPoint.z
+      );
       if (telemetry.cameraSnap || this.cameraModeSnap) {
         this.cameraPosition.copy(this.desiredCameraPosition);
         this.cameraTarget.copy(this.desiredCameraTarget);
@@ -339,6 +348,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraWorldY = this.camera.position.y.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
+    this.renderer.domElement.dataset.cameraBuffet = airBuffet.toFixed(2);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
     this.renderer.domElement.dataset.carScreenZ = this.carScreenPosition.z.toFixed(3);
@@ -814,6 +824,63 @@ export class ThreeRaceRenderer {
     this.speedStreaks.position.y = carY;
     this.speedStreaks.rotation.y = worldYaw;
     this.speedStreaks.scale.z = 0.8 + speedRatio * 1.35;
+  }
+
+  private buildAirWake() {
+    const group = new THREE.Group();
+    group.name = "race-air-wake";
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#c5fff4",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (let index = 0; index < 14; index += 1) {
+      const ribbon = new THREE.Mesh(new THREE.PlaneGeometry(0.16 + (index % 3) * 0.04, 4.8 + (index % 4) * 1.2), material);
+      ribbon.name = "air-wake-ribbon";
+      ribbon.rotation.x = -Math.PI / 2;
+      ribbon.rotation.z = (index % 2 === 0 ? -1 : 1) * (0.16 + (index % 5) * 0.025);
+      ribbon.position.set(((index % 7) - 3) * 0.82, 0.1 + (index % 3) * 0.045, -3.8 - index * 2.7);
+      ribbon.userData.baseX = ribbon.position.x;
+      ribbon.userData.baseZ = ribbon.position.z;
+      ribbon.userData.phase = index * 0.43;
+      group.add(ribbon);
+    }
+
+    group.userData.material = material;
+    return group;
+  }
+
+  private updateAirWake(carX: number, carY: number, carZ: number, heading: number, draft: number, dirtyAir: number, speedRatio: number) {
+    const material = this.airWake.userData.material as THREE.MeshBasicMaterial | undefined;
+    const strength = clamp(draft * 0.36 + dirtyAir * 0.58, 0, 1);
+    this.airWake.visible = strength > 0.015;
+    if (material) {
+      material.opacity = strength * (dirtyAir > draft ? 0.34 : 0.24);
+      material.color.set(dirtyAir > draft ? "#dce2de" : "#b9fff2");
+    }
+
+    const time = performance.now() * 0.001;
+    let visibleRibbons = 0;
+    for (const ribbon of this.airWake.children) {
+      const baseX = Number(ribbon.userData.baseX ?? ribbon.position.x);
+      const baseZ = Number(ribbon.userData.baseZ ?? ribbon.position.z);
+      const phase = Number(ribbon.userData.phase ?? 0);
+      ribbon.visible = strength > 0.015;
+      ribbon.position.x = baseX + Math.sin(time * 2.1 + phase) * (0.18 + dirtyAir * 0.42);
+      ribbon.position.z = baseZ + ((time * (3.8 + speedRatio * 9.5) + phase * 2.2) % 6.2);
+      ribbon.scale.set(0.74 + dirtyAir * 0.9, 1, 0.75 + speedRatio * 1.45 + draft * 0.6);
+      if (ribbon.visible) visibleRibbons += 1;
+    }
+
+    this.airWake.position.set(carX, carY + 0.08, carZ);
+    this.airWake.rotation.y = heading;
+    this.renderer.domElement.dataset.airWakeIntensity = strength.toFixed(2);
+    this.renderer.domElement.dataset.airWakeRibbons = String(visibleRibbons);
   }
 
   private buildTireSmoke() {

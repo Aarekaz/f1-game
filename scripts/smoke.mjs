@@ -212,6 +212,7 @@ async function checkDesktop(browser) {
     cameraWorldY: Number(document.querySelector("#game canvas")?.dataset.cameraWorldY ?? 0),
     cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
     cameraMode: document.querySelector("#game canvas")?.dataset.cameraMode ?? "",
+    cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     carScreenZ: Number(document.querySelector("#game canvas")?.dataset.carScreenZ ?? 0),
@@ -237,6 +238,8 @@ async function checkDesktop(browser) {
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
     draft: Number(document.querySelector("#game canvas")?.dataset.draft ?? 0),
     dirtyAir: Number(document.querySelector("#game canvas")?.dataset.dirtyAir ?? 0),
+    airWakeIntensity: Number(document.querySelector("#game canvas")?.dataset.airWakeIntensity ?? 0),
+    airWakeRibbons: Number(document.querySelector("#game canvas")?.dataset.airWakeRibbons ?? 0),
     rivalProximity: Number(document.querySelector("#game canvas")?.dataset.rivalProximity ?? 0),
     sideBySide: Number(document.querySelector("#game canvas")?.dataset.sideBySide ?? 0),
     contactRisk: Number(document.querySelector("#game canvas")?.dataset.contactRisk ?? 0),
@@ -419,6 +422,9 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
   assert(Number.isFinite(state.draft), "desktop draft telemetry was missing");
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
+  assert(Number.isFinite(state.cameraBuffet), "desktop camera buffet telemetry was missing");
+  assert(state.airWakeIntensity > 0.01, `desktop air wake did not react to traffic turbulence: ${state.airWakeIntensity}`);
+  assert(state.airWakeRibbons >= 10, `desktop air wake ribbons were missing: ${state.airWakeRibbons}`);
   assert(Number.isFinite(state.rivalProximity), "desktop rival proximity telemetry was missing");
   assert(Number.isFinite(state.sideBySide), "desktop side-by-side telemetry was missing");
   assert(Number.isFinite(state.contactRisk), "desktop contact-risk telemetry was missing");

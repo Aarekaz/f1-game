@@ -27,6 +27,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A driver-aid HUD chip that shows when balanced assist is actively steering, braking, or trimming throttle.
 - Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
+- Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
 - A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
 - Local personal bests per fictional track and weather pairing.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
