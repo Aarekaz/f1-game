@@ -327,6 +327,7 @@ async function checkDesktop(browser) {
     surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
+    surfaceEdgeLoad: Number(document.querySelector("#game canvas")?.dataset.surfaceEdgeLoad ?? 0),
     roadAdhesion: Number(document.querySelector("#game canvas")?.dataset.roadAdhesion ?? 0),
     lateralScrub: Number(document.querySelector("#game canvas")?.dataset.lateralScrub ?? 0),
     forwardBite: Number(document.querySelector("#game canvas")?.dataset.forwardBite ?? 0),
@@ -658,6 +659,7 @@ async function checkDesktop(browser) {
   assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
+  assert(state.surfaceEdgeLoad >= 0 && state.surfaceEdgeLoad <= 1, `desktop surface edge-load telemetry was invalid: ${state.surfaceEdgeLoad}`);
   assert(state.roadAdhesion > 0 && state.roadAdhesion <= 1.1, `desktop road adhesion telemetry was invalid: ${state.roadAdhesion}`);
   assert(state.lateralScrub >= 0 && state.lateralScrub <= 1, `desktop lateral scrub telemetry was invalid: ${state.lateralScrub}`);
   assert(state.forwardBite > 0.25 && state.forwardBite <= 1.1, `desktop forward bite telemetry was invalid: ${state.forwardBite}`);
