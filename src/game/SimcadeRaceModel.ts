@@ -962,7 +962,8 @@ export class SimcadeRaceModel {
       (1 - this.downforceLoss * 0.5) *
       (1 - this.fuelLoad * 0.035) *
       (1 - this.dirtyTirePickup * 0.08);
-    const targetYawRate = steer * steerAuthority;
+    const rollingSteerFactor = clamp((this.speed - 4) / 32, 0, 1);
+    const targetYawRate = steer * steerAuthority * rollingSteerFactor;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
     const steeringCommitment = clamp(Math.abs(steer) * 1.18 + this.slip * 0.42 + this.wheelspin * 0.2, 0, 1);
@@ -1003,10 +1004,10 @@ export class SimcadeRaceModel {
     const roadRecoveryPull = -offTrackSide * roadRecoveryNeed * (0.78 + speedRatio * 1.84) * (1 - Math.abs(rawSteer) * 0.32);
     const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5);
     const splitGripPull = tireContact.sideBias * speedRatio * (0.42 + contactRoughness * 0.6) * (1 - Math.abs(rawSteer) * 0.35);
-    const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8);
+    const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8) * rollingSteerFactor;
     const lateralIntent =
       Math.sin(this.heading) * metersPerSecond * 0.28 +
-      steer * (1.32 + speedRatio * 1.78) * steeringSlipLimit * steeringLoad * this.roadAdhesion +
+      steer * (1.32 + speedRatio * 1.78) * steeringSlipLimit * steeringLoad * this.roadAdhesion * rollingSteerFactor +
       curveFollow +
       camberForce +
       splitGripPull +
