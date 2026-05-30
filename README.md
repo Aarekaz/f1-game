@@ -22,6 +22,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Local personal bests per fictional track and weather pairing.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.
+- A small persistent audio toggle for quiet play sessions.
 - Keyboard and touch controls.
 - Unit tests for the race model and a Playwright smoke test for the playable browser build.
 

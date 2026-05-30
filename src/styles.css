@@ -177,12 +177,12 @@ body {
   display: none;
 }
 
-.pause-button {
+.pause-button,
+.audio-button {
   position: fixed;
   top: clamp(14px, 2vw, 22px);
-  right: clamp(14px, 2vw, 22px);
   z-index: 3;
-  display: none;
+  display: grid;
   place-items: center;
   width: 42px;
   height: 42px;
@@ -193,6 +193,22 @@ body {
   font-size: 20px;
   font-weight: 900;
   backdrop-filter: blur(14px) saturate(1.15);
+}
+
+.pause-button {
+  right: clamp(14px, 2vw, 22px);
+  display: none;
+}
+
+.audio-button {
+  right: calc(clamp(14px, 2vw, 22px) + 50px);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.audio-button[aria-pressed="true"] {
+  color: #ffffff;
+  background: rgba(226, 14, 59, 0.74);
 }
 
 .hud[data-phase="countdown"] .pause-button,

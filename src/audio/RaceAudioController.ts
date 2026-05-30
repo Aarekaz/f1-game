@@ -109,6 +109,7 @@ export class RaceAudioController {
   private lastGear = 1;
   private lastShiftTime = -1;
   private unlocked = false;
+  private muted = false;
   private readonly unlock = () => void this.ensureStarted();
 
   attach() {
@@ -147,7 +148,7 @@ export class RaceAudioController {
       this.lastShiftTime = now;
     }
 
-    this.master.gain.setTargetAtTime(mix.masterGain, now, 0.08);
+    this.master.gain.setTargetAtTime(this.muted ? 0 : mix.masterGain, now, 0.08);
     this.engine.frequency.setTargetAtTime(mix.engineFrequency, now, 0.035);
     this.engineGain.gain.setTargetAtTime(mix.engineGain, now, 0.045);
     this.harmonic.frequency.setTargetAtTime(mix.harmonicFrequency, now, 0.032);
@@ -162,6 +163,21 @@ export class RaceAudioController {
     this.rainGain.gain.setTargetAtTime(mix.rainGain, now, 0.12);
     this.ers.frequency.setTargetAtTime(mix.ersFrequency, now, 0.035);
     this.ersGain.gain.setTargetAtTime(mix.ersGain, now, 0.05);
+  }
+
+  setMuted(muted: boolean) {
+    this.muted = muted;
+    if (!muted && this.unlocked) {
+      this.ensureStarted();
+    }
+
+    if (this.context && this.master) {
+      this.master.gain.setTargetAtTime(muted ? 0 : this.master.gain.value, this.context.currentTime, 0.04);
+    }
+  }
+
+  isMuted() {
+    return this.muted;
   }
 
   dispose() {

@@ -23,6 +23,7 @@ import { DEFAULT_SESSION, findAssist, findTrack, findWeather, type SessionConfig
 type ControlName = "left" | "right" | "throttle" | "brake" | "boost" | "recover" | "camera";
 
 const MAX_DT = 1 / 20;
+const AUDIO_MUTED_KEY = "apex-formula:audio-muted";
 
 function readSessionConfig(): SessionConfig {
   const trackSelect = document.getElementById("track-select") as HTMLSelectElement | null;
@@ -103,6 +104,22 @@ function syncSessionDossier(config: SessionConfig) {
     start.setAttribute("cx", startPoint.x.toFixed(1));
     start.setAttribute("cy", startPoint.y.toFixed(1));
     start.setAttribute("style", `--track-accent: ${config.track.accent}`);
+  }
+}
+
+function readAudioMuted() {
+  try {
+    return window.localStorage.getItem(AUDIO_MUTED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function saveAudioMuted(muted: boolean) {
+  try {
+    window.localStorage.setItem(AUDIO_MUTED_KEY, String(muted));
+  } catch {
+    // The game should keep running when browser storage is unavailable.
   }
 }
 
@@ -253,12 +270,14 @@ export function createRaceApp() {
   const pauseSection = document.getElementById("pause-section");
   const restartSessionButton = document.getElementById("restart-session");
   const resultNextEventButton = document.getElementById("result-next-event");
+  const audioToggleButton = document.getElementById("audio-toggle");
   let last = performance.now();
   let frame = 0;
   let session = readSessionConfig();
   let latestTelemetry = model.telemetry();
   let lastPhase = latestTelemetry.phase;
   let paused = false;
+  let audioMuted = readAudioMuted();
   let queuedNextSeriesEvent: ApexSeriesEvent | null = null;
 
   function syncPauseSummary() {
@@ -275,6 +294,19 @@ export function createRaceApp() {
     if (paused) syncPauseSummary();
     pausePanel?.classList.toggle("hidden", !paused);
     pauseButton?.setAttribute("aria-pressed", paused ? "true" : "false");
+  }
+
+  function syncAudioToggle() {
+    audio.setMuted(audioMuted);
+    audioToggleButton?.setAttribute("aria-pressed", audioMuted ? "true" : "false");
+    audioToggleButton?.setAttribute("aria-label", audioMuted ? "Unmute audio" : "Mute audio");
+    if (audioToggleButton) audioToggleButton.textContent = audioMuted ? "OFF" : "SND";
+  }
+
+  function toggleAudioMuted() {
+    audioMuted = !audioMuted;
+    saveAudioMuted(audioMuted);
+    syncAudioToggle();
   }
 
   function restartCurrentRun() {
@@ -352,9 +384,11 @@ export function createRaceApp() {
   document.getElementById("assist-select")?.addEventListener("change", refreshSession);
   restartSessionButton?.addEventListener("click", restartCurrentRun);
   resultNextEventButton?.addEventListener("click", selectQueuedNextSeriesEvent);
+  audioToggleButton?.addEventListener("click", toggleAudioMuted);
   refreshSession();
   input.attach();
   audio.attach();
+  syncAudioToggle();
 
   function tick(now: number) {
     const dt = Math.min(MAX_DT, (now - last) / 1000);
@@ -426,6 +460,7 @@ export function createRaceApp() {
       document.getElementById("assist-select")?.removeEventListener("change", refreshSession);
       restartSessionButton?.removeEventListener("click", restartCurrentRun);
       resultNextEventButton?.removeEventListener("click", selectQueuedNextSeriesEvent);
+      audioToggleButton?.removeEventListener("click", toggleAudioMuted);
       input.detach();
       touch.destroy();
       audio.dispose();

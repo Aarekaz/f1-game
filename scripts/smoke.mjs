@@ -44,6 +44,30 @@ async function checkDesktop(browser) {
   });
   await page.goto(url, { waitUntil: "networkidle" });
 
+  const audioInitial = await page.evaluate(() => ({
+    pressed: document.querySelector("#audio-toggle")?.getAttribute("aria-pressed") ?? "",
+    label: document.querySelector("#audio-toggle")?.getAttribute("aria-label") ?? "",
+    text: document.querySelector("#audio-toggle")?.textContent ?? ""
+  }));
+  await page.locator("#audio-toggle").click();
+  const audioMuted = await page.evaluate(() => ({
+    pressed: document.querySelector("#audio-toggle")?.getAttribute("aria-pressed") ?? "",
+    label: document.querySelector("#audio-toggle")?.getAttribute("aria-label") ?? "",
+    text: document.querySelector("#audio-toggle")?.textContent ?? "",
+    stored: window.localStorage.getItem("apex-formula:audio-muted") ?? ""
+  }));
+  await page.locator("#audio-toggle").click();
+  const audioUnmuted = await page.evaluate(() => ({
+    pressed: document.querySelector("#audio-toggle")?.getAttribute("aria-pressed") ?? "",
+    label: document.querySelector("#audio-toggle")?.getAttribute("aria-label") ?? "",
+    text: document.querySelector("#audio-toggle")?.textContent ?? "",
+    stored: window.localStorage.getItem("apex-formula:audio-muted") ?? ""
+  }));
+  assert(audioInitial.pressed === "false" && audioInitial.text === "SND", `desktop audio toggle initial state was wrong: ${JSON.stringify(audioInitial)}`);
+  assert(audioMuted.pressed === "true" && audioMuted.label === "Unmute audio" && audioMuted.text === "OFF", `desktop audio mute state was wrong: ${JSON.stringify(audioMuted)}`);
+  assert(audioMuted.stored === "true", `desktop audio mute did not persist: ${audioMuted.stored}`);
+  assert(audioUnmuted.pressed === "false" && audioUnmuted.text === "SND" && audioUnmuted.stored === "false", `desktop audio unmute state was wrong: ${JSON.stringify(audioUnmuted)}`);
+
   const seriesStart = await page.evaluate(() => ({
     rows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? ""),
     active: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? ""
