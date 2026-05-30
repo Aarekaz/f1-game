@@ -16,6 +16,13 @@ type KeyMap = {
   restart: boolean;
 };
 
+type GamepadPulseMap = {
+  recover: boolean;
+  camera: boolean;
+  pause: boolean;
+  restart: boolean;
+};
+
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
 }
@@ -44,6 +51,12 @@ export class InputState {
   private cameraPulse = false;
   private pausePulse = false;
   private restartPulse = false;
+  private previousGamepadPulses: GamepadPulseMap = {
+    recover: false,
+    camera: false,
+    pause: false,
+    restart: false
+  };
 
   attach(target: Window = window) {
     target.addEventListener("keydown", this.onKeyDown);
@@ -110,6 +123,12 @@ export class InputState {
     this.cameraPulse = false;
     this.pausePulse = false;
     this.restartPulse = false;
+    this.previousGamepadPulses = {
+      recover: false,
+      camera: false,
+      pause: false,
+      restart: false
+    };
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
@@ -189,6 +208,12 @@ export class InputState {
   private readGamepad() {
     const gamepad = navigator.getGamepads?.().find(Boolean);
     if (!gamepad) {
+      this.previousGamepadPulses = {
+        recover: false,
+        camera: false,
+        pause: false,
+        restart: false
+      };
       return { steer: 0, throttle: 0, brake: 0, ers: false, launch: false, recover: false, camera: false, pause: false, restart: false };
     }
 
@@ -196,16 +221,30 @@ export class InputState {
     const rightTrigger = gamepad.buttons[7]?.value ?? 0;
     const leftTrigger = gamepad.buttons[6]?.value ?? 0;
     const faceDown = gamepad.buttons[0]?.pressed ?? false;
+    const pressed: GamepadPulseMap = {
+      recover: gamepad.buttons[2]?.pressed ?? false,
+      camera: gamepad.buttons[4]?.pressed ?? false,
+      pause: gamepad.buttons[9]?.pressed ?? false,
+      restart: gamepad.buttons[3]?.pressed ?? false
+    };
+    const pulses: GamepadPulseMap = {
+      recover: pressed.recover && !this.previousGamepadPulses.recover,
+      camera: pressed.camera && !this.previousGamepadPulses.camera,
+      pause: pressed.pause && !this.previousGamepadPulses.pause,
+      restart: pressed.restart && !this.previousGamepadPulses.restart
+    };
+    this.previousGamepadPulses = pressed;
+
     return {
       steer: axisSteer,
       throttle: Math.max(rightTrigger, faceDown ? 1 : 0),
       brake: leftTrigger,
       ers: gamepad.buttons[1]?.pressed ?? false,
       launch: rightTrigger > 0.1 || faceDown,
-      recover: gamepad.buttons[2]?.pressed ?? false,
-      camera: gamepad.buttons[4]?.pressed ?? false,
-      pause: gamepad.buttons[9]?.pressed ?? false,
-      restart: gamepad.buttons[3]?.pressed ?? false
+      recover: pulses.recover,
+      camera: pulses.camera,
+      pause: pulses.pause,
+      restart: pulses.restart
     };
   }
 }
