@@ -780,9 +780,12 @@ export class SimcadeRaceModel {
       speedRatio *
       (0.92 + speedRatio * 1.35) *
       (onTrack ? 1 : 0.52 + this.tireContactGrip * 0.42);
+    const lowSpeedSteerSurface = surface.name === "Asphalt" && this.tireRunoffShare < 0.08 ? 1 : surface.name === "Kerb" && this.tireRunoffShare < 0.18 ? 0.22 : 0;
+    const lowSpeedSteerScrub = Math.pow(Math.abs(rawSteer), 1.25) * throttle * (1 - brake) * clamp((48 - this.speed) / 48, 0, 1) * lowSpeedSteerSurface;
     const lateralForceDemand =
       Math.abs(steer) * speedRatio * (0.26 + cornerDemand * 0.52) +
       steeringLoadDemand +
+      lowSpeedSteerScrub * 0.86 +
       Math.abs(track.curve) * speedRatio * (3 + cornerDemand * 1.05) +
       Math.abs(this.lateralVelocity) * 0.018;
     const forceCapacity = clamp(
@@ -836,8 +839,9 @@ export class SimcadeRaceModel {
 
     const torqueCurve = this.engineTorqueCurve();
     const shiftInterruption = 1 - this.shiftCut * 0.54;
-    const steeringPowerTrim = clamp(steeringLoadDemand * 0.34, 0, 0.46);
-    const standingStartTraction = clamp(0.34 + speedRatio * 2.4 + this.longitudinalGrip * 0.18 - roadWetness * 0.16, 0.32, 1);
+    const steeringPowerTrim = clamp(steeringLoadDemand * 0.34 + lowSpeedSteerScrub * 0.3, 0, 0.58);
+    const standingStartTraction =
+      clamp(0.34 + speedRatio * 2.4 + this.longitudinalGrip * 0.18 - roadWetness * 0.16, 0.32, 1) * (1 - lowSpeedSteerScrub * 0.28);
     const tractionDelivery =
       (1 - this.tractionBite * 0.2) *
       clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08, 0.52, 1.06) *
@@ -966,7 +970,7 @@ export class SimcadeRaceModel {
       (1 - this.downforceLoss * 0.5) *
       (1 - this.fuelLoad * 0.035) *
       (1 - this.dirtyTirePickup * 0.08);
-    const rollingSteerFactor = clamp((this.speed - 4) / 32, 0, 1);
+    const rollingSteerFactor = clamp((this.speed - 4) / 32, 0, 1) * (1 - lowSpeedSteerScrub * 0.28);
     const targetYawRate = steer * steerAuthority * rollingSteerFactor;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
