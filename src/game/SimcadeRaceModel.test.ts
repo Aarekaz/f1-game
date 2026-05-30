@@ -929,6 +929,23 @@ describe("SimcadeRaceModel", () => {
     expect(saturated.longitudinalGrip).toBeLessThan(measured.longitudinalGrip);
   });
 
+  it("keeps the car unsettled for a moment after hard brake release", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const fast = run(model, 4.6, { throttle: 1, ers: true });
+    const braking = run(model, 0.9, { brake: 1 });
+    const released = run(model, 0.25, {});
+
+    expect(braking.longitudinalGrip).toBeLessThan(fast.longitudinalGrip);
+    expect(released.longitudinalGrip).toBeLessThan(fast.longitudinalGrip);
+    expect(released.car.pitch).toBeGreaterThan(0.01);
+    expect(released.suspensionTravel).toBeGreaterThan(0.045);
+  });
+
   it("loads the suspension under braking and rough road contact", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
