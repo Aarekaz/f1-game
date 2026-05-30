@@ -26,6 +26,8 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
 - A chase-frame guard now pulls the look target back toward the car when hard cornering or rejoin motion tries to push it out of frame.
+- Off-track recovery keeps the road in frame instead of letting the view become a giant car over empty grass.
+- Portrait screens get a backed-off chase camera, so mobile play shows the road instead of filling the screen with the rear wing.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
 - Trackside posts near the chase camera are culled when they would cut across the car, which keeps the view usable in dense circuit sections.
 - Foreground safety barriers now yield to the chase camera during kerb and runoff moments, keeping the car and road readable.
@@ -50,6 +52,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
 - The racing HUD collapses into a lighter instrument cluster once the car is moving, leaving more of the circuit visible.
 - The HUD now yields when the chase camera drifts toward an edge, so the car and rejoin line win over the instrument cluster.
+- Mobile racing uses a smaller, softer instrument cluster so portrait play keeps more road visible.
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
