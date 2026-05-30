@@ -493,6 +493,32 @@ describe("SimcadeRaceModel", () => {
     expect(edgeBrake.car.lockup).toBeGreaterThan(cleanBrake.car.lockup);
   });
 
+  it("spends one shared tire force budget across steering throttle and brake", () => {
+    const balanced = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    balanced.update(1 / 60, { ...idle, launch: true });
+    run(balanced, 4.8, { throttle: 1 });
+    const measured = run(balanced, 1.1, { throttle: 0.55, steer: 0.36 });
+
+    const overloaded = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    overloaded.update(1 / 60, { ...idle, launch: true });
+    run(overloaded, 4.8, { throttle: 1 });
+    const saturated = run(overloaded, 1.1, { throttle: 1, brake: 0.52, steer: 0.86 });
+
+    expect(saturated.tireForceLoad).toBeGreaterThan(measured.tireForceLoad);
+    expect(saturated.tireSaturation).toBeGreaterThan(measured.tireSaturation);
+    expect(saturated.roadAdhesion).toBeLessThan(measured.roadAdhesion);
+    expect(saturated.car.understeer + saturated.car.lockup).toBeGreaterThan(measured.car.understeer + measured.car.lockup);
+    expect(saturated.longitudinalGrip).toBeLessThan(measured.longitudinalGrip);
+  });
+
   it("loads the suspension under braking and rough road contact", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -540,6 +566,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.longitudinalGrip).toBe(1);
     expect(telemetry.tireContactGrip).toBe(1);
     expect(telemetry.tireRunoffShare).toBe(0);
+    expect(telemetry.tireForceLoad).toBe(0);
+    expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
