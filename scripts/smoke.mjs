@@ -329,6 +329,8 @@ async function checkDesktop(browser) {
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
     roadAdhesion: Number(document.querySelector("#game canvas")?.dataset.roadAdhesion ?? 0),
     lateralScrub: Number(document.querySelector("#game canvas")?.dataset.lateralScrub ?? 0),
+    forwardBite: Number(document.querySelector("#game canvas")?.dataset.forwardBite ?? 0),
+    roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
     suspensionLoad: Number(document.querySelector("#game canvas")?.dataset.suspensionLoad ?? 0),
     suspensionTravel: Number(document.querySelector("#game canvas")?.dataset.suspensionTravel ?? 0),
@@ -657,6 +659,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
   assert(state.roadAdhesion > 0 && state.roadAdhesion <= 1.1, `desktop road adhesion telemetry was invalid: ${state.roadAdhesion}`);
   assert(state.lateralScrub >= 0 && state.lateralScrub <= 1, `desktop lateral scrub telemetry was invalid: ${state.lateralScrub}`);
+  assert(state.forwardBite > 0.25 && state.forwardBite <= 1.1, `desktop forward bite telemetry was invalid: ${state.forwardBite}`);
+  assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
   assert(state.suspensionLoad > 0.45 && state.suspensionLoad < 1.7, `desktop suspension load telemetry was invalid: ${state.suspensionLoad}`);
   assert(state.suspensionTravel > -0.35 && state.suspensionTravel < 0.45, `desktop suspension travel telemetry was invalid: ${state.suspensionTravel}`);
