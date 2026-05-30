@@ -119,6 +119,7 @@ export class ThreeRaceRenderer {
   private readonly speedStreaks = this.buildSpeedStreaks();
   private readonly airWake = this.buildAirWake();
   private readonly tireSmoke = this.buildTireSmoke();
+  private readonly brakePressureTrail = this.buildBrakePressureTrail();
   private readonly rainStreaks = this.buildRainStreaks();
   private readonly waterSpray = this.buildWaterSpray();
   private readonly lensRain = this.buildLensRain();
@@ -161,6 +162,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.speedStreaks);
     this.scene.add(this.airWake);
     this.scene.add(this.tireSmoke);
+    this.scene.add(this.brakePressureTrail);
     this.scene.add(this.rainStreaks);
     this.scene.add(this.waterSpray);
     this.scene.add(this.proximityMarkers);
@@ -288,6 +290,7 @@ export class ThreeRaceRenderer {
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateAirWake(carX, carY, carZ, carWorldYaw, telemetry.draft, telemetry.dirtyAir, speedRatio);
     this.updateTireSmoke(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.wheelspin, telemetry.car.lockup);
+    this.updateBrakePressureTrail(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.braking, telemetry.car.lockup);
     this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
     this.updateRacingLineAssist(telemetry);
     const podMode = this.cameraMode === "pod";
@@ -965,6 +968,66 @@ export class ThreeRaceRenderer {
     this.tireSmoke.rotation.y = heading;
     const pulse = 1 + Math.sin(performance.now() * 0.018) * 0.08;
     this.tireSmoke.scale.setScalar((0.65 + speedRatio * 0.75 + smokeStrength * 0.55) * pulse);
+  }
+
+  private buildBrakePressureTrail() {
+    const group = new THREE.Group();
+    group.name = "brake-pressure-trail";
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#ff7045",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (let index = 0; index < 10; index += 1) {
+      const mark = new THREE.Mesh(new THREE.PlaneGeometry(0.12 + (index % 3) * 0.035, 1.35 + index * 0.18), material);
+      mark.name = "brake-pressure-mark";
+      mark.rotation.x = -Math.PI / 2;
+      mark.position.set(index % 2 === 0 ? -0.9 : 0.9, 0.075, 0.98 + index * 0.42);
+      mark.userData.phase = index * 0.47;
+      group.add(mark);
+    }
+
+    group.userData.material = material;
+    return group;
+  }
+
+  private updateBrakePressureTrail(
+    carX: number,
+    carY: number,
+    carZ: number,
+    heading: number,
+    speedRatio: number,
+    braking: number,
+    lockup: number
+  ) {
+    const material = this.brakePressureTrail.userData.material as THREE.MeshBasicMaterial | undefined;
+    const strength = clamp(braking * (0.34 + speedRatio * 0.72) + lockup * 0.42, 0, 1);
+    this.brakePressureTrail.visible = strength > 0.035;
+    if (material) {
+      material.opacity = strength * 0.38;
+      material.color.set(lockup > 0.22 ? "#fff0d2" : "#ff7045");
+    }
+
+    const time = performance.now() * 0.001;
+    let visibleMarks = 0;
+    for (const mark of this.brakePressureTrail.children) {
+      const phase = Number(mark.userData.phase ?? 0);
+      mark.visible = strength > 0.035;
+      mark.scale.set(0.8 + lockup * 0.5, 1, 0.72 + speedRatio * 0.85 + strength * 0.35);
+      mark.position.y = 0.07 + Math.sin(time * 7 + phase) * 0.012 * strength;
+      mark.rotation.z = Math.sin(time * 5.6 + phase) * 0.025 * strength;
+      if (mark.visible) visibleMarks += 1;
+    }
+
+    this.brakePressureTrail.position.set(carX, carY + 0.01, carZ);
+    this.brakePressureTrail.rotation.y = heading;
+    this.renderer.domElement.dataset.brakePressureTrail = strength.toFixed(2);
+    this.renderer.domElement.dataset.brakePressureMarks = String(visibleMarks);
   }
 
   private buildProximityMarkers() {

@@ -226,6 +226,8 @@ async function checkDesktop(browser) {
     carYawRate: Number(document.querySelector("#game canvas")?.dataset.carYawRate ?? 0),
     wheelSpin: Number(document.querySelector("#game canvas")?.dataset.wheelSpin ?? 0),
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
+    brakePressureTrail: Number(document.querySelector("#game canvas")?.dataset.brakePressureTrail ?? 0),
+    brakePressureMarks: Number(document.querySelector("#game canvas")?.dataset.brakePressureMarks ?? 0),
     rearRainLight: Number(document.querySelector("#game canvas")?.dataset.rearRainLight ?? 0),
     rearRainLightGlow: Number(document.querySelector("#game canvas")?.dataset.rearRainLightGlow ?? 0),
     ersDeployGlow: Number(document.querySelector("#game canvas")?.dataset.ersDeployGlow ?? 0),
@@ -312,6 +314,17 @@ async function checkDesktop(browser) {
     racingStatusWidth: document.querySelector(".status-panel")?.getBoundingClientRect().width ?? 0,
     racingTimingWidth: document.querySelector("#timing-tower")?.getBoundingClientRect().width ?? 0
   }));
+
+  await page.keyboard.down("ArrowDown");
+  await page.waitForTimeout(700);
+  const brakingState = await page.evaluate(() => ({
+    speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+    brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
+    brakePressureTrail: Number(document.querySelector("#game canvas")?.dataset.brakePressureTrail ?? 0),
+    brakePressureMarks: Number(document.querySelector("#game canvas")?.dataset.brakePressureMarks ?? 0),
+    carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0)
+  }));
+  await page.keyboard.up("ArrowDown");
 
   await page.keyboard.press("KeyC");
   await page.waitForTimeout(250);
@@ -411,6 +424,10 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
   assert(Number.isFinite(state.wheelSpin) && Math.abs(state.wheelSpin) > 10, "desktop animated wheel spin telemetry was missing");
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
+  assert(Number.isFinite(state.brakePressureTrail), "desktop brake pressure trail telemetry was missing");
+  assert(brakingState.brakeGlow > state.brakeGlow, `desktop brake glow did not rise under braking: ${JSON.stringify(brakingState)}`);
+  assert(brakingState.brakePressureTrail > 0.2, `desktop brake pressure trail did not activate under braking: ${JSON.stringify(brakingState)}`);
+  assert(brakingState.brakePressureMarks >= 8, `desktop brake pressure marks were missing under braking: ${JSON.stringify(brakingState)}`);
   assert(state.rearRainLight > 0.6, `desktop rear rain light did not activate in storm weather: ${state.rearRainLight}`);
   assert(state.rearRainLightGlow > 0.6, `desktop rear rain light glow did not activate in storm weather: ${state.rearRainLightGlow}`);
   assert(state.ersDeployGlow > 0.6, `desktop ERS deploy glow did not activate while boost was held: ${state.ersDeployGlow}`);
