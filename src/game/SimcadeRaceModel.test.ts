@@ -591,6 +591,37 @@ describe("SimcadeRaceModel", () => {
     expect(crawled.speedKph).toBeGreaterThan(28);
   });
 
+  it("lets stranded drivers crawl forward when steering toward the circuit", () => {
+    const toward = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    toward.update(1 / 60, { ...idle, launch: true });
+    run(toward, 3.8, { throttle: 1 });
+    run(toward, 1.5, { throttle: 1, steer: 1 });
+    const towardBottomed = run(toward, 1.2, { throttle: 0 });
+    const recovered = run(toward, 1.4, { throttle: 1, steer: -0.55 });
+
+    const away = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    away.update(1 / 60, { ...idle, launch: true });
+    run(away, 3.8, { throttle: 1 });
+    run(away, 1.5, { throttle: 1, steer: 1 });
+    const awayBottomed = run(away, 1.2, { throttle: 0 });
+    const bogged = run(away, 1.4, { throttle: 1, steer: 0.55 });
+
+    expect(["Runoff", "Gravel"]).toContain(towardBottomed.surfaceName);
+    expect(["Runoff", "Gravel"]).toContain(awayBottomed.surfaceName);
+    expect(recovered.speedKph).toBeGreaterThan(bogged.speedKph + 6);
+    expect(recovered.trackOffset).toBeGreaterThan(towardBottomed.trackOffset + 0.2);
+    expect(Math.abs(recovered.carX)).toBeLessThan(Math.abs(towardBottomed.carX));
+    expect(bogged.trackOffset).toBeCloseTo(awayBottomed.trackOffset, 1);
+  });
+
   it("spends tire budget when the driver asks for full steering at high speed", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
