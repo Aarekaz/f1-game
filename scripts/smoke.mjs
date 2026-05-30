@@ -394,6 +394,8 @@ async function checkDesktop(browser) {
     horizonSkySize: document.querySelector("#game canvas")?.dataset.horizonSkySize ?? "",
     horizonSkyDepthWrite: document.querySelector("#game canvas")?.dataset.horizonSkyDepthWrite ?? "",
     horizonSkyRenderOrder: Number(document.querySelector("#game canvas")?.dataset.horizonSkyRenderOrder ?? 0),
+    stormLightningBolts: Number(document.querySelector("#game canvas")?.dataset.stormLightningBolts ?? 0),
+    stormLightningFlash: Number(document.querySelector("#game canvas")?.dataset.stormLightningFlash ?? 0),
     surfaceTerrainReach: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainReach ?? 0),
     surfaceTerrainSkirtDrop: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainSkirtDrop ?? 0),
     surfaceTerrainOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceTerrainOpacity ?? 0),
@@ -702,6 +704,8 @@ async function checkDesktop(browser) {
   assert(state.horizonSkySize === "dome:6200", `desktop horizon sky dome was not full-bleed: ${state.horizonSkySize}`);
   assert(state.horizonSkyDepthWrite === "false", `desktop horizon sky wrote to depth: ${state.horizonSkyDepthWrite}`);
   assert(state.horizonSkyRenderOrder <= -1000, `desktop horizon sky did not render behind the world: ${state.horizonSkyRenderOrder}`);
+  assert(state.stormLightningBolts >= 3, `desktop storm lightning layer was missing: ${state.stormLightningBolts}`);
+  assert(state.stormLightningFlash > 0.02, `desktop storm lightning did not react to storm weather: ${state.stormLightningFlash}`);
   assert(
     state.surfaceTerrainReach >= 16 && state.surfaceTerrainReach <= 56,
     `desktop terrain reach was not camera-safe: ${state.surfaceTerrainReach}`
