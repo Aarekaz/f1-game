@@ -417,8 +417,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.assistThrottleTrim), "desktop assist throttle telemetry was missing");
   assert(/assist|Manual/i.test(state.assistChip), `desktop assist chip was missing: ${state.assistChip}`);
   assert(["ready", "active", "manual"].includes(state.assistChipMode), `desktop assist chip mode was invalid: ${state.assistChipMode}`);
-  assert(state.seriesTargetChip === "R3 target: Survive low grip", `desktop racing target chip was wrong: ${state.seriesTargetChip}`);
-  assert(state.seriesTargetMode === "series", `desktop racing target mode was wrong: ${state.seriesTargetMode}`);
+  assert(/^P\d+\/P5 F\d+\/48 \+\d+\/3s$/.test(state.seriesTargetChip), `desktop racing target tracker was wrong: ${state.seriesTargetChip}`);
+  assert(["live", "met", "missed"].includes(state.seriesTargetMode), `desktop racing target mode was wrong: ${state.seriesTargetMode}`);
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.shiftLightCount === 5, `desktop shift-light cluster was incomplete: ${state.shiftLightCount}`);

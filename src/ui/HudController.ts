@@ -1,4 +1,5 @@
 import type { RaceTelemetry } from "../game/SimcadeRaceModel";
+import type { ApexSeriesTargetCriteria } from "../game/ApexSeries";
 import { resultHeadline, type PersonalBest, type PersonalBestUpdate } from "../game/PersonalBestStore";
 import { TRACK_LOOP_LENGTH, trackWorldPointAt, wrapDistance } from "../game/trackPath";
 
@@ -9,6 +10,12 @@ export type SeriesResultUpdate = {
   targetDetail: string;
   score: number;
   scoreDelta: number;
+};
+
+export type SeriesContractHud = {
+  round: string;
+  target: string;
+  criteria: ApexSeriesTargetCriteria;
 };
 
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -70,6 +77,7 @@ export class HudController {
   private shiftLights = optionalElement("shift-lights");
   private objective = requireElement("objective");
   private assistChip = optionalElement("assist-chip");
+  private seriesTargetChip = optionalElement("series-target-chip");
   private sessionTrack = optionalElement("session-track");
   private sessionWeather = optionalElement("session-weather");
   private sectionName = optionalElement("section-name");
@@ -112,6 +120,7 @@ export class HudController {
   private latestBest: PersonalBest | null = null;
   private latestUpdate: PersonalBestUpdate | null = null;
   private latestSeriesResult: SeriesResultUpdate | null = null;
+  private latestSeriesContract: SeriesContractHud | null = null;
   private mapBounds = { minX: -1, maxX: 1, minZ: -1, maxZ: 1 };
 
   constructor() {
@@ -140,6 +149,7 @@ export class HudController {
     this.objective.textContent =
       telemetry.phase === "countdown" ? `Launch ${(telemetry.launchCharge * 100).toFixed(0)}%` : telemetry.objective;
     this.updateAssistChip(telemetry);
+    this.updateSeriesTargetChip(telemetry);
     this.updateSessionReadout(telemetry);
     this.updateTimingTower(telemetry);
     this.updateTrackReadout(telemetry);
@@ -285,6 +295,37 @@ export class HudController {
     this.assistChip.dataset.mode = "active";
   }
 
+  private updateSeriesTargetChip(telemetry: RaceTelemetry) {
+    if (!this.seriesTargetChip) return;
+
+    const contract = this.latestSeriesContract;
+    if (!contract) {
+      this.seriesTargetChip.textContent = "Free run";
+      this.seriesTargetChip.dataset.mode = "free";
+      return;
+    }
+
+    if (telemetry.phase === "ready" || telemetry.phase === "countdown") {
+      this.seriesTargetChip.textContent = `${contract.round} target: ${contract.target}`;
+      this.seriesTargetChip.dataset.mode = "series";
+      return;
+    }
+
+    const criteria = contract.criteria;
+    const flow = Math.round(telemetry.flowScore * 100);
+    const requiredFlow = Math.round(criteria.minFlowScore * 100);
+    const penalty = telemetry.penaltySeconds;
+    const positionOk = telemetry.position <= criteria.maxPosition;
+    const flowOk = telemetry.flowScore >= criteria.minFlowScore;
+    const penaltyOk = penalty <= criteria.maxPenaltySeconds;
+    const cleanOk = !criteria.cleanLapRequired || (telemetry.cleanLap && telemetry.lapValid);
+    const failed = !penaltyOk || !cleanOk;
+    const met = positionOk && flowOk && penaltyOk && cleanOk;
+
+    this.seriesTargetChip.textContent = `P${telemetry.position}/P${criteria.maxPosition} F${flow}/${requiredFlow} +${penalty}/${criteria.maxPenaltySeconds}s`;
+    this.seriesTargetChip.dataset.mode = failed ? "missed" : met ? "met" : "live";
+  }
+
   setPersonalBest(best: PersonalBest | null) {
     this.latestBest = best;
   }
@@ -295,6 +336,10 @@ export class HudController {
 
   setSeriesResult(update: SeriesResultUpdate | null) {
     this.latestSeriesResult = update;
+  }
+
+  setSeriesContract(contract: SeriesContractHud | null) {
+    this.latestSeriesContract = contract;
   }
 
   private racecraftText(telemetry: RaceTelemetry) {

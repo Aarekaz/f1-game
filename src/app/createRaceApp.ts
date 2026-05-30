@@ -390,8 +390,18 @@ export function createRaceApp() {
     syncSessionBest(best);
     syncSeriesProgress(session, selectSeriesEvent);
     syncSeriesTarget(session);
+    const activeSeriesEvent = findApexSeriesEvent(session);
     queuedNextSeriesEvent = null;
     syncNextSeriesEventButton(null);
+    hud.setSeriesContract(
+      activeSeriesEvent
+        ? {
+            round: activeSeriesEvent.round,
+            target: activeSeriesEvent.target,
+            criteria: activeSeriesEvent.criteria
+          }
+        : null
+    );
     hud.setPersonalBest(best);
     hud.setPersonalBestUpdate(null);
     hud.setSeriesResult(null);

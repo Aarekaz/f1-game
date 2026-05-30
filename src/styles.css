@@ -1033,6 +1033,22 @@ body {
   box-shadow: none;
 }
 
+.series-target-chip[data-mode="live"] {
+  color: #fff4c3;
+  background: rgba(255, 204, 82, 0.17);
+}
+
+.series-target-chip[data-mode="met"] {
+  color: #17211b;
+  background: #d7eb8f;
+  box-shadow: 0 0 18px rgba(215, 235, 143, 0.16);
+}
+
+.series-target-chip[data-mode="missed"] {
+  color: #ffffff;
+  background: rgba(226, 14, 59, 0.78);
+}
+
 .session-chip {
   display: grid;
   gap: 3px;

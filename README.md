@@ -15,7 +15,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Racing-style gear, RPM, and shift-light feedback in the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - The pre-race briefing shows the active series contract before launch, including position, flow, cleanliness, and penalty requirements.
-- The live HUD carries the active series target, so each fictional GP scenario has a clear job once the lights go out.
+- The live HUD tracks the active series target during the run, including current position, flow, and penalty state.
 - Apex Series targets are judged at the flag, and the next event unlocks only after the current scenario target is met.
 - Race results can advance straight into the next Apex Series event, so a session feels like part of a ladder instead of a one-off run.
 - Race results show steward status and penalties, not just pace numbers.
