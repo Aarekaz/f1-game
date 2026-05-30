@@ -195,7 +195,6 @@ type RivalState = {
 const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
 const MAX_SPEED = 310;
-const MIN_RACE_SPEED = 16;
 const GEAR_SPEED_LIMITS = [0, 68, 112, 154, 196, 238, 278, MAX_SPEED];
 const RIVAL_GRID = [
   { driver: "Vega", team: "NOVA", color: "#24c7ff" },
@@ -863,7 +862,7 @@ export class SimcadeRaceModel {
     this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42, 0, 1), dt * 12);
 
     this.speed += (acceleration + boostPower + aeroPower + draftPower + looseSurfaceRecoveryDrive + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
-    this.speed = clamp(this.speed, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
+    this.speed = clamp(this.speed, 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
@@ -1031,7 +1030,7 @@ export class SimcadeRaceModel {
       1
     );
     this.slip = Math.max(this.slip, scrubPenalty * 1.05);
-    this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
+    this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, 0, MAX_SPEED);
     const alignmentSlip = Math.abs(this.lateralVelocity - curveFollow);
     const alignmentTarget = clamp(
       Math.cos(this.heading) - alignmentSlip / Math.max(12, metersPerSecond * 0.9) - scrubPenalty * 0.34 - slipAngleLoad * 0.18 - (onTrack ? 0 : 0.08),
