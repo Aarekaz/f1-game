@@ -156,6 +156,7 @@ export class ThreeRaceRenderer {
   private readonly desiredCameraPosition = new THREE.Vector3();
   private readonly desiredCameraTarget = new THREE.Vector3();
   private readonly carScreenPosition = new THREE.Vector3();
+  private readonly frameGuardTarget = new THREE.Vector3();
   private readonly obstructionWorldPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly rivalSprays = new Map<number, THREE.Group>();
@@ -477,11 +478,12 @@ export class ThreeRaceRenderer {
     );
     this.camera.rotation.z += cameraRoll;
     this.camera.updateProjectionMatrix();
+    const cameraFrameGuard = this.applyChaseFrameGuard(carX, carY, carZ, rejoinCameraLift, podMode, telemetry.phase, cameraRoll);
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
     this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
     this.updateWaterSpray(carX, carY, carZ, carWorldYaw, telemetry.roadWetness, speedRatio, telemetry.car.slip);
     this.updateCameraObstructionCulling(carX, carZ);
-    this.carScreenPosition.copy(this.car.position).project(this.camera);
+    this.projectCarVisualAnchor();
     this.renderer.domElement.dataset.cameraWorldX = this.camera.position.x.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldY = this.camera.position.y.toFixed(2);
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
@@ -495,6 +497,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraRejoinFocus = rejoinFocus.toFixed(3);
     this.renderer.domElement.dataset.cameraRoll = cameraRoll.toFixed(3);
     this.renderer.domElement.dataset.cameraFov = this.camera.fov.toFixed(2);
+    this.renderer.domElement.dataset.cameraFrameGuard = cameraFrameGuard.toFixed(3);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
     this.renderer.domElement.dataset.carScreenZ = this.carScreenPosition.z.toFixed(3);
@@ -1293,6 +1296,35 @@ export class ThreeRaceRenderer {
     return strongest * (0.58 + speedRatio * 0.44);
   }
 
+  private applyChaseFrameGuard(
+    carX: number,
+    carY: number,
+    carZ: number,
+    rejoinCameraLift: number,
+    podMode: boolean,
+    phase: string,
+    cameraRoll: number
+  ) {
+    if (podMode || phase === "ready") return 0;
+
+    this.projectCarVisualAnchor();
+    const horizontalEscape = clamp((Math.abs(this.carScreenPosition.x) - 0.58) / 0.46, 0, 1);
+    const bottomEscape = clamp((-this.carScreenPosition.y - 0.5) / 0.26, 0, 1);
+    const frameGuard = Math.max(horizontalEscape, bottomEscape);
+    if (frameGuard <= 0.001) return 0;
+
+    this.frameGuardTarget.set(carX, carY + 0.9 + rejoinCameraLift * 0.2, carZ);
+    this.cameraTarget.lerp(this.frameGuardTarget, frameGuard * 0.58);
+    this.camera.lookAt(this.cameraTarget);
+    this.camera.rotation.z += cameraRoll;
+    this.camera.updateProjectionMatrix();
+    return frameGuard;
+  }
+
+  private projectCarVisualAnchor() {
+    this.carScreenPosition.set(this.car.position.x, this.car.position.y + 0.62, this.car.position.z).project(this.camera);
+  }
+
   private updateCameraObstructionCulling(carX: number, carZ: number) {
     const cameraX = this.camera.position.x;
     const cameraZ = this.camera.position.z;
@@ -1303,6 +1335,7 @@ export class ThreeRaceRenderer {
     let candidates = 0;
     let hiddenBarriers = 0;
     let hiddenGates = 0;
+    let hiddenBoards = 0;
 
     if (segmentLengthSq <= 0.001) return;
 
@@ -1332,13 +1365,15 @@ export class ThreeRaceRenderer {
           inPlayableScreen &&
           cameraDistance < 118;
         const barrierInForeground = this.isBarrierObstructionCandidate(object.name) && inPlayableScreen && cameraDistance < 42;
-        const shouldHide = lineBlocked || gateInPlayfield || barrierInForeground;
+        const boardInForeground = this.isTracksideBoardObstructionCandidate(object.name) && inPlayableScreen && cameraDistance < 46;
+        const shouldHide = lineBlocked || gateInPlayfield || barrierInForeground || boardInForeground;
 
         object.visible = !shouldHide;
         if (shouldHide) {
           hidden += 1;
           if (this.isBarrierObstructionCandidate(object.name)) hiddenBarriers += 1;
           if (this.isGateObstructionCandidate(object.name)) hiddenGates += 1;
+          if (this.isTracksideBoardObstructionCandidate(object.name)) hiddenBoards += 1;
         }
       });
     };
@@ -1349,6 +1384,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraObstructionCulled = String(hidden);
     this.renderer.domElement.dataset.cameraBarrierObstructionsCulled = String(hiddenBarriers);
     this.renderer.domElement.dataset.cameraGateObstructionsCulled = String(hiddenGates);
+    this.renderer.domElement.dataset.cameraBoardObstructionsCulled = String(hiddenBoards);
   }
 
   private isCameraObstructionCandidate(name: string) {
@@ -1356,6 +1392,7 @@ export class ThreeRaceRenderer {
       name === "kenney-light-post" ||
       name.endsWith("-post") ||
       this.isBarrierObstructionCandidate(name) ||
+      this.isTracksideBoardObstructionCandidate(name) ||
       (this.isGateObstructionCandidate(name) &&
         (name.endsWith("-crossbar") ||
           name.endsWith("-left-upright") ||
@@ -1371,6 +1408,10 @@ export class ThreeRaceRenderer {
 
   private isBarrierObstructionCandidate(name: string) {
     return name.startsWith("layered-gp-safety-barrier-");
+  }
+
+  private isTracksideBoardObstructionCandidate(name: string) {
+    return name === "apex-reference-board" || name === "corner-chevron-face" || name.startsWith("braking-reference-");
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
