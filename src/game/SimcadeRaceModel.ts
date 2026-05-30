@@ -658,7 +658,7 @@ export class SimcadeRaceModel {
     const ideal = this.idealLaunchCharge();
     const underCharge = clamp((ideal - this.launchCharge) / ideal, 0, 1);
     const overCharge = clamp((this.launchCharge - ideal) / Math.max(0.2, 1 - ideal), 0, 1);
-    const quality = clamp(1 - underCharge * 0.86 - overCharge * (0.42 + this.session.weather.roadWetness * 0.5), 0.12, 1);
+    const quality = clamp(1 - underCharge * 0.86 - overCharge * (0.42 + this.session.weather.roadWetness * 0.5), 0.34, 1);
     const wetSpin = overCharge * (0.18 + this.session.weather.roadWetness * 0.82);
 
     this.launchQuality = quality;
