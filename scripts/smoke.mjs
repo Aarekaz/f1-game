@@ -252,6 +252,8 @@ async function checkDesktop(browser) {
     cameraChaseDistance: Number(document.querySelector("#game canvas")?.dataset.cameraChaseDistance ?? 0),
     cameraObstructionCandidates: Number(document.querySelector("#game canvas")?.dataset.cameraObstructionCandidates ?? 0),
     cameraObstructionCulled: Number(document.querySelector("#game canvas")?.dataset.cameraObstructionCulled ?? 0),
+    cameraBarrierObstructionsCulled: Number(document.querySelector("#game canvas")?.dataset.cameraBarrierObstructionsCulled ?? 0),
+    cameraGateObstructionsCulled: Number(document.querySelector("#game canvas")?.dataset.cameraGateObstructionsCulled ?? 0),
     cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
     cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
@@ -519,6 +521,8 @@ async function checkDesktop(browser) {
   }
   assert(state.cameraObstructionCandidates > 12, `desktop camera obstruction pass did not scan trackside posts: ${state.cameraObstructionCandidates}`);
   assert(Number.isFinite(state.cameraObstructionCulled), "desktop camera obstruction culling telemetry was missing");
+  assert(Number.isFinite(state.cameraBarrierObstructionsCulled), "desktop barrier obstruction culling telemetry was missing");
+  assert(Number.isFinite(state.cameraGateObstructionsCulled), "desktop gate obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
