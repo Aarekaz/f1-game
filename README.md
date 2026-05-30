@@ -54,6 +54,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The HUD now yields when the chase camera drifts toward an edge, so the car and rejoin line win over the instrument cluster.
 - Mobile racing uses a smaller, softer instrument cluster so portrait play keeps more road visible.
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
+- Road adhesion and lateral scrub now share the tire budget, so heavy steering, dirty tires, kerbs, and runoff change speed and grip instead of feeling like a flat lateral script.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
 - High-speed runs now get peripheral ground-rush streaks and stronger player spray, so speed reads through the world instead of only through the speedometer.
