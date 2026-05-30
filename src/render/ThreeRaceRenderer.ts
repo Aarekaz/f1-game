@@ -1301,6 +1301,8 @@ export class ThreeRaceRenderer {
     const segmentLengthSq = segmentX * segmentX + segmentZ * segmentZ;
     let hidden = 0;
     let candidates = 0;
+    let hiddenBarriers = 0;
+    let hiddenGates = 0;
 
     if (segmentLengthSq <= 0.001) return;
 
@@ -1319,18 +1321,25 @@ export class ThreeRaceRenderer {
         const cameraDistance = Math.hypot(toObjectX, toObjectZ);
         const lineBlocked = t > 0.04 && t < 0.92 && lineDistance < 1.35 && cameraDistance < 42;
         const screenPosition = this.obstructionWorldPosition.project(this.camera);
-        const gateInPlayfield =
-          this.isGateObstructionCandidate(object.name) &&
+        const inPlayableScreen =
           screenPosition.z > -1 &&
           screenPosition.z < 1 &&
-          Math.abs(screenPosition.x) < 0.96 &&
-          screenPosition.y > -0.5 &&
-          screenPosition.y < 0.62 &&
+          Math.abs(screenPosition.x) < 0.98 &&
+          screenPosition.y > -0.68 &&
+          screenPosition.y < 0.66;
+        const gateInPlayfield =
+          this.isGateObstructionCandidate(object.name) &&
+          inPlayableScreen &&
           cameraDistance < 118;
-        const shouldHide = lineBlocked || gateInPlayfield;
+        const barrierInForeground = this.isBarrierObstructionCandidate(object.name) && inPlayableScreen && cameraDistance < 42;
+        const shouldHide = lineBlocked || gateInPlayfield || barrierInForeground;
 
         object.visible = !shouldHide;
-        if (shouldHide) hidden += 1;
+        if (shouldHide) {
+          hidden += 1;
+          if (this.isBarrierObstructionCandidate(object.name)) hiddenBarriers += 1;
+          if (this.isGateObstructionCandidate(object.name)) hiddenGates += 1;
+        }
       });
     };
 
@@ -1338,12 +1347,15 @@ export class ThreeRaceRenderer {
     scan(this.tracksideAssets);
     this.renderer.domElement.dataset.cameraObstructionCandidates = String(candidates);
     this.renderer.domElement.dataset.cameraObstructionCulled = String(hidden);
+    this.renderer.domElement.dataset.cameraBarrierObstructionsCulled = String(hiddenBarriers);
+    this.renderer.domElement.dataset.cameraGateObstructionsCulled = String(hiddenGates);
   }
 
   private isCameraObstructionCandidate(name: string) {
     return (
       name === "kenney-light-post" ||
       name.endsWith("-post") ||
+      this.isBarrierObstructionCandidate(name) ||
       (this.isGateObstructionCandidate(name) &&
         (name.endsWith("-crossbar") ||
           name.endsWith("-left-upright") ||
@@ -1355,6 +1367,10 @@ export class ThreeRaceRenderer {
 
   private isGateObstructionCandidate(name: string) {
     return name.includes("checkpoint-gate") || name.includes("sector-timing-gate") || name.includes("timing-bridge");
+  }
+
+  private isBarrierObstructionCandidate(name: string) {
+    return name.startsWith("layered-gp-safety-barrier-");
   }
 
   private applyAtmosphere(telemetry: RaceTelemetry) {
