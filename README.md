@@ -20,12 +20,14 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Running the rubbered line now gives a small grip reward, while wandering offline can pick up marbles and make the tires feel dirty for the next few corners.
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
 - Nearby rival cars carry compact in-world driver/team/gap plates, so traffic is readable without staring at the timing tower.
+- Rival plates now shrink and fade around close traffic, keeping race information present without covering the braking reference.
 - Racing-style gear, RPM, shift-cut, traction-bite, and shift-light feedback in the HUD and handling model.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
 - Trackside posts near the chase camera are culled when they would cut across the car, which keeps the view usable in dense circuit sections.
+- Overhead gate pieces also respect the chase camera, so checkpoint signage does not slap across the road when the player arrives at speed.
 - The chase camera now lifts and pulls back during runoff or gravel mistakes, keeping rejoin moments readable instead of letting foreground geometry swallow the car.
 - Rejoin framing now recenters on the actual car when it runs wide, instead of letting the ideal racing line pull the player into the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
