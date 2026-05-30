@@ -8,6 +8,7 @@ import {
   summarizeApexSeries,
   type ApexSeriesEvent
 } from "../game/ApexSeries";
+import { GamepadHapticsController } from "../game/GamepadHapticsController";
 import { InputState, type InputActions } from "../game/InputState";
 import {
   mergePersonalBest,
@@ -285,6 +286,7 @@ export function createRaceApp() {
   const renderer = new ThreeRaceRenderer(container);
   const hud = new HudController();
   const audio = new RaceAudioController();
+  const haptics = new GamepadHapticsController();
   const hudRoot = document.querySelector<HTMLElement>(".hud");
   const pausePanel = document.getElementById("pause-panel");
   const pauseButton = document.getElementById("pause-race");
@@ -344,6 +346,7 @@ export function createRaceApp() {
     renderer.update(latestTelemetry);
     hud.update(latestTelemetry);
     audio.update(pausedAudioTelemetry(latestTelemetry));
+    haptics.stop();
   }
 
   function pausedAudioTelemetry(telemetry: typeof latestTelemetry) {
@@ -438,6 +441,7 @@ export function createRaceApp() {
 
     if (paused) {
       audio.update(pausedAudioTelemetry(latestTelemetry));
+      haptics.stop();
       frame = requestAnimationFrame(tick);
       return;
     }
@@ -491,6 +495,7 @@ export function createRaceApp() {
     renderer.update(telemetry);
     hud.update(telemetry);
     audio.update(telemetry);
+    haptics.update(telemetry);
     lastPhase = telemetry.phase;
     frame = requestAnimationFrame(tick);
   }
@@ -516,6 +521,7 @@ export function createRaceApp() {
       input.detach();
       touch.destroy();
       audio.dispose();
+      haptics.stop();
       renderer.dispose();
     }
   };
