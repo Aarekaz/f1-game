@@ -446,6 +446,22 @@ body {
   text-transform: uppercase;
 }
 
+.game-panel button.hidden {
+  display: none;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.game-panel .secondary-action {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f5f7ee;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .game-panel dl {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findApexSeriesEvent, summarizeApexSeries } from "./ApexSeries";
+import { APEX_SERIES_EVENTS, findApexSeriesEvent, nextApexSeriesEvent, summarizeApexSeries } from "./ApexSeries";
 import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 import type { PersonalBest } from "./PersonalBestStore";
 
@@ -55,5 +55,12 @@ describe("ApexSeries", () => {
         assist: findAssist("manual")
       })
     ).toBeNull();
+  });
+
+  it("advances through the authored event order", () => {
+    expect(nextApexSeriesEvent(null)?.id).toBe("aurelia-rhythm");
+    expect(nextApexSeriesEvent(APEX_SERIES_EVENTS[0])?.id).toBe("mirage-dusk");
+    expect(nextApexSeriesEvent(APEX_SERIES_EVENTS[1])?.id).toBe("northstar-storm");
+    expect(nextApexSeriesEvent(APEX_SERIES_EVENTS[2])).toBeNull();
   });
 });

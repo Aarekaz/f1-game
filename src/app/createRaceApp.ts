@@ -1,5 +1,11 @@
 import { RaceAudioController } from "../audio/RaceAudioController";
-import { findApexSeriesEvent, scorePersonalBest, summarizeApexSeries, type ApexSeriesEventSummary } from "../game/ApexSeries";
+import {
+  findApexSeriesEvent,
+  nextApexSeriesEvent,
+  scorePersonalBest,
+  summarizeApexSeries,
+  type ApexSeriesEvent
+} from "../game/ApexSeries";
 import { InputState, type InputActions } from "../game/InputState";
 import {
   mergePersonalBest,
@@ -69,7 +75,7 @@ function appendTextElement<K extends keyof HTMLElementTagNameMap>(
   return element;
 }
 
-function syncSeriesProgress(activeSession: SessionConfig, onSelect: (event: ApexSeriesEventSummary) => void) {
+function syncSeriesProgress(activeSession: SessionConfig, onSelect: (event: ApexSeriesEvent) => void) {
   const progress = document.getElementById("series-progress");
   if (!progress) return;
 
@@ -197,12 +203,14 @@ export function createRaceApp() {
   const pauseLap = document.getElementById("pause-lap");
   const pauseSection = document.getElementById("pause-section");
   const restartSessionButton = document.getElementById("restart-session");
+  const resultNextEventButton = document.getElementById("result-next-event");
   let last = performance.now();
   let frame = 0;
   let session = readSessionConfig();
   let latestTelemetry = model.telemetry();
   let lastPhase = latestTelemetry.phase;
   let paused = false;
+  let queuedNextSeriesEvent: ApexSeriesEvent | null = null;
 
   function syncPauseSummary() {
     if (pausePosition) pausePosition.textContent = `P${latestTelemetry.position}`;
@@ -224,6 +232,8 @@ export function createRaceApp() {
     model.reset();
     latestTelemetry = model.telemetry();
     lastPhase = latestTelemetry.phase;
+    queuedNextSeriesEvent = null;
+    syncNextSeriesEventButton(null);
     hud.setPersonalBestUpdate(null);
     hud.setSeriesResult(null);
     setPaused(false);
@@ -248,11 +258,25 @@ export function createRaceApp() {
     };
   }
 
-  function selectSeriesEvent(event: ApexSeriesEventSummary) {
+  function syncNextSeriesEventButton(event: ApexSeriesEvent | null) {
+    resultNextEventButton?.classList.toggle("hidden", !event);
+    if (resultNextEventButton) {
+      resultNextEventButton.textContent = event ? `Next: ${event.round}` : "Next Event";
+      resultNextEventButton.setAttribute("aria-label", event ? `Load ${event.round} ${event.title}` : "Next event");
+    }
+  }
+
+  function selectSeriesEvent(event: ApexSeriesEvent) {
     setSelectValue("track-select", event.trackId);
     setSelectValue("weather-select", event.weatherId);
     setSelectValue("assist-select", event.assistId);
     refreshSession();
+  }
+
+  function selectQueuedNextSeriesEvent() {
+    if (queuedNextSeriesEvent) {
+      selectSeriesEvent(queuedNextSeriesEvent);
+    }
   }
 
   const refreshSession = () => {
@@ -261,6 +285,8 @@ export function createRaceApp() {
     syncSessionBrief(session);
     syncSessionBest(best);
     syncSeriesProgress(session, selectSeriesEvent);
+    queuedNextSeriesEvent = null;
+    syncNextSeriesEventButton(null);
     hud.setPersonalBest(best);
     hud.setPersonalBestUpdate(null);
     hud.setSeriesResult(null);
@@ -275,6 +301,7 @@ export function createRaceApp() {
   document.getElementById("weather-select")?.addEventListener("change", refreshSession);
   document.getElementById("assist-select")?.addEventListener("change", refreshSession);
   restartSessionButton?.addEventListener("click", restartCurrentRun);
+  resultNextEventButton?.addEventListener("click", selectQueuedNextSeriesEvent);
   refreshSession();
   input.attach();
   audio.attach();
@@ -306,9 +333,11 @@ export function createRaceApp() {
       const previousBest = readPersonalBest(session);
       const update = mergePersonalBest(previousBest, resultFromTelemetry(telemetry));
       const seriesEvent = findApexSeriesEvent(session);
+      queuedNextSeriesEvent = seriesEvent ? nextApexSeriesEvent(seriesEvent) : null;
       savePersonalBest(session, update.best);
       syncSessionBest(update.best);
       syncSeriesProgress(session, selectSeriesEvent);
+      syncNextSeriesEventButton(queuedNextSeriesEvent);
       hud.setPersonalBest(update.best);
       hud.setPersonalBestUpdate(update);
       hud.setSeriesResult(
@@ -346,6 +375,7 @@ export function createRaceApp() {
       document.getElementById("weather-select")?.removeEventListener("change", refreshSession);
       document.getElementById("assist-select")?.removeEventListener("change", refreshSession);
       restartSessionButton?.removeEventListener("click", restartCurrentRun);
+      resultNextEventButton?.removeEventListener("click", selectQueuedNextSeriesEvent);
       input.detach();
       touch.destroy();
       audio.dispose();

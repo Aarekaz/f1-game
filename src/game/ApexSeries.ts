@@ -64,6 +64,14 @@ export function findApexSeriesEvent(session: SessionConfig) {
   );
 }
 
+export function nextApexSeriesEvent(current: ApexSeriesEvent | null) {
+  if (!current) return APEX_SERIES_EVENTS[0] ?? null;
+
+  const index = APEX_SERIES_EVENTS.findIndex((event) => event.id === current.id);
+  if (index < 0) return APEX_SERIES_EVENTS[0] ?? null;
+  return APEX_SERIES_EVENTS[index + 1] ?? null;
+}
+
 export function scorePersonalBest(best: PersonalBest | null) {
   if (!best) return 0;
   if (best.grade === "Apex") return 4;
