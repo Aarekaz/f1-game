@@ -281,6 +281,24 @@ describe("SimcadeRaceModel", () => {
     expect(wetRestart.car.wheelspin).toBeGreaterThan(dryRestart.car.wheelspin);
   });
 
+  it("does not rotate or sidestep the car from steering input at a standstill", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.2, { throttle: 1 });
+    const stopped = run(model, 2.4, { brake: 1 });
+    const steered = run(model, 2, { steer: 1 });
+
+    expect(stopped.speedKph).toBeLessThan(3);
+    expect(steered.speedKph).toBe(0);
+    expect(Math.abs(steered.car.heading - stopped.car.heading)).toBeLessThan(0.05);
+    expect(Math.abs(steered.carX - stopped.carX)).toBeLessThan(0.2);
+    expect(Math.abs(steered.car.yawRate)).toBeLessThan(0.05);
+  });
+
   it("shifts through gears with a momentary power cut and traction bite", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("mirage"),
