@@ -332,6 +332,8 @@ async function checkDesktop(browser) {
     lateralScrub: Number(document.querySelector("#game canvas")?.dataset.lateralScrub ?? 0),
     forwardBite: Number(document.querySelector("#game canvas")?.dataset.forwardBite ?? 0),
     longitudinalGrip: Number(document.querySelector("#game canvas")?.dataset.longitudinalGrip ?? 0),
+    tireContactGrip: Number(document.querySelector("#game canvas")?.dataset.tireContactGrip ?? 0),
+    tireRunoffShare: Number(document.querySelector("#game canvas")?.dataset.tireRunoffShare ?? 0),
     roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadCamber: Number(document.querySelector("#game canvas")?.dataset.roadCamber ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
@@ -665,6 +667,8 @@ async function checkDesktop(browser) {
   assert(state.lateralScrub >= 0 && state.lateralScrub <= 1, `desktop lateral scrub telemetry was invalid: ${state.lateralScrub}`);
   assert(state.forwardBite > 0.25 && state.forwardBite <= 1.1, `desktop forward bite telemetry was invalid: ${state.forwardBite}`);
   assert(state.longitudinalGrip > 0.18 && state.longitudinalGrip <= 1.1, `desktop longitudinal grip telemetry was invalid: ${state.longitudinalGrip}`);
+  assert(state.tireContactGrip > 0.2 && state.tireContactGrip <= 1.1, `desktop tire contact grip telemetry was invalid: ${state.tireContactGrip}`);
+  assert(state.tireRunoffShare >= 0 && state.tireRunoffShare <= 1, `desktop tire runoff share telemetry was invalid: ${state.tireRunoffShare}`);
   assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadCamber), "desktop road camber telemetry was missing");
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
