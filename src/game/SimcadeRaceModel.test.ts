@@ -481,6 +481,35 @@ describe("SimcadeRaceModel", () => {
     expect(crossedUp.trackOffset - settled.trackOffset).toBeLessThan(settled.trackOffset);
   });
 
+  it("turns road-relative velocity into slip angle and tire scrub", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const settled = run(model, 5, { throttle: 1, ers: true });
+
+    let peakSlipAngle = 0;
+    let peakVelocityYaw = 0;
+    let peakScrub = 0;
+    let weakestBite = settled.forwardBite;
+    let telemetry = settled;
+    for (let elapsed = 0; elapsed < 1.6; elapsed += 1 / 60) {
+      telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 1 });
+      peakSlipAngle = Math.max(peakSlipAngle, Math.abs(telemetry.slipAngle));
+      peakVelocityYaw = Math.max(peakVelocityYaw, Math.abs(telemetry.velocityYaw));
+      peakScrub = Math.max(peakScrub, telemetry.lateralScrub);
+      weakestBite = Math.min(weakestBite, telemetry.forwardBite);
+    }
+
+    expect(peakSlipAngle).toBeGreaterThan(0.025);
+    expect(peakVelocityYaw).toBeGreaterThan(0.01);
+    expect(peakScrub).toBeGreaterThan(0.04);
+    expect(weakestBite).toBeLessThan(settled.forwardBite);
+    expect(telemetry.car.slip).toBeGreaterThan(settled.car.slip);
+  });
+
   it("limits drive and braking when the tires are loaded over the track edge", () => {
     const clean = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -586,6 +615,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceEdgeLoad).toBe(0);
     expect(telemetry.roadAdhesion).toBe(1);
     expect(telemetry.lateralScrub).toBe(0);
+    expect(telemetry.slipAngle).toBe(0);
+    expect(telemetry.velocityYaw).toBe(0);
     expect(telemetry.forwardBite).toBe(1);
     expect(telemetry.longitudinalGrip).toBe(1);
     expect(telemetry.tireContactGrip).toBe(1);
