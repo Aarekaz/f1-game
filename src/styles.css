@@ -784,7 +784,8 @@ body {
     width 180ms ease,
     padding 180ms ease,
     background 180ms ease,
-    opacity 180ms ease;
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .hud[data-phase="racing"] .topbar {
@@ -838,6 +839,16 @@ body {
   padding: 8px;
   background: rgba(18, 27, 26, 0.24);
   box-shadow: 0 12px 32px rgba(20, 30, 28, 0.12);
+}
+
+.hud[data-phase="racing"][data-camera-pressure="right"] .status-panel {
+  opacity: 0.42;
+  transform: translateX(12px);
+}
+
+.hud[data-phase="racing"][data-camera-pressure="left"] .topbar,
+.hud[data-phase="racing"][data-camera-pressure="left"] .timing-tower {
+  opacity: 0.36;
 }
 
 .hud[data-phase="racing"] .speed-readout span {
