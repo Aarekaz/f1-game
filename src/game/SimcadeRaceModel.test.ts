@@ -119,7 +119,41 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceGrip).toBeLessThan(0.9);
     expect(telemetry.roadWetness).toBeGreaterThan(0.8);
     expect(telemetry.rainIntensity).toBeGreaterThan(0.8);
+    expect(telemetry.trackEvolutionState).toBe("Wet track");
     expect(telemetry.assistName).toBe("Balanced Assist");
+  });
+
+  it("rubbers in the racing line during a clean dry stint", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.2, { throttle: 0.72 });
+
+    const evolved = runGuided(model, 14);
+
+    expect(evolved.trackRubber).toBeGreaterThan(0.025);
+    expect(evolved.surfaceGrip).toBeGreaterThan(1);
+    expect(["Green track", "Rubber building"]).toContain(evolved.trackEvolutionState);
+  });
+
+  it("builds a drying line in a damp non-rainy session", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("mirage"),
+      weather: findWeather("overcast"),
+      assist: findAssist("balanced")
+    });
+    const initialWetness = model.telemetry().roadWetness;
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.2, { throttle: 0.72 });
+
+    const evolved = runGuided(model, 10);
+
+    expect(evolved.dryingLine).toBeGreaterThan(0);
+    expect(evolved.roadWetness).toBeLessThan(initialWetness);
+    expect(evolved.surfaceGrip).toBeGreaterThan(findWeather("overcast").gripMultiplier);
   });
 
   it("steers with grip limits and loses grip off track", () => {
@@ -213,6 +247,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceRumble).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
+    expect(telemetry.trackRubber).toBe(0);
+    expect(telemetry.dryingLine).toBe(0);
+    expect(telemetry.trackEvolutionState).toBe("Green track");
     expect(telemetry.launchCharge).toBe(0);
     expect(telemetry.launchQuality).toBe(0);
     expect(telemetry.assistName).toBe("Balanced Assist");

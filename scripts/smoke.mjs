@@ -257,6 +257,9 @@ async function checkDesktop(browser) {
     surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
+    trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
+    dryingLine: Number(document.querySelector("#game canvas")?.dataset.dryingLine ?? 0),
+    trackEvolutionState: document.querySelector("#game canvas")?.dataset.trackEvolutionState ?? "",
     draft: Number(document.querySelector("#game canvas")?.dataset.draft ?? 0),
     dirtyAir: Number(document.querySelector("#game canvas")?.dataset.dirtyAir ?? 0),
     airWakeIntensity: Number(document.querySelector("#game canvas")?.dataset.airWakeIntensity ?? 0),
@@ -493,6 +496,9 @@ async function checkDesktop(browser) {
   assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
+  assert(Number.isFinite(state.trackRubber) && state.trackRubber >= 0, `desktop track rubber telemetry was missing: ${state.trackRubber}`);
+  assert(Number.isFinite(state.dryingLine) && state.dryingLine >= 0, `desktop drying-line telemetry was missing: ${state.dryingLine}`);
+  assert(state.trackEvolutionState.length > 0, "desktop track evolution state was missing");
   assert(Number.isFinite(state.draft), "desktop draft telemetry was missing");
   assert(Number.isFinite(state.dirtyAir), "desktop dirty-air telemetry was missing");
   assert(Number.isFinite(state.cameraBuffet), "desktop camera buffet telemetry was missing");

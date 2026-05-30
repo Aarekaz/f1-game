@@ -225,6 +225,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.surfaceName = telemetry.surfaceName;
     this.renderer.domElement.dataset.surfaceGripModifier = telemetry.surfaceGripModifier.toFixed(2);
     this.renderer.domElement.dataset.surfaceRumble = telemetry.surfaceRumble.toFixed(3);
+    this.renderer.domElement.dataset.trackRubber = telemetry.trackRubber.toFixed(3);
+    this.renderer.domElement.dataset.dryingLine = telemetry.dryingLine.toFixed(3);
+    this.renderer.domElement.dataset.trackEvolutionState = telemetry.trackEvolutionState;
     this.renderer.domElement.dataset.draft = telemetry.draft.toFixed(3);
     this.renderer.domElement.dataset.dirtyAir = telemetry.dirtyAir.toFixed(3);
     this.renderer.domElement.dataset.rivalProximity = telemetry.rivalProximity.toFixed(3);
@@ -1152,9 +1155,9 @@ export class ThreeRaceRenderer {
       weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
       weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
       weatherMaterials.glass.opacity = 0.62 + telemetry.roadWetness * 0.16;
-      weatherMaterials.groove.opacity = 0.14 + telemetry.roadWetness * 0.05;
-      weatherMaterials.wetSheen.opacity = telemetry.roadWetness * (0.12 + telemetry.rainIntensity * 0.1);
-      weatherMaterials.puddle.opacity = telemetry.roadWetness * 0.28;
+      weatherMaterials.groove.opacity = 0.14 + telemetry.roadWetness * 0.05 + telemetry.trackRubber * 0.16;
+      weatherMaterials.wetSheen.opacity = telemetry.roadWetness * (0.12 + telemetry.rainIntensity * 0.1) * (1 - telemetry.dryingLine * 0.28);
+      weatherMaterials.puddle.opacity = telemetry.roadWetness * 0.28 * (1 - telemetry.dryingLine * 0.2);
       weatherMaterials.gridPaint.opacity = 0.82 - telemetry.roadWetness * 0.16;
       weatherMaterials.edgePaint.opacity = 0.52 + telemetry.roadWetness * 0.18;
       weatherMaterials.flowPaint.opacity = 0.28 + telemetry.roadWetness * 0.12;

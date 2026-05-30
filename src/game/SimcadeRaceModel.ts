@@ -32,6 +32,9 @@ export type RaceTelemetry = {
   surfaceRumble: number;
   roadWetness: number;
   rainIntensity: number;
+  trackRubber: number;
+  dryingLine: number;
+  trackEvolutionState: string;
   launchCharge: number;
   launchQuality: number;
   assistName: string;
@@ -227,6 +230,8 @@ export class SimcadeRaceModel {
   private aeroDragReduction = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
+  private trackRubber = 0;
+  private dryingLine = 0;
   private frontWingDamage = 0;
   private downforceLoss = 0;
   private lapTime = 0;
@@ -312,12 +317,15 @@ export class SimcadeRaceModel {
       scenarioName: `${this.session.track.name} Sprint`,
       trackName: this.session.track.name,
       weatherName: this.session.weather.name,
-      surfaceGrip: this.session.weather.gripMultiplier,
+      surfaceGrip: this.evolvedWeatherGrip(),
       surfaceName: this.drivingSurface(track).name,
       surfaceGripModifier: this.drivingSurface(track).grip,
       surfaceRumble: this.surfaceRumble,
-      roadWetness: this.session.weather.roadWetness,
+      roadWetness: this.dynamicRoadWetness(),
       rainIntensity: this.session.weather.rainIntensity,
+      trackRubber: this.trackRubber,
+      dryingLine: this.dryingLine,
+      trackEvolutionState: this.trackEvolutionState(),
       launchCharge: this.launchCharge,
       launchQuality: this.launchQuality,
       assistName: this.session.assist.name,
@@ -456,6 +464,8 @@ export class SimcadeRaceModel {
     this.aeroDragReduction = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
+    this.trackRubber = 0;
+    this.dryingLine = 0;
     this.frontWingDamage = 0;
     this.downforceLoss = 0;
     this.lapTime = 0;
@@ -532,6 +542,8 @@ export class SimcadeRaceModel {
       this.positionGainLockout = Math.max(this.positionGainLockout, 3.4);
     }
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
+    this.updateTrackEvolution(dt, speedRatio, onTrack, surface.roughness);
+    const roadWetness = this.dynamicRoadWetness();
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
     this.aeroBoostAvailable =
@@ -601,7 +613,7 @@ export class SimcadeRaceModel {
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
-    const offTrackDrag = surface.drag * (onTrack ? 1 : 1.18 + this.session.weather.roadWetness * 0.34);
+    const offTrackDrag = surface.drag * (onTrack ? 1 : 1.18 + roadWetness * 0.34);
     this.surfaceRumble = approach(this.surfaceRumble, surface.roughness * clamp(0.25 + speedRatio, 0, 1), dt * 12);
 
     this.speed += (acceleration + boostPower + aeroPower + draftPower + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
@@ -609,11 +621,11 @@ export class SimcadeRaceModel {
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
-    const weatherGrip = this.session.weather.gripMultiplier * surface.grip;
+    const weatherGrip = this.evolvedWeatherGrip() * surface.grip;
     const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
     const tireGripFactor = clamp(1 - tireTempPenalty - this.tireWear * 0.18, 0.76, 1.04);
     const damageGripFactor = clamp(1 - this.frontWingDamage * (0.12 + speedRatio * 0.18), 0.74, 1);
-    const wetPenalty = this.session.weather.roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
+    const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
     const gripTarget = onTrack
@@ -729,7 +741,8 @@ export class SimcadeRaceModel {
     }
 
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
-    const lookaheadDistance = 34 + speedRatio * 86 + this.session.weather.roadWetness * 18;
+    const roadWetness = this.dynamicRoadWetness();
+    const lookaheadDistance = 34 + speedRatio * 86 + roadWetness * 18;
     const futureTrack = sampleTrack(this.z + lookaheadDistance);
     const lineError = this.x - track.center - track.racingLineOffset;
     const lateralError = this.x - track.center;
@@ -742,28 +755,28 @@ export class SimcadeRaceModel {
     const handsOffTrust = 1 - driverOverride;
     const upcomingNeed = futureTrack.section.kind === "straight" ? 0.12 : clamp(futureTrack.section.difficulty, 0.32, 1);
     const cornerNeed = Math.max(track.section.kind === "straight" ? 0.12 : clamp(track.section.difficulty, 0.32, 1), upcomingNeed * (0.72 + speedRatio * 0.28));
-    const stabilityBoost = 1 + handsOffTrust * (0.36 + this.session.weather.roadWetness * 0.26);
+    const stabilityBoost = 1 + handsOffTrust * (0.36 + roadWetness * 0.26);
     const steeringAssist = lineCorrection * assist.steeringHelp * cornerNeed * stabilityBoost * (1 - driverOverride * 0.72);
     const rejoinAssist =
       rejoinCorrection *
       assist.steeringHelp *
       offTrackAmount *
-      (1.18 + this.session.weather.roadWetness * 0.28) *
+      (1.18 + roadWetness * 0.28) *
       (1 - driverOverride * 0.45);
     const blendedSteerAssist = Math.abs(rejoinAssist) > Math.abs(steeringAssist) ? rejoinAssist : steeringAssist;
     const targetSpeed = Math.min(track.targetSpeedKph, futureTrack.targetSpeedKph);
     const paceOvershoot = clamp((this.speed - targetSpeed) / 86, 0, 1);
     const brakingWindow = track.brakingZone ? 1 : track.cornerPhase === "turn-in" ? 0.42 : 0;
     const upcomingBrakeWindow = futureTrack.brakingZone || futureTrack.cornerPhase === "turn-in" ? 0.82 : futureTrack.section.kind === "straight" ? 0 : 0.42;
-    const weatherSafety = 0.35 + this.session.weather.roadWetness * 0.65;
+    const weatherSafety = 0.35 + roadWetness * 0.65;
     const brakeAssist = clamp(
       assist.brakeHelp *
         Math.max(paceOvershoot * Math.max(brakingWindow, upcomingBrakeWindow * handsOffTrust * weatherSafety), offTrackAmount * speedRatio * 0.74) *
         (1 - brake) *
         (0.35 + throttle * 0.65) *
-        (1 + handsOffTrust * (0.25 + this.session.weather.roadWetness * 0.5)),
+        (1 + handsOffTrust * (0.25 + roadWetness * 0.5)),
       0,
-      assist.brakeHelp * (1.25 + this.session.weather.roadWetness * 0.75)
+      assist.brakeHelp * (1.25 + roadWetness * 0.75)
     );
     const throttleTrim =
       assist.throttleHelp *
@@ -771,9 +784,9 @@ export class SimcadeRaceModel {
       cornerNeed *
       clamp(speedRatio + 0.12, 0, 1) *
       (track.section.kind === "straight" && futureTrack.section.kind === "straight" ? 0.16 : 1) *
-      (0.78 + handsOffTrust * (0.3 + this.session.weather.roadWetness * 0.38));
+      (0.78 + handsOffTrust * (0.3 + roadWetness * 0.38));
     const rejoinThrottleTrim =
-      assist.throttleHelp * offTrackAmount * clamp(0.42 + speedRatio * 0.54 + this.session.weather.roadWetness * 0.24, 0, 1);
+      assist.throttleHelp * offTrackAmount * clamp(0.42 + speedRatio * 0.54 + roadWetness * 0.24, 0, 1);
     const finalThrottleTrim = clamp(Math.max(throttleTrim, rejoinThrottleTrim), 0, 0.94);
 
     this.latestAssist = {
@@ -806,7 +819,7 @@ export class SimcadeRaceModel {
       this.wheelspin * 0.34 +
       this.lockup * 0.42 +
       surfaceRoughness * 0.12;
-    const cooling = this.session.weather.roadWetness * 0.16 + (1 - throttle) * 0.035;
+    const cooling = this.dynamicRoadWetness() * 0.16 + (1 - throttle) * 0.035;
     const targetTemp = clamp(0.42 + heatLoad - cooling, 0.2, 1.08);
     this.tireTemp = approach(this.tireTemp, targetTemp, dt * (targetTemp > this.tireTemp ? 1.55 : 0.95));
 
@@ -818,6 +831,29 @@ export class SimcadeRaceModel {
       this.understeer * 0.0022 +
       (onTrack ? 0 : 0.002 + surfaceRoughness * 0.0025);
     this.tireWear = clamp(this.tireWear + wearRate * dt, 0, 1);
+  }
+
+  private updateTrackEvolution(dt: number, speedRatio: number, onTrack: boolean, surfaceRoughness: number) {
+    if (!onTrack || this.phase !== "racing") return;
+
+    const cleanLoad = clamp(speedRatio * (1 - surfaceRoughness * 0.55) * (1 - this.slip * 0.35), 0, 1);
+    const wetness = this.dynamicRoadWetness();
+    const rubberRate = cleanLoad * (0.0025 + speedRatio * 0.0035) * (1 - wetness * 0.62);
+    const dryingRate = cleanLoad * this.session.weather.roadWetness * (0.01 + (1 - this.session.weather.rainIntensity) * 0.012);
+    const rainWash = this.session.weather.rainIntensity * 0.0018;
+
+    this.trackRubber = clamp(this.trackRubber + rubberRate * dt - rainWash * dt, 0, 1);
+    this.dryingLine = clamp(this.dryingLine + dryingRate * dt - this.session.weather.rainIntensity * 0.0008 * dt, 0, 1);
+  }
+
+  private dynamicRoadWetness() {
+    return clamp(this.session.weather.roadWetness - this.dryingLine * (0.12 + (1 - this.session.weather.rainIntensity) * 0.18), 0, 1);
+  }
+
+  private evolvedWeatherGrip() {
+    const rubberGrip = this.trackRubber * (0.035 + (1 - this.dynamicRoadWetness()) * 0.025);
+    const dryLineGrip = this.dryingLine * this.session.weather.roadWetness * 0.035;
+    return clamp(this.session.weather.gripMultiplier + rubberGrip + dryLineGrip, 0.64, 1.06);
   }
 
   private updateTrackLimits(dt: number, onTrack: boolean) {
@@ -1040,6 +1076,14 @@ export class SimcadeRaceModel {
     if (this.tireTemp < 0.38) return "Cold tires";
     if (this.tireTemp > 0.62 && this.tireTemp < 0.84) return "Tires ready";
     return "Tires stable";
+  }
+
+  private trackEvolutionState() {
+    if (this.session.weather.roadWetness > 0.04 && this.dryingLine > 0.018) return "Drying line";
+    if (this.trackRubber > 0.28) return "Rubbered in";
+    if (this.trackRubber > 0.08) return "Rubber building";
+    if (this.session.weather.roadWetness > 0.18) return "Wet track";
+    return this.session.weather.roadWetness > 0.04 ? "Damp track" : "Green track";
   }
 
   private damageState() {
