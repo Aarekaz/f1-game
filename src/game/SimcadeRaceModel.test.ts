@@ -374,6 +374,24 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(loaded.car.y - (track.elevation + 0.065))).toBeGreaterThan(0.002);
   });
 
+  it("lets road camber influence hands-off lateral motion", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.8, { throttle: 1 });
+
+    const before = run(model, 0.2, { throttle: 1 });
+    const bankSign = Math.sign(before.roadCamber);
+    const after = run(model, 1.2, { throttle: 1 });
+
+    expect(Math.abs(before.roadCamber)).toBeGreaterThan(0.02);
+    expect(Math.sign(after.carX - before.carX)).toBe(-bankSign);
+    expect(Math.abs(after.car.roll)).toBeGreaterThan(0.005);
+  });
+
   it("reduces forward bite when the car is not aligned with the road", () => {
     const misaligned = new SimcadeRaceModel();
     misaligned.update(1 / 60, { ...idle, launch: true });
@@ -429,6 +447,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.lateralScrub).toBe(0);
     expect(telemetry.forwardBite).toBe(1);
     expect(telemetry.roadAlignment).toBe(1);
+    expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);

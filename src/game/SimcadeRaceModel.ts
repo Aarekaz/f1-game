@@ -34,6 +34,7 @@ export type RaceTelemetry = {
   lateralScrub: number;
   forwardBite: number;
   roadAlignment: number;
+  roadCamber: number;
   roadGrade: number;
   suspensionLoad: number;
   suspensionTravel: number;
@@ -396,6 +397,7 @@ export class SimcadeRaceModel {
       lateralScrub: this.lateralScrub,
       forwardBite: this.forwardBite,
       roadAlignment: this.roadAlignment,
+      roadCamber: surfaceBankAt(carLateral, track),
       roadGrade: this.roadGrade,
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
@@ -656,6 +658,8 @@ export class SimcadeRaceModel {
 
     const surface = this.drivingSurface(track);
     const onTrack = surface.trackLegal;
+    const carLateral = this.x - track.center;
+    const roadCamber = surfaceBankAt(carLateral, track);
     this.positionGainLockout = Math.max(0, this.positionGainLockout - dt);
     this.raceControlCooldown = Math.max(0, this.raceControlCooldown - dt);
     if (!onTrack) {
@@ -761,13 +765,14 @@ export class SimcadeRaceModel {
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
+    const camberLoad = Math.abs(roadCamber) * (0.16 + speedRatio * 0.2);
     const suspensionOscillation = Math.sin(this.z * 0.095 + this.lateralVelocity * 0.12) * surface.roughness * speedRatio * 0.14;
     const loadTarget = clamp(
       1 +
         speedRatio * speedRatio * 0.2 +
         brake * (0.16 + speedRatio * 0.08) -
         throttle * 0.035 +
-        Math.abs(track.bank) * 0.16 +
+        camberLoad +
         cornerLoad * 0.08 +
         surface.roughness * 0.1 +
         suspensionOscillation -
@@ -792,7 +797,7 @@ export class SimcadeRaceModel {
     const fuelGripFactor = clamp(1 - this.fuelLoad * 0.025, 0.96, 1);
     const loadGripFactor = clamp(0.88 + this.suspensionLoad * 0.14 - Math.abs(this.suspensionLoad - 1) * 0.1 - surface.roughness * 0.05, 0.76, 1.06);
     const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
-    const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
+    const bankingSupport = 1 + Math.min(0.12, Math.abs(roadCamber) * 0.24);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
     const gripTarget = onTrack
       ? clamp(
@@ -857,11 +862,13 @@ export class SimcadeRaceModel {
     const roadCentering =
       -lineError * this.roadAdhesion * (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) * (1 - Math.abs(rawSteer));
     const curveFollow = track.curve * metersPerSecond * 0.9;
+    const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5);
     const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8);
     const lateralIntent =
       Math.sin(this.heading) * metersPerSecond * 0.28 +
       steer * (1.32 + speedRatio * 1.78) * steeringSlipLimit * steeringLoad * this.roadAdhesion +
       curveFollow +
+      camberForce +
       roadCentering +
       steeringSaturationPush +
       racecraft.squeeze * this.contactRisk * 0.72;
@@ -898,7 +905,7 @@ export class SimcadeRaceModel {
     this.forwardBite = approach(this.forwardBite, biteTarget, dt * (biteTarget < this.forwardBite ? 9 : 5));
     const pitchTarget = clamp(-this.roadGrade * 2.6 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08, -0.13, 0.13);
     const rollTarget = clamp(
-      -track.bank * 0.32 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + surface.roughness * speedRatio * 0.04,
+      -roadCamber * 0.36 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + surface.roughness * speedRatio * 0.04,
       -0.16,
       0.16
     );
