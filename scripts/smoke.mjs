@@ -358,9 +358,11 @@ async function checkMobile(browser) {
     const throttle = document.querySelector("[data-control=throttle]")?.getBoundingClientRect();
     return {
       controlsDisplay: getComputedStyle(document.querySelector(".touch-controls")).display,
+      racingTimingDisplay: getComputedStyle(document.querySelector("#timing-tower")).display,
       speed: Number(document.querySelector("#speed")?.textContent ?? 0),
       objective: document.querySelector("#objective")?.textContent ?? "",
       canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
+      statusWidth: status?.width ?? 0,
       statusBottom: status?.bottom ?? 0,
       controlsTop: Math.min(steer?.top ?? Infinity, pedals?.top ?? Infinity),
       throttleWidth: throttle?.width ?? 0
@@ -369,9 +371,11 @@ async function checkMobile(browser) {
 
   await page.close();
   assert(state.controlsDisplay === "grid", "mobile controls were not visible");
+  assert(state.racingTimingDisplay === "none", "mobile racing timing tower should collapse to protect the playfield");
   assertCanvasBox(state.canvasBox, "mobile");
   assert(state.speed > 60, `mobile touch launch did not accelerate, speed=${state.speed}`);
   assert(/Catch|Hold/.test(state.objective), `mobile objective missing: ${state.objective}`);
+  assert(state.statusWidth <= 170, `mobile racing status panel was too wide: ${state.statusWidth}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
   assert(state.throttleWidth >= 56, "mobile throttle button is too small");
 }
