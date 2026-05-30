@@ -1208,6 +1208,7 @@ export class ThreeRaceRenderer {
           terrainSkirtDrop: number;
           terrainOpacity: number;
           runoffOuterReach: number;
+          technicalZones: number;
           flowCues: number;
           gridSlots: number;
           puddles: number;
@@ -1236,6 +1237,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.surfaceTerrainSkirtDrop = surfaceStats.terrainSkirtDrop.toFixed(2);
       this.renderer.domElement.dataset.surfaceTerrainOpacity = surfaceStats.terrainOpacity.toFixed(2);
       this.renderer.domElement.dataset.surfaceRunoffReach = surfaceStats.runoffOuterReach.toFixed(1);
+      this.renderer.domElement.dataset.surfaceTechnicalZones = String(surfaceStats.technicalZones);
       this.renderer.domElement.dataset.surfaceFlowCues = String(surfaceStats.flowCues);
       this.renderer.domElement.dataset.surfaceGridSlots = String(surfaceStats.gridSlots);
       this.renderer.domElement.dataset.surfacePuddles = String(surfaceStats.puddles);

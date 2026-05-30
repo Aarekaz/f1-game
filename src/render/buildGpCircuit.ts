@@ -123,6 +123,22 @@ function makeTrackStrip(
   return mesh;
 }
 
+function makeTracksideZone(
+  name: string,
+  material: THREE.Material,
+  side: -1 | 1,
+  startAhead: number,
+  endAhead: number,
+  innerLateral: number,
+  outerLateral: number
+) {
+  const lateralStart = side < 0 ? -outerLateral : innerLateral;
+  const lateralEnd = side < 0 ? -innerLateral : outerLateral;
+  const zone = makeTrackStrip(name, material, lateralStart, lateralEnd, 0.004, startAhead, endAhead, 10);
+  zone.renderOrder = 1;
+  return zone;
+}
+
 function makeRacingLine() {
   const geometry = new THREE.BufferGeometry();
   const vertices: number[] = [];
@@ -583,24 +599,14 @@ export function buildGpCircuit() {
     circuit.add(makeWetPuddle(puddle.distance, puddle.lateral, puddle.scale, puddleMaterial));
   }
 
-  const technicalSections = [
-    { name: "north-hairpin-runoff", x: -22, z: 280, w: 18, d: 120 },
-    { name: "esses-runoff", x: 20, z: 720, w: 16, d: 180 },
-    { name: "final-chicane-gravel", x: -20, z: 1220, w: 18, d: 150 }
+  const technicalZones = [
+    { name: `${layout.id}-fast-corner-runoff`, side: -1 as const, start: 250, end: 430, material: runoff },
+    { name: `${layout.id}-hairpin-escape-runoff`, side: 1 as const, start: 555, end: 735, material: runoff },
+    { name: `${layout.id}-final-brake-gravel-trap`, side: -1 as const, start: 1390, end: 1580, material: gravel }
   ];
 
-  for (let lap = 0; lap < 1; lap += 1) {
-    const lapStart = lap * TRACK_LOOP_LENGTH;
-    for (const section of technicalSections) {
-      const marker = makePlane(
-        section.name,
-        [section.w, section.d],
-        [section.x, 0.005, -(lapStart + section.z)],
-        section.name.includes("gravel") ? gravel : runoff
-      );
-      dynamicPieces.push({ object: marker, ahead: lapStart + section.z, lateral: section.x, curveScale: 0.9 });
-      circuit.add(marker);
-    }
+  for (const zone of technicalZones) {
+    circuit.add(makeTracksideZone(zone.name, zone.material, zone.side, zone.start, zone.end, runoffOuterReach + 0.35, 15.4));
   }
 
   for (let lap = 0; lap < 1; lap += 1) {
@@ -855,6 +861,7 @@ export function buildGpCircuit() {
     terrainSkirtDrop,
     terrainOpacity: grass.opacity,
     runoffOuterReach,
+    technicalZones: technicalZones.length,
     flowCues: flowCueCount,
     gridSlots: 10,
     puddles: puddlePlacements.length
