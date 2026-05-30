@@ -54,6 +54,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The HUD now yields when the chase camera drifts toward an edge, so the car and rejoin line win over the instrument cluster.
 - Mobile racing uses a smaller, softer instrument cluster so portrait play keeps more road visible.
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
+- Keyboard steering now ramps from a softer initial angle to full lock, so quick taps make line corrections instead of instantly punching in maximum steering.
 - Road adhesion and lateral scrub now share the tire budget, so heavy steering, dirty tires, kerbs, and runoff change speed and grip instead of feeling like a flat lateral script.
 - The handling model samples four tire contact patches, so brushing a kerb or dropping the outside tires onto runoff changes grip before the car center has fully left the asphalt.
 - Track-edge load now turns asphalt-to-kerb/runoff crossings into suspension, rumble, and contact-patch events instead of simple surface-label swaps.
