@@ -478,7 +478,7 @@ export function createRaceApp() {
               title: `${seriesEvent.round} ${seriesEvent.title}`,
               target: seriesEvent.target,
               targetMet,
-              targetDetail: targetMet ? (targetEvaluation?.summary ?? "already cleared") : (targetEvaluation?.misses[0] ?? ""),
+              targetDetail: targetMet ? (targetEvaluation?.summary ?? "already cleared") : (targetEvaluation?.misses.join(" / ") ?? ""),
               score: seriesScore,
               scoreDelta: Math.max(0, seriesScore - previousSeriesScore)
             }

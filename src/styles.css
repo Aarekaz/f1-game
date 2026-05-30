@@ -712,6 +712,26 @@ body {
   text-transform: uppercase;
 }
 
+.result-series small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.result-series small[data-state="met"] {
+  color: #d7eb8f;
+}
+
+.result-series small[data-state="missed"] {
+  color: #ffb4b4;
+}
+
 .result-series b[data-state="met"] {
   color: #d7eb8f;
 }

@@ -111,6 +111,7 @@ export class HudController {
   private resultSteward = optionalElement("result-steward");
   private resultSeriesTitle = optionalElement("result-series-title");
   private resultSeriesScore = optionalElement("result-series-score");
+  private resultSeriesDetail = optionalElement("result-series-detail");
   private resultSectors = [
     optionalElement("result-sector-1"),
     optionalElement("result-sector-2"),
@@ -517,6 +518,16 @@ export class HudController {
       } else {
         this.resultSeriesScore.textContent = `Target met / ${this.latestSeriesResult.score}/4 pts`;
         this.resultSeriesScore.dataset.state = "met";
+      }
+    }
+
+    if (this.resultSeriesDetail) {
+      if (!this.latestSeriesResult) {
+        this.resultSeriesDetail.textContent = "Free run";
+        this.resultSeriesDetail.dataset.state = "free";
+      } else {
+        this.resultSeriesDetail.textContent = this.latestSeriesResult.targetDetail;
+        this.resultSeriesDetail.dataset.state = this.latestSeriesResult.targetMet ? "met" : "missed";
       }
     }
   }
