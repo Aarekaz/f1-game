@@ -34,6 +34,7 @@ export type RaceTelemetry = {
   roadAdhesion: number;
   lateralScrub: number;
   forwardBite: number;
+  longitudinalGrip: number;
   roadAlignment: number;
   roadCamber: number;
   roadGrade: number;
@@ -277,6 +278,7 @@ export class SimcadeRaceModel {
   private roadAdhesion = 1;
   private lateralScrub = 0;
   private forwardBite = 1;
+  private longitudinalGrip = 1;
   private roadAlignment = 1;
   private roadGrade = 0;
   private suspensionLoad = 1;
@@ -399,6 +401,7 @@ export class SimcadeRaceModel {
       roadAdhesion: this.roadAdhesion,
       lateralScrub: this.lateralScrub,
       forwardBite: this.forwardBite,
+      longitudinalGrip: this.longitudinalGrip,
       roadAlignment: this.roadAlignment,
       roadCamber: surfaceBankAt(carLateral, track),
       roadGrade: this.roadGrade,
@@ -580,6 +583,7 @@ export class SimcadeRaceModel {
     this.roadAdhesion = 1;
     this.lateralScrub = 0;
     this.forwardBite = 1;
+    this.longitudinalGrip = 1;
     this.roadAlignment = 1;
     this.roadGrade = 0;
     this.suspensionLoad = 1;
@@ -750,11 +754,12 @@ export class SimcadeRaceModel {
 
     const torqueCurve = this.engineTorqueCurve();
     const shiftInterruption = 1 - this.shiftCut * 0.54;
-    const tractionDelivery = 1 - this.tractionBite * 0.22;
+    const tractionDelivery = (1 - this.tractionBite * 0.2) * clamp(0.62 + this.longitudinalGrip * 0.43, 0.54, 1.06);
     const acceleration =
       throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
-    const braking = brake * 248 * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
+    const brakingGrip = clamp(0.58 + this.longitudinalGrip * 0.5 - this.surfaceEdgeLoad * 0.08, 0.42, 1.06);
+    const braking = brake * 248 * brakingGrip * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
     const boostPower = boost * 86;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
@@ -913,6 +918,20 @@ export class SimcadeRaceModel {
       1.04
     );
     this.forwardBite = approach(this.forwardBite, biteTarget, dt * (biteTarget < this.forwardBite ? 9 : 5));
+    const longitudinalGripTarget = clamp(
+      this.forwardBite * (0.48 + this.roadAdhesion * 0.52) * surface.grip -
+        this.surfaceEdgeLoad * 0.16 -
+        this.wheelspin * 0.08 -
+        this.lockup * 0.06 -
+        roadWetness * (onTrack ? 0.025 : 0.075),
+      onTrack ? 0.42 : 0.2,
+      1.08
+    );
+    this.longitudinalGrip = approach(
+      this.longitudinalGrip,
+      longitudinalGripTarget,
+      dt * (longitudinalGripTarget < this.longitudinalGrip ? 10 : 5)
+    );
     const pitchTarget = clamp(-this.roadGrade * 2.6 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08, -0.13, 0.13);
     const rollTarget = clamp(
       -roadCamber * 0.36 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + surface.roughness * speedRatio * 0.04,
@@ -926,11 +945,12 @@ export class SimcadeRaceModel {
       : clamp(0.42 + this.forwardBite * 0.32 - Math.abs(this.heading) * 0.06 - scrubPenalty * 0.14, 0.32, 0.82);
     this.z += metersPerSecond * dt * 1.55 * rollingProgress;
     this.x += this.lateralVelocity * dt;
-    if (!onTrack && this.session.assist.steeringHelp > 0) {
-      const rejoinNeed = clamp((Math.abs(this.x - track.center) - track.halfWidth + 0.2) / 3.4, 0, 1);
+    if (this.session.assist.steeringHelp > 0) {
+      const rejoinNeed = clamp((Math.abs(this.x - track.center) - track.halfWidth + 0.1) / 3.4, 0, 1);
       const rejoinTarget = track.center + track.racingLineOffset * 0.35;
-      this.x = approach(this.x, rejoinTarget, dt * this.session.assist.steeringHelp * rejoinNeed * (7.5 + speedRatio * 4.2));
-      this.lateralVelocity = approach(this.lateralVelocity, 0, dt * this.session.assist.steeringHelp * rejoinNeed * 6.5);
+      const rejoinRate = this.session.assist.steeringHelp * rejoinNeed * (onTrack ? 2.4 + speedRatio * 2.2 : 7.5 + speedRatio * 4.2);
+      this.x = approach(this.x, rejoinTarget, dt * rejoinRate);
+      this.lateralVelocity = approach(this.lateralVelocity, 0, dt * this.session.assist.steeringHelp * rejoinNeed * (onTrack ? 2.8 : 6.5));
     }
     this.keepCarInsideRecoveryApron(track, dt, speedRatio);
     this.lapTime += dt;
@@ -941,7 +961,7 @@ export class SimcadeRaceModel {
 
   private keepCarInsideRecoveryApron(track: ReturnType<typeof sampleTrack>, dt: number, speedRatio: number) {
     const lateral = this.x - track.center;
-    const apronReach = track.halfWidth + (this.session.assist.steeringHelp > 0 ? 1.05 : 2.65);
+    const apronReach = track.halfWidth + (this.session.assist.steeringHelp > 0 ? 0.72 : 2.65);
     const overflow = Math.abs(lateral) - apronReach;
 
     if (overflow <= 0) {
@@ -975,6 +995,7 @@ export class SimcadeRaceModel {
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
     this.forwardBite = Math.max(this.forwardBite, 0.82);
+    this.longitudinalGrip = Math.max(this.longitudinalGrip, 0.82);
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
     this.suspensionTravel = 0;
@@ -1062,6 +1083,7 @@ export class SimcadeRaceModel {
     const lineError = this.x - track.center - track.racingLineOffset;
     const lateralError = this.x - track.center;
     const offTrackAmount = clamp((Math.abs(lateralError) - track.halfWidth - 0.2) / 3.2, 0, 1);
+    const edgeGuardAmount = clamp((Math.abs(lateralError) - track.halfWidth * 0.88) / Math.max(2.2, track.halfWidth * 0.36), 0, 1);
     const futureLineError = this.x - futureTrack.center - futureTrack.racingLineOffset;
     const blendedLineError = lineError * 0.42 + futureLineError * 0.58;
     const lineCorrection = clamp(-blendedLineError / Math.max(3.4, track.halfWidth * 0.72), -1, 1);
@@ -1075,7 +1097,7 @@ export class SimcadeRaceModel {
     const rejoinAssist =
       rejoinCorrection *
       assist.steeringHelp *
-      offTrackAmount *
+      Math.max(offTrackAmount, edgeGuardAmount * 0.24) *
       (1.18 + roadWetness * 0.28) *
       (1 - driverOverride * 0.45);
     const blendedSteerAssist = Math.abs(rejoinAssist) > Math.abs(steeringAssist) ? rejoinAssist : steeringAssist;
@@ -1086,7 +1108,7 @@ export class SimcadeRaceModel {
     const weatherSafety = 0.35 + roadWetness * 0.65;
     const brakeAssist = clamp(
       assist.brakeHelp *
-        Math.max(paceOvershoot * Math.max(brakingWindow, upcomingBrakeWindow * handsOffTrust * weatherSafety), offTrackAmount * speedRatio * 0.74) *
+        Math.max(paceOvershoot * Math.max(brakingWindow, upcomingBrakeWindow * handsOffTrust * weatherSafety), Math.max(offTrackAmount, edgeGuardAmount * 0.2) * speedRatio * 0.74) *
         (1 - brake) *
         (0.35 + throttle * 0.65) *
         (1 + handsOffTrust * (0.25 + roadWetness * 0.5)),
@@ -1101,7 +1123,7 @@ export class SimcadeRaceModel {
       (track.section.kind === "straight" && futureTrack.section.kind === "straight" ? 0.16 : 1) *
       (0.78 + handsOffTrust * (0.3 + roadWetness * 0.38));
     const rejoinThrottleTrim =
-      assist.throttleHelp * offTrackAmount * clamp(0.42 + speedRatio * 0.54 + roadWetness * 0.24, 0, 1);
+      assist.throttleHelp * Math.max(offTrackAmount, edgeGuardAmount * 0.25) * clamp(0.42 + speedRatio * 0.54 + roadWetness * 0.24, 0, 1);
     const finalThrottleTrim = clamp(Math.max(throttleTrim, rejoinThrottleTrim), 0, 0.94);
 
     this.latestAssist = {
@@ -1130,9 +1152,11 @@ export class SimcadeRaceModel {
     );
     const raceRoom = clamp(1 - this.contactRisk * 0.68 - this.dirtyAir * 0.18, 0, 1);
     const sectionWeight = track.section.kind === "straight" ? 0.74 : 1;
+    const recoverySurface = this.drivingSurface(track);
+    const recoveryFloor = recoverySurface.name === "Gravel" ? 0.08 : 0.14;
     const target = onTrack
       ? clamp((paceScore * 0.3 + lineScore * 0.3 + carCalm * 0.28 + raceRoom * 0.12) * sectionWeight + 0.08, 0, 1)
-      : 0.08;
+      : recoveryFloor;
     this.flowScore = approach(this.flowScore, target, dt * (target > this.flowScore ? 0.82 : 2.9));
   }
 
@@ -1182,10 +1206,12 @@ export class SimcadeRaceModel {
     const lowGearLoad = clamp((5 - this.currentGear) / 4, 0, 1);
     const wetWheelLoad = roadWetness * throttle * (0.16 + lowGearLoad * 0.2);
     const lowGripLoad = (1 - this.grip) * throttle * (0.28 + lowGearLoad * 0.22);
+    const contactLossLoad = (1 - this.roadAdhesion) * throttle * (0.16 + lowGearLoad * 0.16);
+    const edgeLoad = this.surfaceEdgeLoad * throttle * (0.12 + lowGearLoad * 0.08);
     const gearTorqueLoad = throttle * lowGearLoad * (0.12 + roadWetness * 0.1);
     const roughLoad = onTrack ? surfaceRoughness * throttle * 0.12 : surfaceRoughness * (0.22 + throttle * 0.18);
     const shiftRecoveryLoad = this.shiftCut * throttle * 0.16;
-    const biteTarget = clamp(wetWheelLoad + lowGripLoad + gearTorqueLoad + roughLoad + shiftRecoveryLoad + this.wheelspin * 0.36, 0, 1);
+    const biteTarget = clamp(wetWheelLoad + lowGripLoad + contactLossLoad + edgeLoad + gearTorqueLoad + roughLoad + shiftRecoveryLoad + this.wheelspin * 0.36, 0, 1);
     this.tractionBite = approach(this.tractionBite, biteTarget, dt * (biteTarget > this.tractionBite ? 7.4 : 4.8));
   }
 

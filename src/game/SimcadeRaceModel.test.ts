@@ -425,8 +425,45 @@ describe("SimcadeRaceModel", () => {
     const crossedUp = run(misaligned, 1.4, { throttle: 1, steer: 1 });
 
     expect(crossedUp.forwardBite).toBeLessThan(settled.forwardBite);
+    expect(crossedUp.longitudinalGrip).toBeLessThan(settled.longitudinalGrip);
     expect(crossedUp.roadAlignment).toBeLessThan(settled.roadAlignment);
     expect(crossedUp.trackOffset - settled.trackOffset).toBeLessThan(settled.trackOffset);
+  });
+
+  it("limits drive and braking when the tires are loaded over the track edge", () => {
+    const clean = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    clean.update(1 / 60, { ...idle, launch: true });
+    run(clean, 4.6, { throttle: 1 });
+    const cleanBeforePower = clean.telemetry();
+    const cleanPower = run(clean, 0.9, { throttle: 1, ers: true });
+    const cleanPowerGain = cleanPower.speedKph - cleanBeforePower.speedKph;
+    const cleanBeforeBrake = clean.telemetry();
+    const cleanBrake = run(clean, 0.7, { brake: 1 });
+    const cleanBrakeDrop = cleanBeforeBrake.speedKph - cleanBrake.speedKph;
+
+    const edge = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    edge.update(1 / 60, { ...idle, launch: true });
+    run(edge, 4.6, { throttle: 1 });
+    const edgeBeforePower = run(edge, 1.4, { throttle: 1, steer: 1 });
+    const edgePower = run(edge, 0.9, { throttle: 1, ers: true });
+    const edgePowerGain = edgePower.speedKph - edgeBeforePower.speedKph;
+    const edgeBeforeBrake = edge.telemetry();
+    const edgeBrake = run(edge, 0.7, { brake: 1 });
+    const edgeBrakeDrop = edgeBeforeBrake.speedKph - edgeBrake.speedKph;
+
+    expect(edgeBeforePower.surfaceEdgeLoad).toBeGreaterThan(0.08);
+    expect(edgeBeforePower.longitudinalGrip).toBeLessThan(cleanBeforePower.longitudinalGrip);
+    expect(edgePowerGain).toBeLessThan(cleanPowerGain);
+    expect(edgeBrakeDrop).toBeLessThan(cleanBrakeDrop);
+    expect(edgeBrake.car.lockup).toBeGreaterThan(cleanBrake.car.lockup);
   });
 
   it("loads the suspension under braking and rough road contact", () => {
@@ -473,6 +510,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadAdhesion).toBe(1);
     expect(telemetry.lateralScrub).toBe(0);
     expect(telemetry.forwardBite).toBe(1);
+    expect(telemetry.longitudinalGrip).toBe(1);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
