@@ -120,6 +120,8 @@ async function checkDesktop(browser) {
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     carScreenZ: Number(document.querySelector("#game canvas")?.dataset.carScreenZ ?? 0),
+    seriesTargetChip: document.querySelector("#series-target-chip")?.textContent ?? "",
+    seriesTargetMode: document.querySelector("#series-target-chip")?.getAttribute("data-mode") ?? "",
     seriesActive: document.querySelector("#series-progress [aria-current='true']")?.getAttribute("data-series-event") ?? "",
     seriesRows: Array.from(document.querySelectorAll("#series-progress [data-series-event]")).map((row) => row.textContent ?? "")
   }));
@@ -137,6 +139,8 @@ async function checkDesktop(browser) {
   assert(ready.briefingAssist === "Balanced", `desktop briefing assist was wrong: ${ready.briefingAssist}`);
   assert(/Best|flow/i.test(ready.sessionBest), `desktop personal best readout missing: ${ready.sessionBest}`);
   assert(ready.seriesActive === "northstar-storm", `desktop Apex Series selected event did not stay active: ${ready.seriesActive}`);
+  assert(ready.seriesTargetChip === "R3 target: Survive low grip", `desktop series target chip did not update: ${ready.seriesTargetChip}`);
+  assert(ready.seriesTargetMode === "series", `desktop series target mode was wrong: ${ready.seriesTargetMode}`);
   assert(ready.seriesRows.length === 3, "desktop Apex Series row count changed after selection");
   assert(ready.speed === 0, "desktop race moved before start");
 
@@ -147,11 +151,15 @@ async function checkDesktop(browser) {
     objective: document.querySelector("#objective")?.textContent ?? "",
     cue: document.querySelector("#track-cue")?.textContent ?? "",
     paceTarget: document.querySelector("#pace-target")?.textContent ?? "",
+    messageTitle: document.querySelector("#message strong")?.textContent ?? "",
+    messageTone: document.querySelector("#message")?.getAttribute("data-tone") ?? "",
     launchCharge: Number(document.querySelector("#game canvas")?.dataset.launchCharge ?? 0)
   }));
   assert(/Launch/i.test(launch.objective), `desktop launch objective was not visible: ${launch.objective}`);
   assert(/revs|throttle|sweet/i.test(launch.cue), `desktop launch cue was not visible: ${launch.cue}`);
   assert(/launch/i.test(launch.paceTarget), `desktop launch quality was not visible: ${launch.paceTarget}`);
+  assert(launch.messageTitle === "Formation ready", `desktop launch radio title was wrong: ${launch.messageTitle}`);
+  assert(launch.messageTone === "launch", `desktop launch radio tone was wrong: ${launch.messageTone}`);
   assert(launch.launchCharge > 0.2, `desktop launch charge did not build during countdown, charge=${launch.launchCharge}`);
   await page.waitForTimeout(3900);
   await page.keyboard.up("ArrowRight");
@@ -222,6 +230,10 @@ async function checkDesktop(browser) {
     assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
     assistChip: document.querySelector("#assist-chip")?.textContent ?? "",
     assistChipMode: document.querySelector("#assist-chip")?.getAttribute("data-mode") ?? "",
+    seriesTargetChip: document.querySelector("#series-target-chip")?.textContent ?? "",
+    seriesTargetMode: document.querySelector("#series-target-chip")?.getAttribute("data-mode") ?? "",
+    messageTitle: document.querySelector("#message strong")?.textContent ?? "",
+    messageTone: document.querySelector("#message")?.getAttribute("data-tone") ?? "",
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     tracksideGrandstands: Number(document.querySelector("#game canvas")?.dataset.tracksideGrandstands ?? 0),
@@ -393,6 +405,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.assistThrottleTrim), "desktop assist throttle telemetry was missing");
   assert(/assist|Manual/i.test(state.assistChip), `desktop assist chip was missing: ${state.assistChip}`);
   assert(["ready", "active", "manual"].includes(state.assistChipMode), `desktop assist chip mode was invalid: ${state.assistChipMode}`);
+  assert(state.seriesTargetChip === "R3 target: Survive low grip", `desktop racing target chip was wrong: ${state.seriesTargetChip}`);
+  assert(state.seriesTargetMode === "series", `desktop racing target mode was wrong: ${state.seriesTargetMode}`);
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.shiftLightCount === 5, `desktop shift-light cluster was incomplete: ${state.shiftLightCount}`);
@@ -553,7 +567,9 @@ async function checkManualAssist(browser) {
     assistBrake: Number(document.querySelector("#game canvas")?.dataset.assistBrake ?? 0),
     assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
     assistChip: document.querySelector("#assist-chip")?.textContent ?? "",
-    assistChipMode: document.querySelector("#assist-chip")?.getAttribute("data-mode") ?? ""
+    assistChipMode: document.querySelector("#assist-chip")?.getAttribute("data-mode") ?? "",
+    seriesTargetChip: document.querySelector("#series-target-chip")?.textContent ?? "",
+    seriesTargetMode: document.querySelector("#series-target-chip")?.getAttribute("data-mode") ?? ""
   }));
 
   await page.close();
@@ -566,6 +582,8 @@ async function checkManualAssist(browser) {
   assert(state.assistThrottleTrim === 0, `manual throttle assist was not zero: ${state.assistThrottleTrim}`);
   assert(state.assistChip === "Manual drive", `manual assist chip was wrong: ${state.assistChip}`);
   assert(state.assistChipMode === "manual", `manual assist chip mode was wrong: ${state.assistChipMode}`);
+  assert(state.seriesTargetChip === "Free run", `manual non-series target was wrong: ${state.seriesTargetChip}`);
+  assert(state.seriesTargetMode === "free", `manual non-series target mode was wrong: ${state.seriesTargetMode}`);
 }
 
 async function waitForServer(target) {

@@ -768,6 +768,7 @@ body {
 
 .hud[data-phase="racing"] .objective-chip,
 .hud[data-phase="racing"] .assist-chip,
+.hud[data-phase="racing"] .series-target-chip,
 .hud[data-phase="racing"] .session-chip,
 .hud[data-phase="racing"] .track-readout,
 .hud[data-phase="racing"] .pace-readout,
@@ -948,6 +949,26 @@ body {
 .assist-chip[data-mode="manual"] {
   color: #cfd6cc;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.series-target-chip {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: #fff4c3;
+  background: rgba(255, 204, 82, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 82, 0.18);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.series-target-chip[data-mode="free"] {
+  color: #cfd6cc;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .session-chip {
@@ -1200,9 +1221,38 @@ body {
   padding: 18px 20px;
   border-radius: 8px;
   text-align: center;
+  background: rgba(17, 25, 24, 0.44);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 18px 42px rgba(0, 0, 0, 0.24);
   transition:
     opacity 160ms ease,
     transform 160ms ease;
+}
+
+.race-message[data-tone="launch"] {
+  background: rgba(24, 32, 30, 0.5);
+}
+
+.race-message[data-tone="warning"] {
+  background: rgba(80, 22, 25, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 92, 92, 0.24),
+    0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.race-message[data-tone="reward"] {
+  background: rgba(22, 63, 43, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(66, 245, 111, 0.22),
+    0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.race-message[data-tone="sector"] {
+  background: rgba(25, 51, 68, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(32, 183, 255, 0.22),
+    0 18px 42px rgba(0, 0, 0, 0.24);
 }
 
 .race-message.hidden {
@@ -1556,6 +1606,12 @@ body {
   }
 
   .assist-chip {
+    margin-top: 6px;
+    padding: 6px 7px;
+    font-size: 9px;
+  }
+
+  .series-target-chip {
     margin-top: 6px;
     padding: 6px 7px;
     font-size: 9px;

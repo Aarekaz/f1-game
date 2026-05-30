@@ -178,6 +178,15 @@ function syncSeriesProgress(activeSession: SessionConfig, onSelect: (event: Apex
   progress.replaceChildren(header, ...rows);
 }
 
+function syncSeriesTarget(activeSession: SessionConfig) {
+  const target = document.getElementById("series-target-chip");
+  if (!target) return;
+
+  const event = findApexSeriesEvent(activeSession);
+  target.textContent = event ? `${event.round} target: ${event.target}` : "Free run";
+  target.dataset.mode = event ? "series" : "free";
+}
+
 function createTouchBridge() {
   const activeControls = new Set<ControlName>();
   const cleanups: Array<() => void> = [];
@@ -366,6 +375,7 @@ export function createRaceApp() {
     syncSessionBrief(session);
     syncSessionBest(best);
     syncSeriesProgress(session, selectSeriesEvent);
+    syncSeriesTarget(session);
     queuedNextSeriesEvent = null;
     syncNextSeriesEventButton(null);
     hud.setPersonalBest(best);

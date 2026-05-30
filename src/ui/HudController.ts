@@ -36,6 +36,23 @@ function setMeter(element: HTMLElement, value: number) {
   element.style.setProperty("--value", percent);
 }
 
+function raceMessageTone(message: string) {
+  if (/penalty|deleted|track limits|give it back|avoid contact|\+\d/i.test(message)) return "warning";
+  if (/passed|overtake/i.test(message)) return "reward";
+  if (/sector/i.test(message)) return "sector";
+  if (/lights out/i.test(message)) return "launch";
+  return "neutral";
+}
+
+function raceMessageTitle(message: string) {
+  const tone = raceMessageTone(message);
+  if (tone === "warning") return "Race Control";
+  if (tone === "reward") return "Overtake";
+  if (tone === "sector") return "Sector Split";
+  if (tone === "launch") return "Lights Out";
+  return "Engineer";
+}
+
 export class HudController {
   private hud = document.querySelector<HTMLElement>(".hud");
   private startPanel = requireElement("start-panel");
@@ -352,9 +369,10 @@ export class HudController {
     const showCountdown = telemetry.phase === "countdown";
     const showMessage = telemetry.message.length > 0 && telemetry.phase !== "ready" && telemetry.phase !== "finished";
     this.message.classList.toggle("hidden", !showCountdown && !showMessage);
+    this.message.dataset.tone = showCountdown ? "launch" : raceMessageTone(telemetry.message);
 
     if (this.messageTitle) {
-      this.messageTitle.textContent = showCountdown ? "Formation ready" : "Apex Formula";
+      this.messageTitle.textContent = showCountdown ? "Formation ready" : raceMessageTitle(telemetry.message);
     }
 
     if (this.messageBody) {

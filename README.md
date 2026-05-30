@@ -14,11 +14,13 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
 - Racing-style gear, RPM, and shift-light feedback in the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
+- The live HUD carries the active series target, so each fictional GP scenario has a clear job once the lights go out.
 - Race results can advance straight into the next Apex Series event, so a session feels like part of a ladder instead of a one-off run.
 - Race results show steward status and penalties, not just pace numbers.
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
 - Selectable balanced/manual assists so keyboard and touch players can drive cleanly without hiding the simcade handling.
 - A driver-aid HUD chip that shows when balanced assist is actively steering, braking, or trimming throttle.
+- Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
 - Local personal bests per fictional track and weather pairing.
