@@ -243,12 +243,32 @@ async function checkDesktop(browser) {
   const pausedState = await page.evaluate(() => ({
     paused: document.querySelector(".hud")?.dataset.paused ?? "",
     pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden"),
+    pausePosition: document.querySelector("#pause-position")?.textContent ?? "",
+    pauseLap: document.querySelector("#pause-lap")?.textContent ?? "",
+    pauseSection: document.querySelector("#pause-section")?.textContent ?? "",
     carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0)
   }));
   await page.waitForTimeout(550);
   const stillPaused = await page.evaluate(() => ({
     carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0)
   }));
+  await page.locator("#restart-session").click();
+  await page.waitForTimeout(250);
+  const restartedFromPause = await page.evaluate(() => ({
+    paused: document.querySelector(".hud")?.dataset.paused ?? "",
+    pauseVisible: !document.querySelector("#pause-panel")?.classList.contains("hidden"),
+    startVisible: !document.querySelector("#start-panel")?.classList.contains("hidden"),
+    hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
+    speed: Number(document.querySelector("#speed")?.textContent ?? 0),
+    carDistance: Number(document.querySelector("#game canvas")?.dataset.carDistance ?? 0)
+  }));
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.down("ArrowRight");
+  await page.waitForTimeout(3900);
+  await page.keyboard.up("ArrowRight");
+  await page.keyboard.up("ArrowUp");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(250);
   const resumedState = await page.evaluate(() => ({
@@ -276,7 +296,16 @@ async function checkDesktop(browser) {
   );
   assert(pausedState.paused === "true", `desktop pause did not set HUD paused state: ${pausedState.paused}`);
   assert(pausedState.pauseVisible, "desktop pause panel did not become visible");
+  assert(/P\d+/.test(pausedState.pausePosition), `desktop pause position summary was missing: ${pausedState.pausePosition}`);
+  assert(/\d\/\d/.test(pausedState.pauseLap), `desktop pause lap summary was missing: ${pausedState.pauseLap}`);
+  assert(pausedState.pauseSection.length > 0, "desktop pause section summary was missing");
   assert(Math.abs(stillPaused.carDistance - pausedState.carDistance) < 0.05, "desktop car kept moving while paused");
+  assert(restartedFromPause.paused === "false", `desktop pause restart did not clear paused state: ${restartedFromPause.paused}`);
+  assert(!restartedFromPause.pauseVisible, "desktop pause restart left pause panel visible");
+  assert(restartedFromPause.startVisible, "desktop pause restart did not return to setup panel");
+  assert(restartedFromPause.hudPhase === "ready", `desktop pause restart did not reset HUD phase: ${restartedFromPause.hudPhase}`);
+  assert(restartedFromPause.speed === 0, `desktop pause restart did not reset speed: ${restartedFromPause.speed}`);
+  assert(restartedFromPause.carDistance === 0, `desktop pause restart did not reset car distance: ${restartedFromPause.carDistance}`);
   assert(resumedState.paused === "false", `desktop resume did not clear HUD paused state: ${resumedState.paused}`);
   assert(!resumedState.pauseVisible, "desktop pause panel stayed visible after resume");
   assert(

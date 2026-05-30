@@ -182,6 +182,10 @@ export function createRaceApp() {
   const hudRoot = document.querySelector<HTMLElement>(".hud");
   const pausePanel = document.getElementById("pause-panel");
   const pauseButton = document.getElementById("pause-race");
+  const pausePosition = document.getElementById("pause-position");
+  const pauseLap = document.getElementById("pause-lap");
+  const pauseSection = document.getElementById("pause-section");
+  const restartSessionButton = document.getElementById("restart-session");
   let last = performance.now();
   let frame = 0;
   let session = readSessionConfig();
@@ -189,13 +193,31 @@ export function createRaceApp() {
   let lastPhase = latestTelemetry.phase;
   let paused = false;
 
+  function syncPauseSummary() {
+    if (pausePosition) pausePosition.textContent = `P${latestTelemetry.position}`;
+    if (pauseLap) pauseLap.textContent = `${latestTelemetry.lap}/${latestTelemetry.laps}`;
+    if (pauseSection) pauseSection.textContent = latestTelemetry.trackSection;
+  }
+
   function setPaused(nextPaused: boolean) {
     paused = nextPaused;
     if (hudRoot) {
       hudRoot.dataset.paused = paused ? "true" : "false";
     }
+    if (paused) syncPauseSummary();
     pausePanel?.classList.toggle("hidden", !paused);
     pauseButton?.setAttribute("aria-pressed", paused ? "true" : "false");
+  }
+
+  function restartCurrentRun() {
+    model.reset();
+    latestTelemetry = model.telemetry();
+    lastPhase = latestTelemetry.phase;
+    hud.setPersonalBestUpdate(null);
+    setPaused(false);
+    renderer.update(latestTelemetry);
+    hud.update(latestTelemetry);
+    audio.update(pausedAudioTelemetry(latestTelemetry));
   }
 
   function pausedAudioTelemetry(telemetry: typeof latestTelemetry) {
@@ -239,6 +261,7 @@ export function createRaceApp() {
   document.getElementById("track-select")?.addEventListener("change", refreshSession);
   document.getElementById("weather-select")?.addEventListener("change", refreshSession);
   document.getElementById("assist-select")?.addEventListener("change", refreshSession);
+  restartSessionButton?.addEventListener("click", restartCurrentRun);
   refreshSession();
   input.attach();
   audio.attach();
@@ -297,6 +320,7 @@ export function createRaceApp() {
       document.getElementById("track-select")?.removeEventListener("change", refreshSession);
       document.getElementById("weather-select")?.removeEventListener("change", refreshSession);
       document.getElementById("assist-select")?.removeEventListener("change", refreshSession);
+      restartSessionButton?.removeEventListener("click", restartCurrentRun);
       input.detach();
       touch.destroy();
       audio.dispose();

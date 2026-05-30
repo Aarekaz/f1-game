@@ -86,7 +86,15 @@
           <span class="panel-kicker">Paused</span>
           <strong>Race Held</strong>
           <p>The session is frozen. Resume when you are ready to get back into the run.</p>
-          <button id="resume-race" type="button">Resume Race</button>
+          <div class="pause-summary" aria-label="Paused race state">
+            <span>Position <b id="pause-position">P8</b></span>
+            <span>Lap <b id="pause-lap">1/3</b></span>
+            <span>Section <b id="pause-section">Front Straight</b></span>
+          </div>
+          <div class="pause-actions">
+            <button id="resume-race" type="button">Resume Race</button>
+            <button id="restart-session" type="button">Restart Run</button>
+          </div>
         </section>
 
         <button class="pause-button" id="pause-race" type="button" aria-label="Pause race">Ⅱ</button>
