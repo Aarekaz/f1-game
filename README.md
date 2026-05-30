@@ -47,6 +47,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A driver-aid HUD chip that shows when balanced assist is actively steering, braking, or trimming throttle.
 - Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
 - The racing HUD collapses into a lighter instrument cluster once the car is moving, leaving more of the circuit visible.
+- The HUD now yields when the chase camera drifts toward an edge, so the car and rejoin line win over the instrument cluster.
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
