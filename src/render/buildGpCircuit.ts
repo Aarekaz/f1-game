@@ -616,10 +616,10 @@ export function buildGpCircuit() {
     const distance = 80 + index * 58;
     const side = index % 2 === 0 ? -1 : 1;
     const stagger = ((index * 37) % 19) - 9;
-    const treeBaseLateral = layout.id === "northstar" ? 44 : 26;
-    const treeSpacing = layout.id === "northstar" ? 3.6 : 2.8;
+    const treeBaseLateral = layout.id === "northstar" ? 52 : 42;
+    const treeSpacing = layout.id === "northstar" ? 5.2 : 4.8;
     const lateral = side * (treeBaseLateral + (index % 5) * treeSpacing) + stagger * 0.2;
-    const treeHeight = layout.id === "northstar" ? 2.6 + (index % 4) * 0.38 : 3.6 + (index % 4) * 0.55;
+    const treeHeight = layout.id === "northstar" ? 2.2 + (index % 4) * 0.32 : 2.6 + (index % 4) * 0.38;
     const tree = makeTree("trackside-cypress", treeHeight, index % 3 === 0 ? layout.treeColor : layout.terrainColor);
     const point = trackWorldPointAt(distance, lateral);
     tree.position.set(point.x, terrainHeightAt(distance, lateral), point.z);
