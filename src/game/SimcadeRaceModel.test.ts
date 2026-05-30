@@ -651,10 +651,12 @@ describe("SimcadeRaceModel", () => {
     model.update(1 / 60, { ...idle, launch: true });
 
     const state = run(model, 26, { throttle: 1, steer: 1, ers: true });
+    const track = sampleTrack(state.trackOffset);
 
     expect(state.trackLimitWarnings).toBeGreaterThan(0);
     expect(state.position).toBeGreaterThan(1);
     expect(state.penaltySeconds).toBeGreaterThan(0);
+    expect(Math.abs(state.carX)).toBeLessThanOrEqual(track.halfWidth + 2.7);
   });
 
   it("lets stranded manual drivers recover to the circuit with a penalty", () => {
@@ -665,9 +667,11 @@ describe("SimcadeRaceModel", () => {
     });
     model.update(1 / 60, { ...idle, launch: true });
     const stranded = run(model, 18, { throttle: 1, steer: 1 });
+    const track = sampleTrack(stranded.trackOffset);
 
     expect(stranded.surfaceName).toBe("Gravel");
     expect(stranded.speedKph).toBeLessThanOrEqual(20);
+    expect(Math.abs(stranded.carX)).toBeLessThanOrEqual(track.halfWidth + 2.7);
 
     const recovered = model.update(1 / 60, { ...idle, recover: true });
 

@@ -779,11 +779,30 @@ export class SimcadeRaceModel {
       this.x = approach(this.x, rejoinTarget, dt * this.session.assist.steeringHelp * rejoinNeed * (7.5 + speedRatio * 4.2));
       this.lateralVelocity = approach(this.lateralVelocity, 0, dt * this.session.assist.steeringHelp * rejoinNeed * 6.5);
     }
-    this.x = clamp(this.x, track.center - 9, track.center + 9);
+    this.keepCarInsideRecoveryApron(track, dt, speedRatio);
     this.lapTime += dt;
     this.totalTime += dt;
     this.updateFlowScore(dt, track, onTrack);
     this.updateTrackLimits(dt, onTrack);
+  }
+
+  private keepCarInsideRecoveryApron(track: ReturnType<typeof sampleTrack>, dt: number, speedRatio: number) {
+    const lateral = this.x - track.center;
+    const apronReach = track.halfWidth + (this.session.assist.steeringHelp > 0 ? 1.85 : 2.65);
+    const overflow = Math.abs(lateral) - apronReach;
+
+    if (overflow <= 0) {
+      this.x = clamp(this.x, track.center - apronReach, track.center + apronReach);
+      return;
+    }
+
+    const side = Math.sign(lateral) || 1;
+    this.x = track.center + side * apronReach;
+    if (this.lateralVelocity * side > 0) {
+      this.lateralVelocity = approach(this.lateralVelocity, -side * Math.min(1.2, overflow * 0.65), dt * (10 + speedRatio * 8));
+    }
+    this.heading = approach(this.heading, -track.curve * 0.18 - side * 0.06, dt * (1.4 + speedRatio * 1.8));
+    this.speed = Math.min(this.speed, 118 - speedRatio * 18);
   }
 
   private recoverToCircuit() {
