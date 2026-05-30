@@ -32,6 +32,9 @@ export type RaceTelemetry = {
   surfaceRumble: number;
   roadAdhesion: number;
   lateralScrub: number;
+  roadGrade: number;
+  suspensionLoad: number;
+  suspensionTravel: number;
   roadWetness: number;
   rainIntensity: number;
   trackRubber: number;
@@ -130,6 +133,8 @@ export type RaceTelemetry = {
     bank: number;
     heading: number;
     yawRate: number;
+    pitch: number;
+    roll: number;
     slip: number;
     braking: number;
     throttle: number;
@@ -253,6 +258,11 @@ export class SimcadeRaceModel {
   private grip = 1;
   private roadAdhesion = 1;
   private lateralScrub = 0;
+  private roadGrade = 0;
+  private suspensionLoad = 1;
+  private suspensionTravel = 0;
+  private chassisPitch = 0;
+  private chassisRoll = 0;
   private ers = 1;
   private aeroBoostAvailable = false;
   private aeroBoostActive = 0;
@@ -366,6 +376,9 @@ export class SimcadeRaceModel {
       surfaceRumble: this.surfaceRumble,
       roadAdhesion: this.roadAdhesion,
       lateralScrub: this.lateralScrub,
+      roadGrade: this.roadGrade,
+      suspensionLoad: this.suspensionLoad,
+      suspensionTravel: this.suspensionTravel,
       roadWetness: this.dynamicRoadWetness(),
       rainIntensity: this.session.weather.rainIntensity,
       trackRubber: this.trackRubber,
@@ -464,6 +477,8 @@ export class SimcadeRaceModel {
         bank: track.bank,
         heading: this.heading,
         yawRate: this.yawRate,
+        pitch: this.chassisPitch,
+        roll: this.chassisRoll,
         slip: this.slip,
         braking: this.phase === "racing" ? this.lastBrake : 0,
         throttle: this.phase === "racing" ? this.lastThrottle : 0,
@@ -538,6 +553,11 @@ export class SimcadeRaceModel {
     this.dirtyTirePickup = 0;
     this.roadAdhesion = 1;
     this.lateralScrub = 0;
+    this.roadGrade = 0;
+    this.suspensionLoad = 1;
+    this.suspensionTravel = 0;
+    this.chassisPitch = 0;
+    this.chassisRoll = 0;
     this.frontWingDamage = 0;
     this.downforceLoss = 0;
     this.lapTime = 0;
@@ -707,6 +727,7 @@ export class SimcadeRaceModel {
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
+    this.roadGrade = approach(this.roadGrade, grade, dt * 7);
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14) * driverDemand;
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
@@ -718,6 +739,26 @@ export class SimcadeRaceModel {
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
+    const suspensionOscillation = Math.sin(this.z * 0.095 + this.lateralVelocity * 0.12) * surface.roughness * speedRatio * 0.14;
+    const loadTarget = clamp(
+      1 +
+        speedRatio * speedRatio * 0.2 +
+        brake * (0.16 + speedRatio * 0.08) -
+        throttle * 0.035 +
+        Math.abs(track.bank) * 0.16 +
+        cornerLoad * 0.08 +
+        surface.roughness * 0.1 +
+        suspensionOscillation -
+        roadWetness * 0.035,
+      0.62,
+      1.42
+    );
+    this.suspensionLoad = approach(this.suspensionLoad, loadTarget, dt * (surface.roughness > 0.2 ? 11 : 7));
+    this.suspensionTravel = approach(
+      this.suspensionTravel,
+      clamp((this.suspensionLoad - 1) * 0.44 + surface.roughness * speedRatio * 0.12 + brake * 0.035 - throttle * 0.02, -0.2, 0.32),
+      dt * 9
+    );
     const weatherGrip = this.evolvedWeatherGrip() * surface.grip;
     const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
     const tireGripFactor = clamp(
@@ -727,6 +768,7 @@ export class SimcadeRaceModel {
     );
     const damageGripFactor = clamp(1 - this.frontWingDamage * (0.12 + speedRatio * 0.18), 0.74, 1);
     const fuelGripFactor = clamp(1 - this.fuelLoad * 0.025, 0.96, 1);
+    const loadGripFactor = clamp(0.88 + this.suspensionLoad * 0.14 - Math.abs(this.suspensionLoad - 1) * 0.1 - surface.roughness * 0.05, 0.76, 1.06);
     const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
@@ -737,6 +779,7 @@ export class SimcadeRaceModel {
             tireGripFactor *
             damageGripFactor *
             fuelGripFactor *
+            loadGripFactor *
             bankingSupport -
             wetPenalty -
             dirtyAirPenalty,
@@ -818,6 +861,14 @@ export class SimcadeRaceModel {
     );
     this.slip = Math.max(this.slip, scrubPenalty * 1.05);
     this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, this.speed > 0 ? MIN_RACE_SPEED : 0, MAX_SPEED);
+    const pitchTarget = clamp(-this.roadGrade * 2.6 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08, -0.13, 0.13);
+    const rollTarget = clamp(
+      -track.bank * 0.32 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + surface.roughness * speedRatio * 0.04,
+      -0.16,
+      0.16
+    );
+    this.chassisPitch = approach(this.chassisPitch, pitchTarget, dt * 8);
+    this.chassisRoll = approach(this.chassisRoll, rollTarget, dt * 9);
     const rollingProgress = onTrack
       ? clamp(1 - Math.abs(this.heading) * 0.03 - scrubPenalty * 0.04, 0.94, 1)
       : clamp(1 - Math.abs(this.heading) * 0.08 - scrubPenalty * 0.12 - 0.08, 0.8, 1);
@@ -870,6 +921,10 @@ export class SimcadeRaceModel {
     this.surfaceRumble = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
+    this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
+    this.suspensionTravel = 0;
+    this.chassisPitch = 0;
+    this.chassisRoll = 0;
     this.cleanLap = false;
     this.positionGainLockout = Math.max(this.positionGainLockout, 2.8);
     this.offTrackTime = -2.4;

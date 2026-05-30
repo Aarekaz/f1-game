@@ -339,6 +339,27 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(telemetry.carX)).toBeLessThan(sampleTrack(telemetry.trackOffset).halfWidth + 2.7);
   });
 
+  it("loads the suspension under braking and rough road contact", () => {
+    const model = new SimcadeRaceModel();
+    model.update(1 / 60, { ...idle, launch: true });
+    const cruise = run(model, 5, { throttle: 1 });
+    const braking = run(model, 0.8, { brake: 1 });
+
+    expect(braking.suspensionLoad).toBeGreaterThan(cruise.suspensionLoad);
+    expect(braking.suspensionTravel).toBeGreaterThan(cruise.suspensionTravel);
+    expect(braking.car.pitch).toBeGreaterThan(cruise.car.pitch);
+
+    let roughest = braking;
+    for (let elapsed = 0; elapsed < 2.5; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 1 });
+      if (telemetry.surfaceRumble > roughest.surfaceRumble) roughest = telemetry;
+    }
+
+    expect(["Kerb", "Runoff", "Gravel"]).toContain(roughest.surfaceName);
+    expect(roughest.suspensionTravel).toBeGreaterThan(cruise.suspensionTravel);
+    expect(Math.abs(roughest.car.roll)).toBeGreaterThan(0.005);
+  });
+
   it("keeps compatibility telemetry fields available", () => {
     const model = new SimcadeRaceModel();
     const telemetry = model.telemetry();
@@ -360,6 +381,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceRumble).toBe(0);
     expect(telemetry.roadAdhesion).toBe(1);
     expect(telemetry.lateralScrub).toBe(0);
+    expect(telemetry.roadGrade).toBe(0);
+    expect(telemetry.suspensionLoad).toBe(1);
+    expect(telemetry.suspensionTravel).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.trackRubber).toBe(0);
@@ -427,6 +451,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.car.throttle).toBe(0);
     expect(Number.isFinite(telemetry.car.y)).toBe(true);
     expect(Number.isFinite(telemetry.car.bank)).toBe(true);
+    expect(telemetry.car.pitch).toBe(0);
+    expect(telemetry.car.roll).toBe(0);
     expect(telemetry.car.wheelspin).toBe(0);
     expect(telemetry.car.understeer).toBe(0);
     expect(telemetry.car.lockup).toBe(0);
