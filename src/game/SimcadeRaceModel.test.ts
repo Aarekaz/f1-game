@@ -39,7 +39,7 @@ function runRubberedLine(model: SimcadeRaceModel, seconds: number) {
   for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
     const track = sampleTrack(telemetry.trackOffset);
     const lineError = telemetry.carX - track.racingLineOffset;
-    const steer = clamp(-lineError / 3.2, -0.86, 0.86);
+    const steer = clamp(-lineError / 2.3 - telemetry.car.heading * 1.2 - telemetry.car.yawRate * 0.45, -0.86, 0.86);
     telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true, steer });
   }
   return telemetry;
@@ -375,6 +375,27 @@ describe("SimcadeRaceModel", () => {
     expect(loadedHeading).toBeGreaterThan(0.08);
     expect(Math.abs(settled.car.heading)).toBeLessThan(loadedHeading * 0.82);
     expect(Math.abs(settled.car.yawRate)).toBeLessThan(Math.abs(loaded.car.yawRate));
+  });
+
+  it("makes committed steering travel through chassis heading instead of a sideways lane shift", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.2, { throttle: 1 });
+
+    const turnIn = run(model, 0.85, { throttle: 1, steer: 0.78 });
+    const track = sampleTrack(turnIn.trackOffset);
+
+    expect(turnIn.onTrack).toBe(true);
+    expect(Math.abs(turnIn.car.heading)).toBeGreaterThan(0.1);
+    expect(Math.abs(turnIn.car.yawRate)).toBeGreaterThan(0.12);
+    expect(Math.abs(turnIn.carX)).toBeGreaterThan(2);
+    expect(Math.abs(turnIn.carX)).toBeLessThan(track.halfWidth - 0.55);
+    expect(turnIn.lateralScrub).toBeGreaterThan(0.1);
+    expect(turnIn.roadAlignment).toBeLessThan(0.94);
   });
 
   it("turns kerbs and runoff into tactile surface feedback", () => {
