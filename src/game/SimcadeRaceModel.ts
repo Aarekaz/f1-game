@@ -863,17 +863,36 @@ export class SimcadeRaceModel {
     const recoverySteerPenalty =
       recoverySteerTowardRoad >= 0 ? clamp(Math.abs(rawSteer) * 0.22, 0, 0.34) : clamp(Math.abs(rawSteer) * 1.75, 0, 1);
     const settledRecoveryInput = throttle * (1 - recoverySteerPenalty);
+    const recoverySteerGrip = clamp((recoverySteerTowardRoad - 0.08) / 0.92, 0, 1);
     const lowSpeedRecoveryWindow = clamp((92 - this.speed) / 92, 0.35, 1);
+    const crawlRecoveryWindow = clamp((34 - this.speed) / 34, 0, 1);
     const looseSurfaceRecoveryRelief = onTrack
       ? 0
-      : clamp((72 - this.speed) / 72, 0, 1) * settledRecoveryInput * (surface.name === "Gravel" ? 0.32 : 0.58);
+      : clamp((72 - this.speed) / 72, 0, 1) *
+        settledRecoveryInput *
+        clamp((surface.name === "Gravel" ? 0.32 : 0.58) + recoverySteerGrip * (surface.name === "Gravel" ? 0.54 : 0.28), 0, 0.82);
     const looseSurfaceRecoveryDrive = onTrack
       ? 0
       : settledRecoveryInput * (surface.name === "Gravel" ? 78 : 110) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
-    const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief));
+    const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 150 : 92) * crawlRecoveryWindow;
+    const crawlDragCut = onTrack ? 0 : recoverySteerGrip * settledRecoveryInput * crawlRecoveryWindow * (surface.name === "Gravel" ? 0.42 : 0.28);
+    const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief) * (1 - crawlDragCut));
     this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42, 0, 1), dt * 12);
 
-    this.speed += (acceleration + boostPower + aeroPower + draftPower + looseSurfaceRecoveryDrive + gradeForce - braking - Math.max(0, drag - this.aeroDragReduction) - instabilityDrag - racecraftDrag - offTrackDrag) * dt;
+    this.speed +=
+      (acceleration +
+        boostPower +
+        aeroPower +
+        draftPower +
+        looseSurfaceRecoveryDrive +
+        looseSurfaceCrawlDrive +
+        gradeForce -
+        braking -
+        Math.max(0, drag - this.aeroDragReduction) -
+        instabilityDrag -
+        racecraftDrag -
+        offTrackDrag) *
+      dt;
     this.speed = clamp(this.speed, 0, MAX_SPEED);
     this.ers = clamp(this.ers + brake * 0.28 * dt + 0.025 * dt - boost * 0.38 * dt - this.aeroBoostActive * 0.07 * dt, 0, 1);
 
