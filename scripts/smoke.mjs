@@ -243,6 +243,9 @@ async function checkDesktop(browser) {
     carGroundShadow: document.querySelector("#game canvas")?.dataset.carGroundShadow ?? "",
     carGroundShadowOpacity: Number(document.querySelector("#game canvas")?.dataset.carGroundShadowOpacity ?? 0),
     carGroundShadowLength: Number(document.querySelector("#game canvas")?.dataset.carGroundShadowLength ?? 0),
+    speedStreaks: document.querySelector("#game canvas")?.dataset.speedStreaks ?? "",
+    speedStreakOpacity: Number(document.querySelector("#game canvas")?.dataset.speedStreakOpacity ?? 0),
+    speedStreakCount: Number(document.querySelector("#game canvas")?.dataset.speedStreakCount ?? 0),
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     brakePressureTrail: Number(document.querySelector("#game canvas")?.dataset.brakePressureTrail ?? 0),
     brakePressureMarks: Number(document.querySelector("#game canvas")?.dataset.brakePressureMarks ?? 0),
@@ -258,6 +261,9 @@ async function checkDesktop(browser) {
     powerState: document.querySelector("#game canvas")?.dataset.powerState ?? "",
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
+    playerWaterSpray: document.querySelector("#game canvas")?.dataset.playerWaterSpray ?? "",
+    playerWaterSprayStrength: Number(document.querySelector("#game canvas")?.dataset.playerWaterSprayStrength ?? 0),
+    playerWaterSprayPlumes: Number(document.querySelector("#game canvas")?.dataset.playerWaterSprayPlumes ?? 0),
     rivalLabelsVisible: Number(document.querySelector("#game canvas")?.dataset.rivalLabelsVisible ?? 0),
     rivalLabelSample: document.querySelector("#game canvas")?.dataset.rivalLabelSample ?? "",
     lensRainDroplets: Number(document.querySelector("#game canvas")?.dataset.lensRainDroplets ?? 0),
@@ -519,6 +525,9 @@ async function checkDesktop(browser) {
   );
   assert(state.carGroundShadowLength > 0.9, `desktop formula car ground shadow did not stretch with speed: ${state.carGroundShadowLength}`);
   assert(podCamera.carGroundShadow === "hidden", `desktop pod camera should hide external car shadow: ${podCamera.carGroundShadow}`);
+  assert(state.speedStreaks === "peripheral-ground-rush", `desktop high-speed ground-rush cue was missing: ${state.speedStreaks}`);
+  assert(state.speedStreakOpacity > 0.08, `desktop high-speed ground-rush cue was too faint: ${state.speedStreakOpacity}`);
+  assert(state.speedStreakCount >= 20, `desktop high-speed ground-rush cue was too sparse: ${state.speedStreakCount}`);
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(Number.isFinite(state.brakePressureTrail), "desktop brake pressure trail telemetry was missing");
   assert(brakingState.brakeGlow > state.brakeGlow, `desktop brake glow did not rise under braking: ${JSON.stringify(brakingState)}`);
@@ -538,6 +547,9 @@ async function checkDesktop(browser) {
   assert(/Power|Shift|Traction|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
+  assert(state.playerWaterSpray === "active", `desktop player spray did not render in storm weather: ${state.playerWaterSpray}`);
+  assert(state.playerWaterSprayStrength > 0.4, `desktop player spray stayed too faint: ${state.playerWaterSprayStrength}`);
+  assert(state.playerWaterSprayPlumes >= 12, `desktop player spray plume count was too sparse: ${state.playerWaterSprayPlumes}`);
   assert(state.rivalLabelsVisible > 0, `desktop in-world rival labels did not render: ${state.rivalLabelsVisible}`);
   assert(/[A-Z]{3}.*[+-]\d/.test(state.rivalLabelSample), `desktop rival label sample was not readable: ${state.rivalLabelSample}`);
   assert(state.lensRainDroplets >= 8, `desktop rain lens droplets were missing in storm weather: ${state.lensRainDroplets}`);
