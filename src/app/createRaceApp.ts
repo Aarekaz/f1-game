@@ -2,6 +2,7 @@ import { RaceAudioController } from "../audio/RaceAudioController";
 import {
   evaluateApexSeriesTarget,
   findApexSeriesEvent,
+  formatApexSeriesCriteria,
   nextApexSeriesEvent,
   scorePersonalBest,
   summarizeApexSeries,
@@ -182,11 +183,22 @@ function syncSeriesProgress(activeSession: SessionConfig, onSelect: (event: Apex
 
 function syncSeriesTarget(activeSession: SessionConfig) {
   const target = document.getElementById("series-target-chip");
-  if (!target) return;
+  const contract = document.getElementById("target-contract");
+  const contractTitle = document.getElementById("target-contract-title");
+  const contractGoal = document.getElementById("target-contract-goal");
+  const contractCriteria = document.getElementById("target-contract-criteria");
 
   const event = findApexSeriesEvent(activeSession);
-  target.textContent = event ? `${event.round} target: ${event.target}` : "Free run";
-  target.dataset.mode = event ? "series" : "free";
+  if (target) {
+    target.textContent = event ? `${event.round} target: ${event.target}` : "Free run";
+    target.dataset.mode = event ? "series" : "free";
+  }
+  if (contract) contract.dataset.mode = event ? "series" : "free";
+  if (contractTitle) contractTitle.textContent = event ? `${event.round} ${event.title}` : "Free Run";
+  if (contractGoal) contractGoal.textContent = event ? event.target : "No series target";
+  if (contractCriteria) {
+    contractCriteria.textContent = event ? formatApexSeriesCriteria(event) : "Pick an Apex Series round for a scored contract.";
+  }
 }
 
 function createTouchBridge() {

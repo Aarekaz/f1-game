@@ -326,6 +326,50 @@ body {
   min-height: 40px;
 }
 
+.target-contract {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  min-height: 50px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.target-contract[data-mode="series"] {
+  background: rgba(243, 211, 72, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(243, 211, 72, 0.12);
+}
+
+.target-contract span,
+.target-contract b {
+  overflow: hidden;
+  color: #aeb8aa;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.target-contract strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.target-contract b {
+  justify-self: end;
+  color: #d7eb8f;
+}
+
 .session-dossier {
   display: grid;
   grid-template-columns: minmax(160px, 0.9fr) minmax(0, 1fr);
@@ -1472,6 +1516,14 @@ body {
 
   .session-dossier {
     grid-template-columns: 1fr;
+  }
+
+  .target-contract {
+    grid-template-columns: 1fr;
+  }
+
+  .target-contract b {
+    justify-self: start;
   }
 
   .session-map-card svg {

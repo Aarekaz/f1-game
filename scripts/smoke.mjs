@@ -114,6 +114,10 @@ async function checkDesktop(browser) {
     briefingGrip: document.querySelector("#brief-grip")?.textContent ?? "",
     briefingWeather: document.querySelector("#brief-weather")?.textContent ?? "",
     briefingAssist: document.querySelector("#brief-assist")?.textContent ?? "",
+    targetContractMode: document.querySelector("#target-contract")?.getAttribute("data-mode") ?? "",
+    targetContractTitle: document.querySelector("#target-contract-title")?.textContent ?? "",
+    targetContractGoal: document.querySelector("#target-contract-goal")?.textContent ?? "",
+    targetContractCriteria: document.querySelector("#target-contract-criteria")?.textContent ?? "",
     sessionBest: document.querySelector("#session-best")?.textContent ?? "",
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     trackOffset: Number(document.querySelector("#game canvas")?.dataset.trackOffset ?? 0),
@@ -141,6 +145,10 @@ async function checkDesktop(browser) {
   assert(ready.briefingGrip === "78%", `desktop briefing grip was wrong: ${ready.briefingGrip}`);
   assert(ready.briefingWeather === "Wet Storm", `desktop briefing weather was wrong: ${ready.briefingWeather}`);
   assert(ready.briefingAssist === "Balanced", `desktop briefing assist was wrong: ${ready.briefingAssist}`);
+  assert(ready.targetContractMode === "series", `desktop target contract mode was wrong: ${ready.targetContractMode}`);
+  assert(ready.targetContractTitle === "R3 Storm Charge", `desktop target contract title was wrong: ${ready.targetContractTitle}`);
+  assert(ready.targetContractGoal === "Survive low grip", `desktop target contract goal was wrong: ${ready.targetContractGoal}`);
+  assert(ready.targetContractCriteria === "P5 / 48% flow / warnings ok / 3s max", `desktop target contract criteria was wrong: ${ready.targetContractCriteria}`);
   assert(/Best|flow/i.test(ready.sessionBest), `desktop personal best readout missing: ${ready.sessionBest}`);
   assert(ready.seriesActive === "northstar-storm", `desktop Apex Series selected event did not stay active: ${ready.seriesActive}`);
   assert(ready.seriesTargetChip === "R3 target: Survive low grip", `desktop series target chip did not update: ${ready.seriesTargetChip}`);

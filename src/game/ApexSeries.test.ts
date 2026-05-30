@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { APEX_SERIES_EVENTS, evaluateApexSeriesTarget, findApexSeriesEvent, nextApexSeriesEvent, summarizeApexSeries } from "./ApexSeries";
+import {
+  APEX_SERIES_EVENTS,
+  evaluateApexSeriesTarget,
+  findApexSeriesEvent,
+  formatApexSeriesCriteria,
+  nextApexSeriesEvent,
+  summarizeApexSeries
+} from "./ApexSeries";
 import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 import type { PersonalBest } from "./PersonalBestStore";
 
@@ -79,7 +86,8 @@ describe("ApexSeries", () => {
     });
 
     expect(pass.passed).toBe(true);
-    expect(pass.summary).toBe("P5 / 48% flow / 3s max");
+    expect(pass.summary).toBe("P5 / 48% flow / warnings ok / 3s max");
+    expect(formatApexSeriesCriteria(APEX_SERIES_EVENTS[0])).toBe("P3 / 76% flow / clean / 0s max");
     expect(fail.passed).toBe(false);
     expect(fail.misses).toEqual(["finish P5 or better", "48% flow", "3s penalty max"]);
   });

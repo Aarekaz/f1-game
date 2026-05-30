@@ -126,9 +126,15 @@ export function evaluateApexSeriesTarget(event: ApexSeriesEvent, result: Session
 
   return {
     passed: misses.length === 0,
-    summary: `P${criteria.maxPosition} / ${Math.round(criteria.minFlowScore * 100)}% flow / ${criteria.maxPenaltySeconds}s max`,
+    summary: formatApexSeriesCriteria(event),
     misses
   };
+}
+
+export function formatApexSeriesCriteria(event: ApexSeriesEvent) {
+  const criteria = event.criteria;
+  const clean = criteria.cleanLapRequired ? "clean" : "warnings ok";
+  return `P${criteria.maxPosition} / ${Math.round(criteria.minFlowScore * 100)}% flow / ${clean} / ${criteria.maxPenaltySeconds}s max`;
 }
 
 export function summarizeApexSeries(readBest: (session: SessionConfig) => PersonalBest | null) {
