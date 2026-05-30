@@ -86,6 +86,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
 - High-speed runs now get peripheral ground-rush streaks and stronger player spray, so speed reads through the world instead of only through the speedometer.
 - Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
+- Panic braking now bleeds steering authority through lockup and tire saturation, so full brake plus full lock scrubs forward instead of rotating like an arcade handbrake.
 - Full braking can now bring the car all the way to rest, and throttle has to build speed back up instead of snapping to a hidden rolling minimum.
 - Standing starts and post-stop restarts now build through available traction, so wet asphalt crawls away with wheelspin instead of launching like dry pavement.
 - Wheel-to-wheel contact can now leave persistent front-wing damage, costing downforce and making the car harder to place until the run ends.
