@@ -17,6 +17,7 @@ import { RacingAssetLibrary } from "./RacingAssetLibrary";
 type CameraMode = "chase" | "pod";
 
 const RACING_LINE_SEGMENTS = 30;
+const RACING_LINE_CHEVRON_BARS = 2;
 
 function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
   const materials = new Set<{ dispose: () => void }>();
@@ -537,7 +538,7 @@ export class ThreeRaceRenderer {
       weatherMaterials.asphalt.metalness = 0.02 + telemetry.roadWetness * 0.16;
       weatherMaterials.grass.color.set(telemetry.roadWetness > 0.7 ? "#5c7065" : telemetry.grassColor);
       weatherMaterials.runoff.color.set(telemetry.roadWetness > 0.4 ? "#8a978f" : getActiveTrackLayout().runoffColor);
-      weatherMaterials.racingLine.opacity = 0.3 - telemetry.roadWetness * 0.08;
+      weatherMaterials.racingLine.opacity = 0.08 + telemetry.roadWetness * 0.02;
       weatherMaterials.fence.opacity = 0.2 + telemetry.rainIntensity * 0.12;
       weatherMaterials.glass.color.set(telemetry.roadWetness > 0.4 ? "#7f9ca4" : "#8fa5aa");
       weatherMaterials.glass.opacity = 0.62 + telemetry.roadWetness * 0.16;
@@ -799,10 +800,21 @@ export class ThreeRaceRenderer {
         fog: false,
         side: THREE.DoubleSide
       });
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.56 + taper * 0.2, 3.8 + taper * 1.6), material);
-      mesh.name = "dynamic-racing-line-segment";
-      mesh.rotation.x = -Math.PI / 2;
-      group.add(mesh);
+      const chevron = new THREE.Group();
+      chevron.name = "dynamic-racing-line-chevron";
+      chevron.userData.material = material;
+
+      for (const side of [-1, 1]) {
+        const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.13 + taper * 0.05, 2.65 + taper * 0.9), material);
+        bar.name = side < 0 ? "dynamic-racing-line-chevron-left" : "dynamic-racing-line-chevron-right";
+        bar.rotation.x = -Math.PI / 2;
+        bar.rotation.z = side * 0.48;
+        bar.position.x = side * (0.28 + taper * 0.08);
+        bar.position.z = -0.12;
+        chevron.add(bar);
+      }
+
+      group.add(chevron);
     }
 
     return group;
@@ -813,7 +825,9 @@ export class ThreeRaceRenderer {
     this.racingLineAssist.visible = visible;
     if (!visible) {
       this.renderer.domElement.dataset.racingLineAssist = telemetry.assistName === "Manual" ? "manual-off" : "hidden";
+      this.renderer.domElement.dataset.racingLineAssistStyle = "off";
       this.renderer.domElement.dataset.dynamicRacingLineSegments = "0";
+      this.renderer.domElement.dataset.dynamicRacingLinePieces = "0";
       this.renderer.domElement.dataset.racingLineCue = "";
       return;
     }
@@ -821,8 +835,9 @@ export class ThreeRaceRenderer {
     let visibleSegments = 0;
     let nearestCue = "commit";
     for (let index = 0; index < this.racingLineAssist.children.length; index += 1) {
-      const mesh = this.racingLineAssist.children[index];
-      if (!(mesh instanceof THREE.Mesh) || !(mesh.material instanceof THREE.MeshBasicMaterial)) continue;
+      const chevron = this.racingLineAssist.children[index];
+      const material = chevron.userData.material as THREE.MeshBasicMaterial | undefined;
+      if (!material) continue;
 
       const lookAhead = 13 + index * 7.2;
       const distance = telemetry.car.z + lookAhead;
@@ -837,17 +852,19 @@ export class ThreeRaceRenderer {
       const cue = brakingPressure ? "brake" : apexPressure ? "apex" : exitPressure ? "exit" : "commit";
       if (index < 5) nearestCue = cue;
 
-      mesh.visible = true;
-      mesh.position.set(point.x, sample.elevation + 0.082, point.z);
-      mesh.rotation.set(-Math.PI / 2, trackWorldHeadingAt(distance), 0);
-      mesh.scale.set(1, 1 + telemetry.roadWetness * 0.08, 1);
-      mesh.material.color.set(cue === "brake" ? "#ff3b33" : cue === "apex" ? "#f3d348" : cue === "exit" ? "#42f56f" : "#20b7ff");
-      mesh.material.opacity = (0.1 + near * 0.22) * (cue === "brake" ? 1.18 : 1) + telemetry.roadWetness * 0.04;
+      chevron.visible = true;
+      chevron.position.set(point.x, sample.elevation + 0.086, point.z);
+      chevron.rotation.set(0, trackWorldHeadingAt(distance), 0);
+      chevron.scale.setScalar(0.82 + near * 0.38 + telemetry.roadWetness * 0.05);
+      material.color.set(cue === "brake" ? "#ff3b33" : cue === "apex" ? "#f3d348" : cue === "exit" ? "#42f56f" : "#20b7ff");
+      material.opacity = (0.12 + near * 0.22) * (cue === "brake" ? 1.18 : 1) + telemetry.roadWetness * 0.04;
       visibleSegments += 1;
     }
 
     this.renderer.domElement.dataset.racingLineAssist = "dynamic";
+    this.renderer.domElement.dataset.racingLineAssistStyle = "chevrons";
     this.renderer.domElement.dataset.dynamicRacingLineSegments = String(visibleSegments);
+    this.renderer.domElement.dataset.dynamicRacingLinePieces = String(visibleSegments * RACING_LINE_CHEVRON_BARS);
     this.renderer.domElement.dataset.racingLineCue = nearestCue;
   }
 

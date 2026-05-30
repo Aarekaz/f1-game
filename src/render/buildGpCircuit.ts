@@ -133,7 +133,7 @@ function makeRacingLine() {
   for (let ahead = -150; ahead <= RENDERED_TRACK_LENGTH; ahead += 14) {
     const sample = sampleTrack(ahead);
     const racingOffset = sample.racingLineOffset;
-    const width = sample.brakingZone ? 0.34 : 0.22;
+    const width = sample.brakingZone ? 0.2 : 0.14;
     const centerOffset = Math.max(-2.8, Math.min(2.8, racingOffset));
     const left = trackWorldPointAt(ahead, centerOffset - width);
     const right = trackWorldPointAt(ahead, centerOffset + width);
@@ -161,9 +161,9 @@ function makeRacingLine() {
   geometry.computeVertexNormals();
 
   const material = new THREE.MeshBasicMaterial({
-    color: "#d7eb8f",
+    color: "#dfe7d8",
     transparent: true,
-    opacity: 0.32,
+    opacity: 0.08,
     depthWrite: false
   });
   const mesh = new THREE.Mesh(geometry, material);

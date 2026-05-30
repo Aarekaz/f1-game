@@ -270,7 +270,9 @@ async function checkDesktop(browser) {
     surfaceWetSheenOpacity: Number(document.querySelector("#game canvas")?.dataset.surfaceWetSheenOpacity ?? 0),
     surfacePuddleOpacity: Number(document.querySelector("#game canvas")?.dataset.surfacePuddleOpacity ?? 0),
     racingLineAssist: document.querySelector("#game canvas")?.dataset.racingLineAssist ?? "",
+    racingLineAssistStyle: document.querySelector("#game canvas")?.dataset.racingLineAssistStyle ?? "",
     dynamicRacingLineSegments: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLineSegments ?? 0),
+    dynamicRacingLinePieces: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLinePieces ?? 0),
     racingLineCue: document.querySelector("#game canvas")?.dataset.racingLineCue ?? "",
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
@@ -447,7 +449,9 @@ async function checkDesktop(browser) {
   assert(state.surfaceWetSheenOpacity > 0.1, `desktop wet sheen did not react to storm weather: ${state.surfaceWetSheenOpacity}`);
   assert(state.surfacePuddleOpacity > 0.2, `desktop puddles did not react to storm weather: ${state.surfacePuddleOpacity}`);
   assert(state.racingLineAssist === "dynamic", `desktop dynamic racing line did not activate: ${state.racingLineAssist}`);
+  assert(state.racingLineAssistStyle === "chevrons", `desktop racing line assist was not chevron styled: ${state.racingLineAssistStyle}`);
   assert(state.dynamicRacingLineSegments >= 24, `desktop dynamic racing line segments missing: ${state.dynamicRacingLineSegments}`);
+  assert(state.dynamicRacingLinePieces >= state.dynamicRacingLineSegments * 2, `desktop racing line chevron pieces missing: ${state.dynamicRacingLinePieces}`);
   assert(["brake", "apex", "exit", "commit"].includes(state.racingLineCue), `desktop racing line cue was missing: ${state.racingLineCue}`);
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
@@ -578,7 +582,9 @@ async function checkManualAssist(browser) {
     hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
     sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
     racingLineAssist: document.querySelector("#game canvas")?.dataset.racingLineAssist ?? "",
+    racingLineAssistStyle: document.querySelector("#game canvas")?.dataset.racingLineAssistStyle ?? "",
     dynamicRacingLineSegments: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLineSegments ?? 0),
+    dynamicRacingLinePieces: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLinePieces ?? 0),
     assistSteer: Number(document.querySelector("#game canvas")?.dataset.assistSteer ?? 0),
     assistBrake: Number(document.querySelector("#game canvas")?.dataset.assistBrake ?? 0),
     assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
@@ -592,7 +598,9 @@ async function checkManualAssist(browser) {
   assert(state.hudPhase === "racing", `manual smoke did not enter racing phase: ${state.hudPhase}`);
   assert(/Manual/.test(state.sessionWeather), `manual session readout did not expose manual assist: ${state.sessionWeather}`);
   assert(state.racingLineAssist === "manual-off", `manual racing line assist stayed visible: ${state.racingLineAssist}`);
+  assert(state.racingLineAssistStyle === "off", `manual racing line assist style stayed active: ${state.racingLineAssistStyle}`);
   assert(state.dynamicRacingLineSegments === 0, `manual racing line segments stayed active: ${state.dynamicRacingLineSegments}`);
+  assert(state.dynamicRacingLinePieces === 0, `manual racing line chevron pieces stayed active: ${state.dynamicRacingLinePieces}`);
   assert(state.assistSteer === 0, `manual steering assist was not zero: ${state.assistSteer}`);
   assert(state.assistBrake === 0, `manual brake assist was not zero: ${state.assistBrake}`);
   assert(state.assistThrottleTrim === 0, `manual throttle assist was not zero: ${state.assistThrottleTrim}`);
