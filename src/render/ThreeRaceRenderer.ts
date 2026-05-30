@@ -132,6 +132,7 @@ export class ThreeRaceRenderer {
   private readonly carScreenPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly rivalSprays = new Map<number, THREE.Group>();
+  private readonly rivalLabels = new Map<number, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
   private readonly handleResize = () => this.resize();
   private cameraMode: CameraMode = "chase";
   private cameraModeSnap = false;
@@ -375,6 +376,7 @@ export class ThreeRaceRenderer {
       if (gapMeters < -45 || gapMeters > 280 || cameraOccludedByTrailingCar) {
         if (existing) existing.visible = false;
         this.hideRivalSpray(rival.id);
+        this.hideRivalLabel(rival.id);
         continue;
       }
 
@@ -409,9 +411,19 @@ export class ThreeRaceRenderer {
         visibleWetRivalSprays += 1;
         strongestWetRivalSpray = Math.max(strongestWetRivalSpray, sprayStrength);
       }
+      this.updateRivalLabel(rival.id, rival.driver, rival.team, rival.gap, rivalPoint.x, rival.y, rivalPoint.z, gapMeters);
+    }
+    let visibleRivalLabels = 0;
+    let rivalLabelSample = "";
+    for (const label of this.rivalLabels.values()) {
+      if (!label.visible) continue;
+      visibleRivalLabels += 1;
+      if (!rivalLabelSample) rivalLabelSample = String(label.userData.labelText ?? "");
     }
     this.renderer.domElement.dataset.wetRivalSprays = String(visibleWetRivalSprays);
     this.renderer.domElement.dataset.wetRivalSprayStrength = strongestWetRivalSpray.toFixed(2);
+    this.renderer.domElement.dataset.rivalLabelsVisible = String(visibleRivalLabels);
+    this.renderer.domElement.dataset.rivalLabelSample = rivalLabelSample;
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -421,6 +433,7 @@ export class ThreeRaceRenderer {
     disposeObject3D(this.scene);
     this.rivals.clear();
     this.rivalSprays.clear();
+    this.rivalLabels.clear();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -467,6 +480,88 @@ export class ThreeRaceRenderer {
   private hideRivalSpray(id: number) {
     const spray = this.rivalSprays.get(id);
     if (spray) spray.visible = false;
+  }
+
+  private addRivalLabel(id: number) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 384;
+    canvas.height = 96;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const material = new THREE.MeshBasicMaterial({
+      color: "#ffffff",
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 1.28), material);
+    label.name = `rival-${id}-label`;
+    label.renderOrder = 8;
+    label.userData.canvas = canvas;
+    label.userData.texture = texture;
+    label.userData.labelText = "";
+    this.rivalLabels.set(id, label);
+    this.scene.add(label);
+    return label;
+  }
+
+  private updateRivalLabel(
+    id: number,
+    driver: string,
+    team: string,
+    gap: number,
+    carX: number,
+    carY: number,
+    carZ: number,
+    gapMeters: number
+  ) {
+    const label = this.rivalLabels.get(id) ?? this.addRivalLabel(id);
+    const gapText = gap >= 0 ? `+${gap.toFixed(1)}` : gap.toFixed(1);
+    const text = `${driver.toUpperCase()}  ${team}  ${gapText}`;
+    if (label.userData.labelText !== text) {
+      this.drawRivalLabel(label, text);
+    }
+
+    const distanceFade = clamp(1 - Math.abs(gapMeters) / 280, 0.16, 1);
+    label.visible = true;
+    label.position.set(carX, carY + 2.95 + distanceFade * 0.55, carZ);
+    label.lookAt(this.camera.position);
+    label.scale.setScalar(0.96 + distanceFade * 0.54);
+    label.material.opacity = 0.52 + distanceFade * 0.42;
+  }
+
+  private drawRivalLabel(label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>, text: string) {
+    const canvas = label.userData.canvas as HTMLCanvasElement | undefined;
+    const texture = label.userData.texture as THREE.CanvasTexture | undefined;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !texture || !ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(10, 18, 22, 0.72)";
+    ctx.strokeStyle = "rgba(210, 245, 236, 0.56)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(12, 18, 360, 56, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(87, 235, 255, 0.94)";
+    ctx.fillRect(28, 30, 5, 32);
+    ctx.fillStyle = "#f5fff8";
+    ctx.font = "700 28px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 48, 47, 300);
+
+    label.userData.labelText = text;
+    texture.needsUpdate = true;
+  }
+
+  private hideRivalLabel(id: number) {
+    const label = this.rivalLabels.get(id);
+    if (label) label.visible = false;
   }
 
   private animateFormulaCar(

@@ -233,6 +233,8 @@ async function checkDesktop(browser) {
     ersDeployGlow: Number(document.querySelector("#game canvas")?.dataset.ersDeployGlow ?? 0),
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
+    rivalLabelsVisible: Number(document.querySelector("#game canvas")?.dataset.rivalLabelsVisible ?? 0),
+    rivalLabelSample: document.querySelector("#game canvas")?.dataset.rivalLabelSample ?? "",
     lensRainDroplets: Number(document.querySelector("#game canvas")?.dataset.lensRainDroplets ?? 0),
     lensRainOpacity: Number(document.querySelector("#game canvas")?.dataset.lensRainOpacity ?? 0),
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
@@ -433,6 +435,8 @@ async function checkDesktop(browser) {
   assert(state.ersDeployGlow > 0.6, `desktop ERS deploy glow did not activate while boost was held: ${state.ersDeployGlow}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
+  assert(state.rivalLabelsVisible > 0, `desktop in-world rival labels did not render: ${state.rivalLabelsVisible}`);
+  assert(/[A-Z]{3}.*[+-]\d/.test(state.rivalLabelSample), `desktop rival label sample was not readable: ${state.rivalLabelSample}`);
   assert(state.lensRainDroplets >= 8, `desktop rain lens droplets were missing in storm weather: ${state.lensRainDroplets}`);
   assert(state.lensRainOpacity > 0.1, `desktop rain lens opacity stayed too faint: ${state.lensRainOpacity}`);
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
