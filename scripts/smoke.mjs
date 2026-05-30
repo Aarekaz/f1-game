@@ -151,6 +151,8 @@ async function checkDesktop(browser) {
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
+    carHeading: Number(document.querySelector("#game canvas")?.dataset.carHeading ?? 0),
+    carYawRate: Number(document.querySelector("#game canvas")?.dataset.carYawRate ?? 0),
     wheelSpin: Number(document.querySelector("#game canvas")?.dataset.wheelSpin ?? 0),
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
@@ -261,6 +263,8 @@ async function checkDesktop(browser) {
   assert(Math.abs(state.carScreenX) < 0.72, `desktop car drifted too far horizontally in frame: ${state.carScreenX}`);
   assert(state.carScreenY > -0.55 && state.carScreenY < 0.72, `desktop car drifted too far vertically in frame: ${state.carScreenY}`);
   assert(state.carScreenZ > -1 && state.carScreenZ < 1, `desktop car was outside camera depth range: ${state.carScreenZ}`);
+  assert(Number.isFinite(state.carHeading), "desktop car heading telemetry was missing");
+  assert(Number.isFinite(state.carYawRate), "desktop car yaw-rate telemetry was missing");
   assert(Number.isFinite(state.carSlip), "desktop slip telemetry was missing");
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");

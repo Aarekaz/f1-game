@@ -564,6 +564,14 @@ export class SimcadeRaceModel {
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
+    const steeringCommitment = clamp(Math.abs(steer) * 1.18 + this.slip * 0.42 + this.wheelspin * 0.2, 0, 1);
+    const selfAlignTarget = -track.curve * (0.14 + speedRatio * 0.1);
+    const selfAlignRate =
+      (onTrack ? 1.25 + this.grip * 2.2 : 0.42 + surface.grip * 0.7) *
+      (0.32 + speedRatio * 0.86) *
+      (1 - steeringCommitment * 0.62);
+    this.heading = approach(this.heading, selfAlignTarget, dt * selfAlignRate);
+    this.heading = clamp(this.heading, -0.72, 0.72);
     this.slip = clamp(
       Math.max(
         Math.abs(this.yawRate) * speedRatio * (1.25 - this.grip),

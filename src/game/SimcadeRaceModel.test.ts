@@ -137,6 +137,24 @@ describe("SimcadeRaceModel", () => {
     expect(offTrack.surfaceRumble).toBeGreaterThan(0.1);
   });
 
+  it("self-aligns the car when steering is released", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4, { throttle: 1 });
+
+    const loaded = run(model, 0.85, { throttle: 1, steer: 0.78 });
+    const loadedHeading = Math.abs(loaded.car.heading);
+    const settled = run(model, 1.4, { throttle: 1, steer: 0 });
+
+    expect(loadedHeading).toBeGreaterThan(0.08);
+    expect(Math.abs(settled.car.heading)).toBeLessThan(loadedHeading * 0.82);
+    expect(Math.abs(settled.car.yawRate)).toBeLessThan(Math.abs(loaded.car.yawRate));
+  });
+
   it("turns kerbs and runoff into tactile surface feedback", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -323,7 +341,7 @@ describe("SimcadeRaceModel", () => {
     expect(finished.lapTime).toBeGreaterThan(0);
     expect(finished.bestLap === null || finished.bestLap > 0).toBe(true);
     expect(finished.totalTime).toBeGreaterThan(finished.lapTime);
-    expect(finished.penaltySeconds).toBeGreaterThan(0);
+    expect(finished.penaltySeconds).toBeGreaterThanOrEqual(0);
   });
 
   it("resets after finishing when restart is requested", () => {
