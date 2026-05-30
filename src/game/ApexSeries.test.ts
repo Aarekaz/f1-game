@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APEX_SERIES_EVENTS, findApexSeriesEvent, nextApexSeriesEvent, summarizeApexSeries } from "./ApexSeries";
+import { APEX_SERIES_EVENTS, evaluateApexSeriesTarget, findApexSeriesEvent, nextApexSeriesEvent, summarizeApexSeries } from "./ApexSeries";
 import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 import type { PersonalBest } from "./PersonalBestStore";
 
@@ -37,6 +37,35 @@ describe("ApexSeries", () => {
       id: "northstar-storm",
       status: "Apex / P2"
     });
+  });
+
+  it("evaluates authored targets against the current run", () => {
+    const northstar = APEX_SERIES_EVENTS[2];
+    const pass = evaluateApexSeriesTarget(northstar, {
+      totalTime: 190,
+      bestLap: 61.2,
+      flowScore: 0.58,
+      position: 4,
+      overtakes: 4,
+      cleanLap: false,
+      lapValid: true,
+      penaltySeconds: 2
+    });
+    const fail = evaluateApexSeriesTarget(northstar, {
+      totalTime: 196,
+      bestLap: 64.4,
+      flowScore: 0.41,
+      position: 7,
+      overtakes: 2,
+      cleanLap: false,
+      lapValid: false,
+      penaltySeconds: 5
+    });
+
+    expect(pass.passed).toBe(true);
+    expect(pass.summary).toBe("P5 / 48% flow / 3s max");
+    expect(fail.passed).toBe(false);
+    expect(fail.misses).toEqual(["finish P5 or better", "48% flow", "3s penalty max"]);
   });
 
   it("finds the authored series event for a selected session", () => {

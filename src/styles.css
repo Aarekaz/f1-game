@@ -658,6 +658,14 @@ body {
   text-transform: uppercase;
 }
 
+.result-series b[data-state="met"] {
+  color: #d7eb8f;
+}
+
+.result-series b[data-state="missed"] {
+  color: #ffb4b4;
+}
+
 .topbar div {
   min-height: 58px;
   padding: 9px 11px;

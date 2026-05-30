@@ -10,6 +10,8 @@ export type SessionResult = {
   position: number;
   overtakes: number;
   cleanLap: boolean;
+  lapValid: boolean;
+  penaltySeconds: number;
 };
 
 export type PersonalBest = {
@@ -43,12 +45,14 @@ export function resultFromTelemetry(telemetry: RaceTelemetry): SessionResult {
     flowScore: telemetry.flowScore,
     position: telemetry.position,
     overtakes: telemetry.overtakeStreak,
-    cleanLap: telemetry.cleanLap
+    cleanLap: telemetry.cleanLap,
+    lapValid: telemetry.lapValid,
+    penaltySeconds: telemetry.penaltySeconds
   };
 }
 
 export function gradeResult(result: SessionResult) {
-  if (!result.cleanLap) return "Scrappy";
+  if (!result.cleanLap || !result.lapValid || result.penaltySeconds > 0) return "Scrappy";
   if (result.position <= 3 && result.flowScore >= 0.76) return "Apex";
   if (result.position <= 3 && result.flowScore >= 0.62) return "Podium";
   if (result.position <= 5 && result.flowScore >= 0.48) return "Points";
@@ -58,7 +62,7 @@ export function gradeResult(result: SessionResult) {
 
 export function resultHeadline(result: SessionResult) {
   if (result.position > 3) return `Finished P${result.position}`;
-  if (!result.cleanLap) return "Podium With Warnings";
+  if (!result.cleanLap || !result.lapValid || result.penaltySeconds > 0) return "Podium With Warnings";
   if (result.flowScore >= 0.76) return "Apex Podium Run";
   if (result.flowScore >= 0.62) return "Clean Podium Run";
   return "Podium, Rhythm Needed";

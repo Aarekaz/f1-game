@@ -1,5 +1,6 @@
 import { RaceAudioController } from "../audio/RaceAudioController";
 import {
+  evaluateApexSeriesTarget,
   findApexSeriesEvent,
   nextApexSeriesEvent,
   scorePersonalBest,
@@ -425,9 +426,11 @@ export function createRaceApp() {
     }
     if (telemetry.phase === "finished" && lastPhase !== "finished") {
       const previousBest = readPersonalBest(session);
-      const update = mergePersonalBest(previousBest, resultFromTelemetry(telemetry));
+      const result = resultFromTelemetry(telemetry);
+      const update = mergePersonalBest(previousBest, result);
       const seriesEvent = findApexSeriesEvent(session);
-      queuedNextSeriesEvent = seriesEvent ? nextApexSeriesEvent(seriesEvent) : null;
+      const targetEvaluation = seriesEvent ? evaluateApexSeriesTarget(seriesEvent, result) : null;
+      queuedNextSeriesEvent = seriesEvent && targetEvaluation?.passed ? nextApexSeriesEvent(seriesEvent) : null;
       savePersonalBest(session, update.best);
       syncSessionBest(update.best);
       syncSeriesProgress(session, selectSeriesEvent);
@@ -439,6 +442,8 @@ export function createRaceApp() {
           ? {
               title: `${seriesEvent.round} ${seriesEvent.title}`,
               target: seriesEvent.target,
+              targetMet: targetEvaluation?.passed ?? false,
+              targetDetail: targetEvaluation?.passed ? (targetEvaluation?.summary ?? "") : (targetEvaluation?.misses[0] ?? ""),
               score: scorePersonalBest(update.best),
               scoreDelta: Math.max(0, scorePersonalBest(update.best) - scorePersonalBest(previousBest))
             }

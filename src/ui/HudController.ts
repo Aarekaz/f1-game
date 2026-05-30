@@ -5,6 +5,8 @@ import { TRACK_LOOP_LENGTH, trackWorldPointAt, wrapDistance } from "../game/trac
 export type SeriesResultUpdate = {
   title: string;
   target: string;
+  targetMet: boolean;
+  targetDetail: string;
   score: number;
   scoreDelta: number;
 };
@@ -406,7 +408,9 @@ export class HudController {
       flowScore: telemetry.flowScore,
       position: telemetry.position,
       overtakes: telemetry.overtakeStreak,
-      cleanLap: telemetry.cleanLap
+      cleanLap: telemetry.cleanLap,
+      lapValid: telemetry.lapValid,
+      penaltySeconds: telemetry.penaltySeconds
     });
     this.resultTotal.textContent = formatTime(telemetry.totalTime);
     this.resultBest.textContent = telemetry.bestLap === null ? "No clean" : formatTime(telemetry.bestLap);
@@ -458,10 +462,16 @@ export class HudController {
     if (this.resultSeriesScore) {
       if (!this.latestSeriesResult) {
         this.resultSeriesScore.textContent = "No series score";
+        this.resultSeriesScore.dataset.state = "free";
+      } else if (!this.latestSeriesResult.targetMet) {
+        this.resultSeriesScore.textContent = `Target missed / ${this.latestSeriesResult.targetDetail}`;
+        this.resultSeriesScore.dataset.state = "missed";
       } else if (this.latestSeriesResult.scoreDelta > 0) {
-        this.resultSeriesScore.textContent = `+${this.latestSeriesResult.scoreDelta} pts`;
+        this.resultSeriesScore.textContent = `Target met / +${this.latestSeriesResult.scoreDelta} pts`;
+        this.resultSeriesScore.dataset.state = "met";
       } else {
-        this.resultSeriesScore.textContent = `${this.latestSeriesResult.score}/4 pts`;
+        this.resultSeriesScore.textContent = `Target met / ${this.latestSeriesResult.score}/4 pts`;
+        this.resultSeriesScore.dataset.state = "met";
       }
     }
   }

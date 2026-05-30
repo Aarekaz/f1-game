@@ -1,5 +1,12 @@
 import { findAssist, findTrack, findWeather, type FictionalAssistId, type FictionalTrackId, type FictionalWeatherId, type SessionConfig } from "../world/FictionalGpWorld";
-import type { PersonalBest } from "./PersonalBestStore";
+import type { PersonalBest, SessionResult } from "./PersonalBestStore";
+
+export type ApexSeriesTargetCriteria = {
+  maxPosition: number;
+  minFlowScore: number;
+  cleanLapRequired: boolean;
+  maxPenaltySeconds: number;
+};
 
 export type ApexSeriesEvent = {
   id: string;
@@ -9,6 +16,7 @@ export type ApexSeriesEvent = {
   weatherId: FictionalWeatherId;
   assistId: FictionalAssistId;
   target: string;
+  criteria: ApexSeriesTargetCriteria;
 };
 
 export type ApexSeriesEventSummary = ApexSeriesEvent & {
@@ -26,7 +34,13 @@ export const APEX_SERIES_EVENTS: ApexSeriesEvent[] = [
     trackId: "aurelia",
     weatherId: "clear",
     assistId: "balanced",
-    target: "Clean podium flow"
+    target: "Clean podium flow",
+    criteria: {
+      maxPosition: 3,
+      minFlowScore: 0.76,
+      cleanLapRequired: true,
+      maxPenaltySeconds: 0
+    }
   },
   {
     id: "mirage-dusk",
@@ -35,7 +49,13 @@ export const APEX_SERIES_EVENTS: ApexSeriesEvent[] = [
     trackId: "mirage",
     weatherId: "dusk",
     assistId: "balanced",
-    target: "Hold the walls"
+    target: "Hold the walls",
+    criteria: {
+      maxPosition: 5,
+      minFlowScore: 0.56,
+      cleanLapRequired: true,
+      maxPenaltySeconds: 0
+    }
   },
   {
     id: "northstar-storm",
@@ -44,7 +64,13 @@ export const APEX_SERIES_EVENTS: ApexSeriesEvent[] = [
     trackId: "northstar",
     weatherId: "storm",
     assistId: "balanced",
-    target: "Survive low grip"
+    target: "Survive low grip",
+    criteria: {
+      maxPosition: 5,
+      minFlowScore: 0.48,
+      cleanLapRequired: false,
+      maxPenaltySeconds: 3
+    }
   }
 ];
 
@@ -78,6 +104,30 @@ export function scorePersonalBest(best: PersonalBest | null) {
   if (best.grade === "Podium") return 3;
   if (best.grade === "Points" || best.grade === "Clean") return 2;
   return 1;
+}
+
+export function evaluateApexSeriesTarget(event: ApexSeriesEvent, result: SessionResult) {
+  const misses: string[] = [];
+  const criteria = event.criteria;
+
+  if (result.position > criteria.maxPosition) {
+    misses.push(`finish P${criteria.maxPosition} or better`);
+  }
+  if (result.flowScore < criteria.minFlowScore) {
+    misses.push(`${Math.round(criteria.minFlowScore * 100)}% flow`);
+  }
+  if (criteria.cleanLapRequired && (!result.cleanLap || !result.lapValid)) {
+    misses.push("clean valid run");
+  }
+  if (result.penaltySeconds > criteria.maxPenaltySeconds) {
+    misses.push(`${criteria.maxPenaltySeconds}s penalty max`);
+  }
+
+  return {
+    passed: misses.length === 0,
+    summary: `P${criteria.maxPosition} / ${Math.round(criteria.minFlowScore * 100)}% flow / ${criteria.maxPenaltySeconds}s max`,
+    misses
+  };
 }
 
 export function summarizeApexSeries(readBest: (session: SessionConfig) => PersonalBest | null) {

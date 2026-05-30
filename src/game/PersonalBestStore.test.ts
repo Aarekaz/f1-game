@@ -8,7 +8,9 @@ const cleanPodium: SessionResult = {
   flowScore: 0.79,
   position: 3,
   overtakes: 5,
-  cleanLap: true
+  cleanLap: true,
+  lapValid: true,
+  penaltySeconds: 0
 };
 
 describe("PersonalBestStore", () => {
@@ -38,7 +40,9 @@ describe("PersonalBestStore", () => {
         flowScore: 0.72,
         position: 2,
         overtakes: 6,
-        cleanLap: false
+        cleanLap: false,
+        lapValid: false,
+        penaltySeconds: 5
       },
       new Date("2026-05-29T10:05:00Z")
     );
