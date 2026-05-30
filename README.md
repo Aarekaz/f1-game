@@ -41,6 +41,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
 - Wheel-to-wheel contact can now leave persistent front-wing damage, costing downforce and making the car harder to place until the run ends.
 - A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
+- The car now carries a soft dynamic contact shadow, which helps it feel planted on the circuit instead of floating above the procedural surface.
 - Local personal bests per fictional track and weather pairing.
 - A first external asset pass using a small CC0 Kenney Racing Kit subset.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.

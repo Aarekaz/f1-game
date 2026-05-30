@@ -103,6 +103,27 @@ function makeRainDropletTexture() {
   return texture;
 }
 
+function makeCarGroundShadowTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 192;
+  canvas.height = 320;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const gradient = ctx.createRadialGradient(96, 166, 8, 96, 166, 138);
+    gradient.addColorStop(0, "rgba(4, 8, 7, 0.42)");
+    gradient.addColorStop(0.34, "rgba(4, 8, 7, 0.26)");
+    gradient.addColorStop(0.72, "rgba(4, 8, 7, 0.09)");
+    gradient.addColorStop(1, "rgba(4, 8, 7, 0)");
+    ctx.scale(1, 1.42);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height / 1.42);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -128,6 +149,7 @@ export class ThreeRaceRenderer {
   private readonly proximityMarkers = this.buildProximityMarkers();
   private readonly racingLineAssist = this.buildRacingLineAssist();
   private readonly checkpointBeacon = this.buildCheckpointBeacon();
+  private readonly carGroundShadow = this.buildCarGroundShadow();
   private readonly cockpitFrame = this.buildCockpitFrame();
   private readonly cameraPosition = new THREE.Vector3(0, 5.8, 22.5);
   private readonly cameraTarget = new THREE.Vector3(0, 0.72, -16.5);
@@ -174,6 +196,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.proximityMarkers);
     this.scene.add(this.racingLineAssist);
     this.scene.add(this.checkpointBeacon);
+    this.scene.add(this.carGroundShadow);
     this.scene.add(this.car);
     void this.loadRaceAssets();
     this.resize();
@@ -327,6 +350,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rearAeroFlap = telemetry.aeroBoostActive.toFixed(2);
 
     const carWorldYaw = trackYaw - telemetry.car.heading;
+    this.updateCarGroundShadow(carX, carY, carZ, carWorldYaw, telemetry);
     const airBuffet = clamp(telemetry.dirtyAir * 0.48 + telemetry.draft * 0.18 + telemetry.contactRisk * 0.22 + telemetry.shiftCut * 0.08, 0, 1);
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
     this.updateAirWake(carX, carY, carZ, carWorldYaw, telemetry.draft, telemetry.dirtyAir, speedRatio);
@@ -519,6 +543,46 @@ export class ThreeRaceRenderer {
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
     return mesh;
+  }
+
+  private buildCarGroundShadow() {
+    const texture = makeCarGroundShadowTexture();
+    const material = new THREE.MeshBasicMaterial({
+      color: "#111612",
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 6.8), material);
+    shadow.name = "formula-car-ground-contact-shadow";
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.renderOrder = 3;
+    shadow.userData.material = material;
+    shadow.userData.texture = texture;
+    return shadow;
+  }
+
+  private updateCarGroundShadow(carX: number, carY: number, carZ: number, carWorldYaw: number, telemetry: RaceTelemetry) {
+    const podMode = this.cameraMode === "pod" && telemetry.phase !== "ready";
+    const speedRatio = clamp(telemetry.speedKph / 310, 0, 1);
+    const roughnessLift = telemetry.surfaceRumble * 0.012;
+    const shadowOpacity = podMode ? 0 : clamp(0.27 + speedRatio * 0.08 - telemetry.roadWetness * 0.06 + telemetry.car.slip * 0.04, 0.16, 0.36);
+    const shadowLength = 0.9 + speedRatio * 0.18 + telemetry.car.slip * 0.1;
+    const shadowWidth = 0.94 + telemetry.car.understeer * 0.08;
+
+    this.carGroundShadow.visible = !podMode;
+    this.carGroundShadow.position.set(carX, carY + 0.026 + roughnessLift, carZ);
+    this.carGroundShadow.rotation.y = carWorldYaw;
+    this.carGroundShadow.scale.set(shadowWidth, shadowLength, 1);
+
+    const material = this.carGroundShadow.userData.material as THREE.MeshBasicMaterial | undefined;
+    if (material) material.opacity = shadowOpacity;
+
+    this.renderer.domElement.dataset.carGroundShadow = this.carGroundShadow.visible ? "planted" : "hidden";
+    this.renderer.domElement.dataset.carGroundShadowOpacity = shadowOpacity.toFixed(3);
+    this.renderer.domElement.dataset.carGroundShadowLength = shadowLength.toFixed(3);
   }
 
   private addRivalSpray(id: number) {

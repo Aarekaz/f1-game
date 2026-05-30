@@ -231,6 +231,9 @@ async function checkDesktop(browser) {
     carHeading: Number(document.querySelector("#game canvas")?.dataset.carHeading ?? 0),
     carYawRate: Number(document.querySelector("#game canvas")?.dataset.carYawRate ?? 0),
     wheelSpin: Number(document.querySelector("#game canvas")?.dataset.wheelSpin ?? 0),
+    carGroundShadow: document.querySelector("#game canvas")?.dataset.carGroundShadow ?? "",
+    carGroundShadowOpacity: Number(document.querySelector("#game canvas")?.dataset.carGroundShadowOpacity ?? 0),
+    carGroundShadowLength: Number(document.querySelector("#game canvas")?.dataset.carGroundShadowLength ?? 0),
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     brakePressureTrail: Number(document.querySelector("#game canvas")?.dataset.brakePressureTrail ?? 0),
     brakePressureMarks: Number(document.querySelector("#game canvas")?.dataset.brakePressureMarks ?? 0),
@@ -391,6 +394,7 @@ async function checkDesktop(browser) {
     carWorldY: Number(document.querySelector("#game canvas")?.dataset.carWorldY ?? 0),
     carWorldZ: Number(document.querySelector("#game canvas")?.dataset.carWorldZ ?? 0),
     externalCarVisible: document.querySelector("#game canvas")?.dataset.externalCarVisible ?? "",
+    carGroundShadow: document.querySelector("#game canvas")?.dataset.carGroundShadow ?? "",
     cockpitFrame: document.querySelector("#game canvas")?.dataset.cockpitFrame ?? "",
     cockpitFrameParts: Number(document.querySelector("#game canvas")?.dataset.cockpitFrameParts ?? 0),
     cockpitWheelAngle: Number(document.querySelector("#game canvas")?.dataset.cockpitWheelAngle ?? 0),
@@ -442,7 +446,7 @@ async function checkDesktop(browser) {
   assert(state.carDistance > ready.carDistance + 10, "desktop car distance did not advance after launch");
   assert(
     Math.hypot(state.carWorldX - ready.carWorldX, state.carWorldZ - ready.carWorldZ) > 10,
-    "desktop car did not move through world-space circuit coordinates"
+    `desktop car did not move through world-space circuit coordinates: ready=(${ready.carWorldX},${ready.carWorldZ}) state=(${state.carWorldX},${state.carWorldZ}) distance=${state.carDistance}`
   );
   assert(Number.isFinite(state.carWorldY) && state.carWorldY > 0.5, "desktop car did not receive elevated track height");
   assert(state.circuitWorldZ === ready.circuitWorldZ, "desktop circuit moved instead of staying in world space");
@@ -495,6 +499,13 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
   assert(Number.isFinite(state.wheelSpin) && Math.abs(state.wheelSpin) > 10, "desktop animated wheel spin telemetry was missing");
+  assert(state.carGroundShadow === "planted", `desktop formula car ground shadow was missing: ${state.carGroundShadow}`);
+  assert(
+    state.carGroundShadowOpacity > 0.12 && state.carGroundShadowOpacity < 0.42,
+    `desktop formula car ground shadow opacity was wrong: ${state.carGroundShadowOpacity}`
+  );
+  assert(state.carGroundShadowLength > 0.9, `desktop formula car ground shadow did not stretch with speed: ${state.carGroundShadowLength}`);
+  assert(podCamera.carGroundShadow === "hidden", `desktop pod camera should hide external car shadow: ${podCamera.carGroundShadow}`);
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(Number.isFinite(state.brakePressureTrail), "desktop brake pressure trail telemetry was missing");
   assert(brakingState.brakeGlow > state.brakeGlow, `desktop brake glow did not rise under braking: ${JSON.stringify(brakingState)}`);
