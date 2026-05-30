@@ -96,6 +96,7 @@ export class ThreeRaceRenderer {
   private readonly desiredCameraTarget = new THREE.Vector3();
   private readonly carScreenPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
+  private readonly rivalSprays = new Map<number, THREE.Group>();
   private readonly handleResize = () => this.resize();
   private cameraMode: CameraMode = "chase";
   private cameraModeSnap = false;
@@ -309,6 +310,8 @@ export class ThreeRaceRenderer {
     this.horizon.position.z = this.camera.position.z;
     this.horizon.rotation.y = this.camera.rotation.y;
 
+    let visibleWetRivalSprays = 0;
+    let strongestWetRivalSpray = 0;
     for (const rival of telemetry.rivals) {
       const existing = this.rivals.get(rival.id);
       const gapMeters = rival.z - telemetry.car.z;
@@ -316,14 +319,16 @@ export class ThreeRaceRenderer {
       const cameraOccludedByTrailingCar = gapMeters < -6 && Math.abs(rivalLateral - carLateral) < 5.5;
       if (gapMeters < -45 || gapMeters > 280 || cameraOccludedByTrailingCar) {
         if (existing) existing.visible = false;
+        this.hideRivalSpray(rival.id);
         continue;
       }
 
       const mesh = existing ?? this.addRival(rival.id, rival.color);
       const rivalPoint = trackWorldPointAt(rival.z, rivalLateral);
+      const rivalWorldYaw = trackWorldHeadingAt(rival.z) - rival.heading;
       mesh.visible = true;
       mesh.position.set(rivalPoint.x, rival.y, rivalPoint.z);
-      mesh.rotation.y = trackWorldHeadingAt(rival.z) - rival.heading;
+      mesh.rotation.y = rivalWorldYaw;
       mesh.rotation.z = -rival.bank * 0.12;
       this.animateFormulaCar(mesh, {
         distance: rival.z,
@@ -334,7 +339,23 @@ export class ThreeRaceRenderer {
         wheelspin: 0,
         rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0
       });
+      const sprayStrength = this.updateRivalSpray(
+        rival.id,
+        rivalPoint.x,
+        rival.y,
+        rivalPoint.z,
+        rivalWorldYaw,
+        telemetry.roadWetness,
+        rival.speedKph,
+        telemetry.phase === "racing"
+      );
+      if (sprayStrength > 0.03) {
+        visibleWetRivalSprays += 1;
+        strongestWetRivalSpray = Math.max(strongestWetRivalSpray, sprayStrength);
+      }
     }
+    this.renderer.domElement.dataset.wetRivalSprays = String(visibleWetRivalSprays);
+    this.renderer.domElement.dataset.wetRivalSprayStrength = strongestWetRivalSpray.toFixed(2);
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -343,6 +364,7 @@ export class ThreeRaceRenderer {
     window.removeEventListener("resize", this.handleResize);
     disposeObject3D(this.scene);
     this.rivals.clear();
+    this.rivalSprays.clear();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -353,6 +375,42 @@ export class ThreeRaceRenderer {
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
     return mesh;
+  }
+
+  private addRivalSpray(id: number) {
+    const group = new THREE.Group();
+    group.name = `rival-${id}-wet-spray`;
+    const texture = makeSoftMistTexture();
+    const material = new THREE.MeshBasicMaterial({
+      color: "#dce5e2",
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    for (let index = 0; index < 8; index += 1) {
+      const width = 0.42 + index * 0.1;
+      const length = 0.72 + index * 0.15;
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, length), material);
+      mesh.name = "rival-water-spray-plume";
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(index % 2 === 0 ? -0.72 : 0.72, 0.06, 0.98 + index * 0.42);
+      group.add(mesh);
+    }
+
+    group.userData.material = material;
+    group.userData.texture = texture;
+    this.rivalSprays.set(id, group);
+    this.scene.add(group);
+    return group;
+  }
+
+  private hideRivalSpray(id: number) {
+    const spray = this.rivalSprays.get(id);
+    if (spray) spray.visible = false;
   }
 
   private animateFormulaCar(
@@ -988,5 +1046,31 @@ export class ThreeRaceRenderer {
     this.waterSpray.position.set(carX, carY + 0.02, carZ + 0.25);
     this.waterSpray.rotation.y = heading;
     this.waterSpray.scale.set(0.8 + sprayStrength * 0.9, 0.8 + sprayStrength * 0.8, 0.9 + speedRatio * 1.4);
+  }
+
+  private updateRivalSpray(
+    id: number,
+    carX: number,
+    carY: number,
+    carZ: number,
+    heading: number,
+    roadWetness: number,
+    speedKph: number,
+    active: boolean
+  ) {
+    const spray = this.rivalSprays.get(id) ?? this.addRivalSpray(id);
+    const speedRatio = clamp((speedKph - 55) / 190, 0, 1);
+    const sprayStrength = active ? clamp(roadWetness * (0.18 + speedRatio * 0.9), 0, 1) : 0;
+    const material = spray.userData.material as THREE.MeshBasicMaterial | undefined;
+    spray.visible = sprayStrength > 0.03;
+    if (material) {
+      material.opacity = sprayStrength * 0.22;
+    }
+
+    spray.position.set(carX, carY + 0.02, carZ + 0.2);
+    spray.rotation.y = heading;
+    spray.scale.set(0.64 + sprayStrength * 0.7, 0.7 + sprayStrength * 0.46, 0.72 + speedRatio * 1.18);
+
+    return sprayStrength;
   }
 }

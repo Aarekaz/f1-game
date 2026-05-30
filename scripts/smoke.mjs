@@ -225,6 +225,8 @@ async function checkDesktop(browser) {
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     rearRainLight: Number(document.querySelector("#game canvas")?.dataset.rearRainLight ?? 0),
     rearRainLightGlow: Number(document.querySelector("#game canvas")?.dataset.rearRainLightGlow ?? 0),
+    wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
+    wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
     flowScore: Number(document.querySelector("#game canvas")?.dataset.flowScore ?? 0),
     flowState: document.querySelector("#game canvas")?.dataset.flowState ?? "",
     flowMeter: document.querySelector("#flow")?.style.getPropertyValue("--value") ?? "",
@@ -403,6 +405,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(state.rearRainLight > 0.6, `desktop rear rain light did not activate in storm weather: ${state.rearRainLight}`);
   assert(state.rearRainLightGlow > 0.6, `desktop rear rain light glow did not activate in storm weather: ${state.rearRainLightGlow}`);
+  assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
+  assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.flowScore > 0 && state.flowScore <= 1, `desktop flow score was missing: ${state.flowScore}`);
   assert(state.flowState.length > 0, "desktop flow state was missing");
   assert(/%/.test(state.flowMeter), `desktop flow meter did not update: ${state.flowMeter}`);
