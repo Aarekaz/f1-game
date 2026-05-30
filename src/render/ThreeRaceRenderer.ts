@@ -315,20 +315,28 @@ export class ThreeRaceRenderer {
     this.car.visible = !podMode || telemetry.phase === "ready";
     this.renderer.domElement.dataset.externalCarVisible = String(this.car.visible);
     this.updateCockpitFrame(telemetry, podMode);
-    this.camera.fov = podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
+    const apexSampleDistance = telemetry.car.z + (podMode ? 42 + speedRatio * 62 : 58 + speedRatio * 84);
+    const apexSample = sampleTrack(apexSampleDistance);
+    const apexDirection = clamp(apexSample.curve * 28 + apexSample.racingLineOffset * 0.1, -1, 1);
+    const cameraApexBias = apexDirection * (podMode ? 1.6 + speedRatio * 1.1 : 3.2 + speedRatio * 2.2);
+    const fovTarget =
+      (podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6) +
+      Math.abs(apexDirection) * (podMode ? 1.2 : 2.4);
+    this.camera.fov = fovTarget;
 
-    const lookAhead = podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18;
+    const lookAhead = (podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18) + Math.abs(apexDirection) * (podMode ? 8 : 16);
     const cameraLag = podMode ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 : 6.6 + speedRatio * 3.6 + telemetry.car.throttle * 0.4 - telemetry.car.braking * 1.2;
     const lateralShoulder = podMode ? carLateral * 0.045 - telemetry.car.yawRate * 0.08 : carLateral * (0.18 + speedRatio * 0.06) - telemetry.car.yawRate * 0.62;
-    const targetLateral = podMode ? carLateral * 0.08 + telemetry.car.yawRate * 0.34 - telemetry.curve * 0.4 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85;
+    const targetLateral =
+      (podMode ? carLateral * 0.08 + telemetry.car.yawRate * 0.34 - telemetry.curve * 0.4 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85) +
+      apexSample.racingLineOffset * (podMode ? 0.28 : 0.46) +
+      cameraApexBias;
+    const targetDistance = telemetry.car.z + lookAhead;
     const cameraPoint = {
       x: carX - trackTangent.x * cameraLag + trackNormal.x * lateralShoulder,
       z: carZ - trackTangent.z * cameraLag + trackNormal.z * lateralShoulder
     };
-    const targetPoint = {
-      x: carX + trackTangent.x * lookAhead + trackNormal.x * targetLateral,
-      z: carZ + trackTangent.z * lookAhead + trackNormal.z * targetLateral
-    };
+    const targetPoint = trackWorldPointAt(targetDistance, targetLateral);
     if (telemetry.phase === "ready") {
       const gridLateral = -4.2;
       this.desiredCameraPosition.set(
@@ -369,6 +377,12 @@ export class ThreeRaceRenderer {
     }
     this.camera.position.copy(this.cameraPosition);
     this.camera.lookAt(this.cameraTarget);
+    const cameraRoll = clamp(
+      -telemetry.car.yawRate * (podMode ? 0.018 : 0.035) - telemetry.car.bank * (podMode ? 0.04 : 0.055) + apexDirection * (podMode ? 0.008 : 0.016),
+      podMode ? -0.032 : -0.044,
+      podMode ? 0.032 : 0.044
+    );
+    this.camera.rotation.z += cameraRoll;
     this.camera.updateProjectionMatrix();
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
     this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
@@ -379,6 +393,10 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraWorldZ = this.camera.position.z.toFixed(2);
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.renderer.domElement.dataset.cameraBuffet = airBuffet.toFixed(2);
+    this.renderer.domElement.dataset.cameraLookAhead = lookAhead.toFixed(2);
+    this.renderer.domElement.dataset.cameraApexBias = cameraApexBias.toFixed(3);
+    this.renderer.domElement.dataset.cameraRoll = cameraRoll.toFixed(3);
+    this.renderer.domElement.dataset.cameraFov = this.camera.fov.toFixed(2);
     this.renderer.domElement.dataset.carScreenX = this.carScreenPosition.x.toFixed(3);
     this.renderer.domElement.dataset.carScreenY = this.carScreenPosition.y.toFixed(3);
     this.renderer.domElement.dataset.carScreenZ = this.carScreenPosition.z.toFixed(3);

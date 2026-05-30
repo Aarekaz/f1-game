@@ -216,6 +216,10 @@ async function checkDesktop(browser) {
     cameraWorldZ: Number(document.querySelector("#game canvas")?.dataset.cameraWorldZ ?? 0),
     cameraMode: document.querySelector("#game canvas")?.dataset.cameraMode ?? "",
     cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
+    cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
+    cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
+    cameraRoll: Number(document.querySelector("#game canvas")?.dataset.cameraRoll ?? 0),
+    cameraFov: Number(document.querySelector("#game canvas")?.dataset.cameraFov ?? 0),
     carScreenX: Number(document.querySelector("#game canvas")?.dataset.carScreenX ?? 0),
     carScreenY: Number(document.querySelector("#game canvas")?.dataset.carScreenY ?? 0),
     carScreenZ: Number(document.querySelector("#game canvas")?.dataset.carScreenZ ?? 0),
@@ -416,6 +420,10 @@ async function checkDesktop(browser) {
   assert(state.cameraMode === "chase", `desktop default camera mode was wrong: ${state.cameraMode}`);
   assert(Number.isFinite(state.cameraWorldY) && state.cameraWorldY > state.carWorldY, "desktop chase camera did not sit above the car");
   assert(Math.abs(state.cameraWorldZ - state.carWorldZ) > 3, "desktop chase camera did not separate from the car in world space");
+  assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
+  assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
+  assert(Number.isFinite(state.cameraRoll), "desktop camera roll telemetry was missing");
+  assert(state.cameraFov >= 42 && state.cameraFov <= 56, `desktop camera FOV was out of range: ${state.cameraFov}`);
   assert(podCamera.mode === "pod", `desktop camera toggle did not enter pod mode: ${podCamera.mode}`);
   assert(podCamera.externalCarVisible === "false", `desktop pod camera still showed the external player car: ${podCamera.externalCarVisible}`);
   assert(podCamera.cockpitFrame === "visible", `desktop pod camera cockpit frame was not visible: ${podCamera.cockpitFrame}`);

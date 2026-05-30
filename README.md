@@ -16,6 +16,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Nearby rival cars carry compact in-world driver/team/gap plates, so traffic is readable without staring at the timing tower.
 - Racing-style gear, RPM, and shift-light feedback in the HUD.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
+- The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - The pre-race briefing shows the active series contract before launch, including position, flow, cleanliness, and penalty requirements.
 - The live HUD tracks the active series target during the run, including current position, flow, and penalty state.
