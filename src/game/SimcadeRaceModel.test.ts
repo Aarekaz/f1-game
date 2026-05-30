@@ -25,6 +25,17 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
+function testSurfaceRelief(track: ReturnType<typeof sampleTrack>, lateral: number) {
+  const absoluteLateral = Math.abs(lateral);
+  const kerbInnerEdge = track.halfWidth - 0.55;
+  const kerbOuterEdge = track.halfWidth + 0.35;
+  const kerbRampIn = clamp((absoluteLateral - kerbInnerEdge) / 0.32, 0, 1);
+  const kerbRampOut = 1 - clamp((absoluteLateral - (kerbOuterEdge - 0.18)) / 0.52, 0, 1);
+  const kerbCrown = Math.min(kerbRampIn, kerbRampOut) * 0.052;
+  const shoulderDrop = -clamp((absoluteLateral - kerbOuterEdge) / 2.25, 0, 1) * 0.038;
+  return kerbCrown + shoulderDrop;
+}
+
 function runGuided(model: SimcadeRaceModel, seconds: number) {
   let telemetry = model.telemetry();
   for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
@@ -797,11 +808,42 @@ describe("SimcadeRaceModel", () => {
     const loaded = run(model, 1.8, { throttle: 1, steer: 0.9 });
     const track = sampleTrack(loaded.trackOffset);
     const normalized = clamp(loaded.carX / Math.max(1, track.halfWidth), -1.35, 1.35);
-    const bankedHeight = track.elevation + track.bank * normalized + 0.065;
+    const bankedHeight = track.elevation + track.bank * normalized + testSurfaceRelief(track, loaded.carX) + 0.065;
 
     expect(Math.abs(loaded.carX)).toBeGreaterThan(0.65);
     expect(loaded.car.y).toBeCloseTo(bankedHeight, 4);
     expect(Math.abs(loaded.car.y - (track.elevation + 0.065))).toBeGreaterThan(0.002);
+  });
+
+  it("lifts and rolls the chassis over raised kerb contact", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const cruise = run(model, 4.6, { throttle: 1 });
+    let kerbRide = cruise;
+    let kerbRelief = 0;
+
+    for (let elapsed = 0; elapsed < 2.2; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 0.84 });
+      const relief = testSurfaceRelief(sampleTrack(telemetry.trackOffset), telemetry.carX);
+      if (relief > kerbRelief) {
+        kerbRide = telemetry;
+        kerbRelief = relief;
+      }
+    }
+
+    const track = sampleTrack(kerbRide.trackOffset);
+    const normalized = clamp(kerbRide.carX / Math.max(1, track.halfWidth), -1.35, 1.35);
+    const flatBankedHeight = track.elevation + track.bank * normalized + 0.065;
+
+    expect(kerbRide.surfaceName).toBe("Kerb");
+    expect(kerbRide.car.y).toBeGreaterThan(flatBankedHeight + 0.018);
+    expect(kerbRelief).toBeGreaterThan(0.035);
+    expect(kerbRide.suspensionTravel).toBeGreaterThan(cruise.suspensionTravel + 0.025);
+    expect(Math.abs(kerbRide.car.roll)).toBeGreaterThan(Math.abs(cruise.car.roll) + 0.01);
   });
 
   it("lets road camber influence hands-off lateral motion", () => {
