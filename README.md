@@ -25,10 +25,12 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
+- A chase-frame guard now pulls the look target back toward the car when hard cornering or rejoin motion tries to push it out of frame.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
 - Trackside posts near the chase camera are culled when they would cut across the car, which keeps the view usable in dense circuit sections.
 - Foreground safety barriers now yield to the chase camera during kerb and runoff moments, keeping the car and road readable.
 - Overhead gate pieces also respect the chase camera, so checkpoint signage does not slap across the road when the player arrives at speed.
+- Close braking and chevron boards also yield when they would cover the player car in the chase view.
 - The chase camera now lifts and pulls back during runoff or gravel mistakes, keeping rejoin moments readable instead of letting foreground geometry swallow the car.
 - Rejoin framing now recenters on the actual car when it runs wide, instead of letting the ideal racing line pull the player into the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
