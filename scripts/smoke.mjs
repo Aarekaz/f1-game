@@ -121,6 +121,8 @@ async function checkDesktop(browser) {
     canvasBox: document.querySelector("#game canvas")?.getBoundingClientRect().toJSON(),
     speed: Number(document.querySelector("#speed")?.textContent ?? 0),
     gear: Number(document.querySelector("#gear")?.textContent ?? 0),
+    shiftLightsActive: Number(document.querySelector("#shift-lights")?.dataset.activeLights ?? 0),
+    shiftLightCount: document.querySelectorAll("#shift-lights i").length,
     objective: document.querySelector("#objective")?.textContent ?? "",
     timingRows: Array.from(document.querySelectorAll("#timing-tower div")).map((row) => row.textContent ?? ""),
     timingPlayer: document.querySelector("#timing-tower .player")?.textContent ?? "",
@@ -348,6 +350,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.assistThrottleTrim), "desktop assist throttle telemetry was missing");
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
+  assert(state.shiftLightCount === 5, `desktop shift-light cluster was incomplete: ${state.shiftLightCount}`);
+  assert(state.shiftLightsActive > 0, `desktop shift lights did not react to RPM: ${state.shiftLightsActive}`);
   assert(state.assetCar === "apex-procedural-f25", `desktop fictional formula car did not load, asset=${state.assetCar}`);
   assert(state.tracksideAssets === "kenney", `desktop free trackside assets did not load, assets=${state.tracksideAssets}`);
   assert(state.tracksideGrandstands >= 4, `desktop free grandstand assets did not load, grandstands=${state.tracksideGrandstands}`);

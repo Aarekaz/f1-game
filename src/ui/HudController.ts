@@ -48,6 +48,7 @@ export class HudController {
   private speed = requireElement("speed");
   private gear = optionalElement("gear");
   private rpm = optionalElement("rpm");
+  private shiftLights = optionalElement("shift-lights");
   private objective = requireElement("objective");
   private sessionTrack = optionalElement("session-track");
   private sessionWeather = optionalElement("session-weather");
@@ -192,8 +193,21 @@ export class HudController {
       this.gear.textContent = String(telemetry.gear);
     }
 
+    const rpmRatio = telemetry.rpm / 10000;
     if (this.rpm) {
-      setMeter(this.rpm, telemetry.rpm / 10000);
+      setMeter(this.rpm, rpmRatio);
+    }
+
+    if (this.shiftLights) {
+      const activeCount = telemetry.phase === "racing" ? Math.max(0, Math.min(5, Math.ceil((rpmRatio - 0.5) / 0.09))) : 0;
+      const redline = rpmRatio > 0.92;
+      this.shiftLights.dataset.activeLights = String(activeCount);
+      this.shiftLights.dataset.redline = redline ? "true" : "false";
+      Array.from(this.shiftLights.querySelectorAll("i")).forEach((light, index) => {
+        light.classList.toggle("active", index < activeCount);
+        light.classList.toggle("hot", index >= 3 && index < activeCount);
+        light.classList.toggle("redline", redline);
+      });
     }
   }
 

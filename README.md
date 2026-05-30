@@ -11,6 +11,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Track sections, braking zones, racing-line hints, boards, chevrons, a real circuit minimap, rhythm scoring, and HUD cues.
 - A more readable track surface with a rubbered racing groove, wet sheen, standing water, painted grid slots, and braking marks.
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
+- Racing-style gear, RPM, and shift-light feedback in the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - Race results can advance straight into the next Apex Series event, so a session feels like part of a ladder instead of a one-off run.
 - Denser circuit dressing: catch fencing, pit wall modules, marshal posts, fictional paddock blocks, and venue-specific hero structures.
