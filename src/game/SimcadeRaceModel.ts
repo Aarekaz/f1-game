@@ -864,6 +864,17 @@ export class SimcadeRaceModel {
     const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14 + this.surfaceEdgeLoad * 6 + this.tireSaturation * 10) * driverDemand;
+    const highSpeedSteeringWindow = clamp((this.speed - 190) / 95, 0, 1);
+    const steeringScrubDrag =
+      Math.pow(Math.abs(rawSteer), 1.5) *
+      speedRatio *
+      speedRatio *
+      highSpeedSteeringWindow *
+      throttle *
+      (1 - brake * 0.82) *
+      (0.18 + this.tireSaturation * 0.82) *
+      (68 + speedRatio * 142) *
+      (onTrack ? 1 : 0.42 + this.tireContactGrip * 0.34);
     const racecraftDrag = this.contactRisk * (8 + speedRatio * 18) + this.sideBySide * Math.abs(steer) * 6 + this.frontWingDamage * (5 + speedRatio * 18);
     const recoverySteerTowardRoad = clamp(-rawSteer * offTrackSide, -1, 1);
     const recoverySteerPenalty =
@@ -880,7 +891,7 @@ export class SimcadeRaceModel {
     const looseSurfaceRecoveryDrive = onTrack
       ? 0
       : settledRecoveryInput * (surface.name === "Gravel" ? 78 : 110) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
-    const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 150 : 92) * crawlRecoveryWindow;
+    const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 170 : 98) * crawlRecoveryWindow;
     const crawlDragCut = onTrack ? 0 : recoverySteerGrip * settledRecoveryInput * crawlRecoveryWindow * (surface.name === "Gravel" ? 0.42 : 0.28);
     const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief) * (1 - crawlDragCut));
     this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42, 0, 1), dt * 12);
@@ -896,6 +907,7 @@ export class SimcadeRaceModel {
         braking -
         Math.max(0, drag - this.aeroDragReduction) -
         instabilityDrag -
+        steeringScrubDrag -
         racecraftDrag -
         offTrackDrag) *
       dt;
