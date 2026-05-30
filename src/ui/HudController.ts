@@ -50,6 +50,7 @@ export class HudController {
   private rpm = optionalElement("rpm");
   private shiftLights = optionalElement("shift-lights");
   private objective = requireElement("objective");
+  private assistChip = optionalElement("assist-chip");
   private sessionTrack = optionalElement("session-track");
   private sessionWeather = optionalElement("session-weather");
   private sectionName = optionalElement("section-name");
@@ -119,6 +120,7 @@ export class HudController {
     this.updatePowertrain(telemetry);
     this.objective.textContent =
       telemetry.phase === "countdown" ? `Launch ${(telemetry.launchCharge * 100).toFixed(0)}%` : telemetry.objective;
+    this.updateAssistChip(telemetry);
     this.updateSessionReadout(telemetry);
     this.updateTimingTower(telemetry);
     this.updateTrackReadout(telemetry);
@@ -238,6 +240,30 @@ export class HudController {
         return row;
       })
     );
+  }
+
+  private updateAssistChip(telemetry: RaceTelemetry) {
+    if (!this.assistChip) return;
+
+    if (telemetry.assistName === "Manual") {
+      this.assistChip.textContent = "Manual drive";
+      this.assistChip.dataset.mode = "manual";
+      return;
+    }
+
+    const steer = Math.abs(telemetry.assistSteer);
+    const brake = telemetry.assistBrake;
+    const throttleTrim = telemetry.assistThrottleTrim;
+    const strongest = Math.max(steer, brake, throttleTrim);
+    const label = strongest === steer ? "Steer" : strongest === brake ? "Brake" : "Trim";
+    if (strongest < 0.025 || telemetry.phase === "ready") {
+      this.assistChip.textContent = "Assist ready";
+      this.assistChip.dataset.mode = "ready";
+      return;
+    }
+
+    this.assistChip.textContent = `${label} assist ${(strongest * 100).toFixed(0)}%`;
+    this.assistChip.dataset.mode = "active";
   }
 
   setPersonalBest(best: PersonalBest | null) {

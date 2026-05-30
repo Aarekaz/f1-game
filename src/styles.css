@@ -767,6 +767,7 @@ body {
 }
 
 .hud[data-phase="racing"] .objective-chip,
+.hud[data-phase="racing"] .assist-chip,
 .hud[data-phase="racing"] .session-chip,
 .hud[data-phase="racing"] .track-readout,
 .hud[data-phase="racing"] .pace-readout,
@@ -925,6 +926,28 @@ body {
   font-weight: 950;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.assist-chip {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: #17211b;
+  background: #d7eb8f;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.assist-chip[data-mode="active"] {
+  color: #ffffff;
+  background: rgba(32, 183, 255, 0.72);
+}
+
+.assist-chip[data-mode="manual"] {
+  color: #cfd6cc;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .session-chip {
@@ -1528,6 +1551,12 @@ body {
   }
 
   .hud[data-phase="racing"] .objective-chip {
+    padding: 6px 7px;
+    font-size: 9px;
+  }
+
+  .assist-chip {
+    margin-top: 6px;
     padding: 6px 7px;
     font-size: 9px;
   }

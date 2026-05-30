@@ -220,6 +220,8 @@ async function checkDesktop(browser) {
     assistSteer: Number(document.querySelector("#game canvas")?.dataset.assistSteer ?? 0),
     assistBrake: Number(document.querySelector("#game canvas")?.dataset.assistBrake ?? 0),
     assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
+    assistChip: document.querySelector("#assist-chip")?.textContent ?? "",
+    assistChipMode: document.querySelector("#assist-chip")?.getAttribute("data-mode") ?? "",
     assetCar: document.querySelector("#game canvas")?.dataset.assetCar ?? "",
     tracksideAssets: document.querySelector("#game canvas")?.dataset.tracksideAssets ?? "",
     tracksideGrandstands: Number(document.querySelector("#game canvas")?.dataset.tracksideGrandstands ?? 0),
@@ -389,6 +391,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.assistSteer), "desktop assist steering telemetry was missing");
   assert(Number.isFinite(state.assistBrake), "desktop assist brake telemetry was missing");
   assert(Number.isFinite(state.assistThrottleTrim), "desktop assist throttle telemetry was missing");
+  assert(/assist|Manual/i.test(state.assistChip), `desktop assist chip was missing: ${state.assistChip}`);
+  assert(["ready", "active", "manual"].includes(state.assistChipMode), `desktop assist chip mode was invalid: ${state.assistChipMode}`);
   assert(state.speed > 60, `desktop launch did not accelerate, speed=${state.speed}`);
   assert(state.gear >= 1, "desktop gear readout was missing");
   assert(state.shiftLightCount === 5, `desktop shift-light cluster was incomplete: ${state.shiftLightCount}`);
@@ -547,7 +551,9 @@ async function checkManualAssist(browser) {
     dynamicRacingLineSegments: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLineSegments ?? 0),
     assistSteer: Number(document.querySelector("#game canvas")?.dataset.assistSteer ?? 0),
     assistBrake: Number(document.querySelector("#game canvas")?.dataset.assistBrake ?? 0),
-    assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0)
+    assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0),
+    assistChip: document.querySelector("#assist-chip")?.textContent ?? "",
+    assistChipMode: document.querySelector("#assist-chip")?.getAttribute("data-mode") ?? ""
   }));
 
   await page.close();
@@ -558,6 +564,8 @@ async function checkManualAssist(browser) {
   assert(state.assistSteer === 0, `manual steering assist was not zero: ${state.assistSteer}`);
   assert(state.assistBrake === 0, `manual brake assist was not zero: ${state.assistBrake}`);
   assert(state.assistThrottleTrim === 0, `manual throttle assist was not zero: ${state.assistThrottleTrim}`);
+  assert(state.assistChip === "Manual drive", `manual assist chip was wrong: ${state.assistChip}`);
+  assert(state.assistChipMode === "manual", `manual assist chip mode was wrong: ${state.assistChipMode}`);
 }
 
 async function waitForServer(target) {
