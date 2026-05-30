@@ -23,6 +23,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
 - The chase camera now lifts and pulls back during runoff or gravel mistakes, keeping rejoin moments readable instead of letting foreground geometry swallow the car.
+- Rejoin framing now recenters on the actual car when it runs wide, instead of letting the ideal racing line pull the player into the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
 - The pre-race briefing shows the active series contract before launch, including position, flow, cleanliness, and penalty requirements.
 - The live HUD tracks the active series target during the run, including current position, flow, and penalty state.
