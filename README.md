@@ -30,6 +30,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP brake release load](readme-assets/screenshots/08-aurelia-brake-release-load.png) |
 
+| High-speed tire scrub |
+| --- |
+| ![Aurelia GP high-speed steering scrub](readme-assets/screenshots/09-aurelia-high-speed-steering-scrub.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
