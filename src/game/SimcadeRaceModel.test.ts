@@ -222,6 +222,34 @@ describe("SimcadeRaceModel", () => {
     expect(heated.speedKph).toBeLessThan(260);
   });
 
+  it("makes panic braking shed steering authority instead of adding rotation", () => {
+    const trail = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    trail.update(1 / 60, { ...idle, launch: true });
+    run(trail, 4.6, { throttle: 1, ers: true });
+    const controlled = run(trail, 1.05, { brake: 0.72, steer: 0.55 });
+
+    const panic = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    panic.update(1 / 60, { ...idle, launch: true });
+    run(panic, 4.6, { throttle: 1, ers: true });
+    const locked = run(panic, 1.05, { brake: 1, steer: 1 });
+
+    expect(locked.speedKph).toBeLessThan(controlled.speedKph);
+    expect(Math.abs(locked.car.heading)).toBeLessThan(Math.abs(controlled.car.heading));
+    expect(Math.abs(locked.carX)).toBeLessThan(Math.abs(controlled.carX) + 0.65);
+    expect(locked.car.lockup).toBeGreaterThan(controlled.car.lockup);
+    expect(locked.car.understeer).toBeGreaterThan(controlled.car.understeer);
+    expect(locked.lateralScrub).toBeGreaterThan(controlled.lateralScrub);
+    expect(locked.forwardBite).toBeLessThan(controlled.forwardBite);
+  });
+
   it("lets full braking bring the car to a real stop", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
