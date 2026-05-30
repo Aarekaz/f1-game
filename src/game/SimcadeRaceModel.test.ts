@@ -156,6 +156,23 @@ describe("SimcadeRaceModel", () => {
     expect(evolved.surfaceGrip).toBeGreaterThan(findWeather("overcast").gripMultiplier);
   });
 
+  it("burns fuel and makes the car lighter during a committed run", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("balanced")
+    });
+    const initial = model.telemetry();
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.2, { throttle: 0.72 });
+
+    const evolved = runGuided(model, 18);
+
+    expect(evolved.fuelLoad).toBeLessThan(initial.fuelLoad);
+    expect(evolved.fuelMassKg).toBeLessThan(initial.fuelMassKg);
+    expect(["Heavy fuel", "Fuel coming down", "Light car"]).toContain(evolved.fuelState);
+  });
+
   it("steers with grip limits and loses grip off track", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -287,6 +304,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);
     expect(telemetry.tireState.length).toBeGreaterThan(0);
+    expect(telemetry.fuelLoad).toBe(1);
+    expect(telemetry.fuelMassKg).toBeGreaterThan(50);
+    expect(telemetry.fuelState).toBe("Heavy fuel");
     expect(telemetry.flowScore).toBeGreaterThan(0);
     expect(telemetry.flowState).toBe("Good rhythm");
     expect(telemetry.cameraSnap).toBe(false);
@@ -641,8 +661,8 @@ describe("SimcadeRaceModel", () => {
     let peakDamage = 0;
     let state = model.telemetry();
 
-    for (let elapsed = 0; elapsed < 15; elapsed += 1 / 60) {
-      state = model.update(1 / 60, { ...idle, throttle: 1, steer: -0.12, ers: true });
+    for (let elapsed = 0; elapsed < 18; elapsed += 1 / 60) {
+      state = model.update(1 / 60, { ...idle, throttle: 1, steer: -0.18, ers: true });
       peakProximity = Math.max(peakProximity, state.rivalProximity);
       peakSideBySide = Math.max(peakSideBySide, state.sideBySide);
       peakContactRisk = Math.max(peakContactRisk, state.contactRisk);

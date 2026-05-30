@@ -249,6 +249,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.tireTemp = telemetry.tireTemp.toFixed(2);
     this.renderer.domElement.dataset.tireWear = telemetry.tireWear.toFixed(3);
     this.renderer.domElement.dataset.tireState = telemetry.tireState;
+    this.renderer.domElement.dataset.fuelLoad = telemetry.fuelLoad.toFixed(3);
+    this.renderer.domElement.dataset.fuelMassKg = telemetry.fuelMassKg.toFixed(1);
+    this.renderer.domElement.dataset.fuelState = telemetry.fuelState;
     this.renderer.domElement.dataset.assistSteer = telemetry.assistSteer.toFixed(3);
     this.renderer.domElement.dataset.assistBrake = telemetry.assistBrake.toFixed(3);
     this.renderer.domElement.dataset.assistThrottleTrim = telemetry.assistThrottleTrim.toFixed(3);

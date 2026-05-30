@@ -55,6 +55,9 @@ export type RaceTelemetry = {
   tireTemp: number;
   tireWear: number;
   tireState: string;
+  fuelLoad: number;
+  fuelMassKg: number;
+  fuelState: string;
   grip: number;
   flowScore: number;
   flowState: string;
@@ -230,6 +233,7 @@ export class SimcadeRaceModel {
   private aeroDragReduction = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
+  private fuelLoad = 1;
   private trackRubber = 0;
   private dryingLine = 0;
   private frontWingDamage = 0;
@@ -346,6 +350,9 @@ export class SimcadeRaceModel {
       tireTemp: this.tireTemp,
       tireWear: this.tireWear,
       tireState: this.tireState(),
+      fuelLoad: this.fuelLoad,
+      fuelMassKg: this.fuelMassKg(),
+      fuelState: this.fuelState(),
       grip: this.grip,
       flowScore: this.flowScore,
       flowState: this.flowState(),
@@ -464,6 +471,7 @@ export class SimcadeRaceModel {
     this.aeroDragReduction = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
+    this.fuelLoad = 1;
     this.trackRubber = 0;
     this.dryingLine = 0;
     this.frontWingDamage = 0;
@@ -545,6 +553,8 @@ export class SimcadeRaceModel {
     this.updateTrackEvolution(dt, speedRatio, onTrack, surface.roughness);
     const roadWetness = this.dynamicRoadWetness();
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
+    this.updateFuelLoad(dt, throttle, boost, speedRatio);
+    const fuelWeightPenalty = this.fuelLoad * 0.075;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
     this.aeroBoostAvailable =
       onTrack &&
@@ -572,7 +582,7 @@ export class SimcadeRaceModel {
       this.messageTimer = 0.85;
       this.racecraftCooldown = 2.1;
     }
-    const contactImpact = clamp((this.contactRisk - 0.62) / 0.38, 0, 1) * clamp((this.speed - 80) / 170, 0, 1) * (0.35 + this.sideBySide * 0.65);
+    const contactImpact = clamp((this.contactRisk - 0.48) / 0.52, 0, 1) * clamp((this.speed - 80) / 170, 0, 1) * (0.35 + this.sideBySide * 0.65);
     if (contactImpact > 0.04) {
       const previousDamage = this.frontWingDamage;
       this.frontWingDamage = clamp(this.frontWingDamage + contactImpact * dt * 0.18, 0, 1);
@@ -603,8 +613,8 @@ export class SimcadeRaceModel {
     this.understeer = approach(this.understeer, understeerTarget, dt * 6);
     this.updateTireState(dt, speedRatio, throttle, brake, Math.abs(steer), surface.roughness, onTrack);
 
-    const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34);
-    const braking = brake * 248 * (1 - this.lockup * 0.22);
+    const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34) * (1 - fuelWeightPenalty);
+    const braking = brake * 248 * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45);
     const boostPower = boost * 72;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
@@ -625,6 +635,7 @@ export class SimcadeRaceModel {
     const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
     const tireGripFactor = clamp(1 - tireTempPenalty - this.tireWear * 0.18, 0.76, 1.04);
     const damageGripFactor = clamp(1 - this.frontWingDamage * (0.12 + speedRatio * 0.18), 0.74, 1);
+    const fuelGripFactor = clamp(1 - this.fuelLoad * 0.025, 0.96, 1);
     const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05);
     const bankingSupport = 1 + Math.min(0.1, Math.abs(track.bank) * 0.22);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
@@ -634,6 +645,7 @@ export class SimcadeRaceModel {
             weatherGrip *
             tireGripFactor *
             damageGripFactor *
+            fuelGripFactor *
             bankingSupport -
             wetPenalty -
             dirtyAirPenalty,
@@ -643,7 +655,8 @@ export class SimcadeRaceModel {
       : 0.42 * weatherGrip;
     this.grip = approach(this.grip, gripTarget, dt * 5.5);
 
-    const steerAuthority = (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35) * (1 - this.downforceLoss * 0.5);
+    const steerAuthority =
+      (0.78 - speedRatio * 0.44) * this.grip * (1 - this.understeer * 0.35) * (1 - this.downforceLoss * 0.5) * (1 - this.fuelLoad * 0.035);
     const targetYawRate = steer * steerAuthority;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
@@ -831,6 +844,15 @@ export class SimcadeRaceModel {
       this.understeer * 0.0022 +
       (onTrack ? 0 : 0.002 + surfaceRoughness * 0.0025);
     this.tireWear = clamp(this.tireWear + wearRate * dt, 0, 1);
+  }
+
+  private updateFuelLoad(dt: number, throttle: number, boost: number, speedRatio: number) {
+    const burnRate = throttle * (0.0028 + speedRatio * 0.0052) + boost * 0.0024;
+    this.fuelLoad = clamp(this.fuelLoad - burnRate * dt, 0.38, 1);
+  }
+
+  private fuelMassKg() {
+    return 18 + this.fuelLoad * 42;
   }
 
   private updateTrackEvolution(dt: number, speedRatio: number, onTrack: boolean, surfaceRoughness: number) {
@@ -1076,6 +1098,12 @@ export class SimcadeRaceModel {
     if (this.tireTemp < 0.38) return "Cold tires";
     if (this.tireTemp > 0.62 && this.tireTemp < 0.84) return "Tires ready";
     return "Tires stable";
+  }
+
+  private fuelState() {
+    if (this.fuelLoad > 0.82) return "Heavy fuel";
+    if (this.fuelLoad > 0.62) return "Fuel coming down";
+    return "Light car";
   }
 
   private trackEvolutionState() {

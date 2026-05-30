@@ -254,6 +254,9 @@ async function checkDesktop(browser) {
     tireState: document.querySelector("#game canvas")?.dataset.tireState ?? "",
     tireMeter: document.querySelector("#tire")?.style.getPropertyValue("--value") ?? "",
     tireMeterState: document.querySelector("#tire")?.getAttribute("data-state") ?? "",
+    fuelLoad: Number(document.querySelector("#game canvas")?.dataset.fuelLoad ?? 0),
+    fuelMassKg: Number(document.querySelector("#game canvas")?.dataset.fuelMassKg ?? 0),
+    fuelState: document.querySelector("#game canvas")?.dataset.fuelState ?? "",
     surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
@@ -493,6 +496,9 @@ async function checkDesktop(browser) {
   assert(/Tires|tire/i.test(state.tireState), `desktop tire state was missing: ${state.tireState}`);
   assert(/%/.test(state.tireMeter), `desktop tire meter did not update: ${state.tireMeter}`);
   assert(state.tireMeterState === state.tireState, `desktop tire meter state was not wired: ${state.tireMeterState}`);
+  assert(state.fuelLoad > 0 && state.fuelLoad <= 1, `desktop fuel load telemetry was invalid: ${state.fuelLoad}`);
+  assert(state.fuelMassKg > 20, `desktop fuel mass telemetry was invalid: ${state.fuelMassKg}`);
+  assert(/fuel|car/i.test(state.fuelState), `desktop fuel state was missing: ${state.fuelState}`);
   assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
