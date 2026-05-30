@@ -427,6 +427,26 @@ describe("SimcadeRaceModel", () => {
     expect(["Kerb", "Runoff", "Gravel"]).toContain(recovering.surfaceName);
   });
 
+  it("lets loose-surface mistakes crawl back once the driver releases full lock", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.8, { throttle: 1 });
+
+    const wide = run(model, 1.5, { throttle: 1, steer: 1 });
+    const bottomed = run(model, 1.1, { throttle: 0 });
+    const crawled = run(model, 2.2, { throttle: 1 });
+
+    expect(["Runoff", "Gravel"]).toContain(wide.surfaceName);
+    expect(bottomed.speedKph).toBeLessThan(45);
+    expect(crawled.speedKph).toBeGreaterThan(bottomed.speedKph + 8);
+    expect(Math.abs(crawled.carX)).toBeLessThan(Math.abs(bottomed.carX));
+    expect(crawled.speedKph).toBeGreaterThan(28);
+  });
+
   it("rides the lateral road surface instead of the centerline height", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("northstar"),
