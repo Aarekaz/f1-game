@@ -257,6 +257,9 @@ async function checkDesktop(browser) {
     fuelLoad: Number(document.querySelector("#game canvas")?.dataset.fuelLoad ?? 0),
     fuelMassKg: Number(document.querySelector("#game canvas")?.dataset.fuelMassKg ?? 0),
     fuelState: document.querySelector("#game canvas")?.dataset.fuelState ?? "",
+    brakeTemp: Number(document.querySelector("#game canvas")?.dataset.brakeTemp ?? 0),
+    brakeFade: Number(document.querySelector("#game canvas")?.dataset.brakeFade ?? 0),
+    brakeState: document.querySelector("#game canvas")?.dataset.brakeState ?? "",
     surfaceName: document.querySelector("#game canvas")?.dataset.surfaceName ?? "",
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
@@ -352,7 +355,8 @@ async function checkDesktop(browser) {
     brakeGlow: Number(document.querySelector("#game canvas")?.dataset.brakeGlow ?? 0),
     brakePressureTrail: Number(document.querySelector("#game canvas")?.dataset.brakePressureTrail ?? 0),
     brakePressureMarks: Number(document.querySelector("#game canvas")?.dataset.brakePressureMarks ?? 0),
-    carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0)
+    carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
+    brakeTemp: Number(document.querySelector("#game canvas")?.dataset.brakeTemp ?? 0)
   }));
   await page.keyboard.up("ArrowDown");
 
@@ -473,6 +477,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(Number.isFinite(state.brakePressureTrail), "desktop brake pressure trail telemetry was missing");
   assert(brakingState.brakeGlow > state.brakeGlow, `desktop brake glow did not rise under braking: ${JSON.stringify(brakingState)}`);
+  assert(brakingState.brakeTemp >= state.brakeTemp, `desktop brake temperature did not rise under braking: ${JSON.stringify(brakingState)}`);
   assert(brakingState.brakePressureTrail > 0.2, `desktop brake pressure trail did not activate under braking: ${JSON.stringify(brakingState)}`);
   assert(brakingState.brakePressureMarks >= 8, `desktop brake pressure marks were missing under braking: ${JSON.stringify(brakingState)}`);
   assert(state.rearRainLight > 0.6, `desktop rear rain light did not activate in storm weather: ${state.rearRainLight}`);
@@ -499,6 +504,9 @@ async function checkDesktop(browser) {
   assert(state.fuelLoad > 0 && state.fuelLoad <= 1, `desktop fuel load telemetry was invalid: ${state.fuelLoad}`);
   assert(state.fuelMassKg > 20, `desktop fuel mass telemetry was invalid: ${state.fuelMassKg}`);
   assert(/fuel|car/i.test(state.fuelState), `desktop fuel state was missing: ${state.fuelState}`);
+  assert(state.brakeTemp > 0 && state.brakeTemp <= 1.1, `desktop brake temperature telemetry was invalid: ${state.brakeTemp}`);
+  assert(state.brakeFade >= 0 && state.brakeFade <= 1, `desktop brake fade telemetry was invalid: ${state.brakeFade}`);
+  assert(/brake/i.test(state.brakeState), `desktop brake state was missing: ${state.brakeState}`);
   assert(/Asphalt|Kerb|Runoff|Gravel/.test(state.surfaceName), `desktop surface name was missing: ${state.surfaceName}`);
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
@@ -520,7 +528,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);

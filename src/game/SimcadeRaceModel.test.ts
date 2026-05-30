@@ -173,6 +173,25 @@ describe("SimcadeRaceModel", () => {
     expect(["Heavy fuel", "Fuel coming down", "Light car"]).toContain(evolved.fuelState);
   });
 
+  it("heats brakes under repeated heavy braking and exposes fade risk", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    const initial = model.telemetry();
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 3.2, { throttle: 1 });
+    run(model, 3.2, { throttle: 1, brake: 1 });
+
+    const heated = model.telemetry();
+
+    expect(heated.brakeTemp).toBeGreaterThan(initial.brakeTemp);
+    expect(heated.brakeFade).toBeGreaterThanOrEqual(0);
+    expect(["Brakes ready", "Brakes hot", "Brake fade"]).toContain(heated.brakeState);
+    expect(heated.speedKph).toBeLessThan(260);
+  });
+
   it("steers with grip limits and loses grip off track", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -307,6 +326,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.fuelLoad).toBe(1);
     expect(telemetry.fuelMassKg).toBeGreaterThan(50);
     expect(telemetry.fuelState).toBe("Heavy fuel");
+    expect(telemetry.brakeTemp).toBeGreaterThan(0);
+    expect(telemetry.brakeFade).toBe(0);
+    expect(telemetry.brakeState).toBe("Brakes ready");
     expect(telemetry.flowScore).toBeGreaterThan(0);
     expect(telemetry.flowState).toBe("Good rhythm");
     expect(telemetry.cameraSnap).toBe(false);

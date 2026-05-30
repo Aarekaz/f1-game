@@ -35,7 +35,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
-- Heavy braking shows pressure trails and heat feedback so slowing the car has the same tactile weight as accelerating it.
+- Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
 - Wheel-to-wheel contact can now leave persistent front-wing damage, costing downforce and making the car harder to place until the run ends.
 - A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
 - Local personal bests per fictional track and weather pairing.

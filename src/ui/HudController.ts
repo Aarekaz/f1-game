@@ -355,6 +355,7 @@ export class HudController {
     if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
+    if (telemetry.brakeFade > 0.2 || telemetry.brakeState === "Cold brakes") return telemetry.brakeState;
     if (telemetry.fuelLoad < 0.7) return telemetry.fuelState;
     if (telemetry.frontWingDamage > 0.04) return `${telemetry.damageState} ${(telemetry.frontWingDamage * 100).toFixed(0)}%`;
     if (telemetry.trackRubber > 0.12 || telemetry.dryingLine > 0.1) return telemetry.trackEvolutionState;

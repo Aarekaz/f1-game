@@ -58,6 +58,9 @@ export type RaceTelemetry = {
   fuelLoad: number;
   fuelMassKg: number;
   fuelState: string;
+  brakeTemp: number;
+  brakeFade: number;
+  brakeState: string;
   grip: number;
   flowScore: number;
   flowState: string;
@@ -234,6 +237,8 @@ export class SimcadeRaceModel {
   private tireTemp = 0.52;
   private tireWear = 0;
   private fuelLoad = 1;
+  private brakeTemp = 0.34;
+  private brakeFade = 0;
   private trackRubber = 0;
   private dryingLine = 0;
   private frontWingDamage = 0;
@@ -353,6 +358,9 @@ export class SimcadeRaceModel {
       fuelLoad: this.fuelLoad,
       fuelMassKg: this.fuelMassKg(),
       fuelState: this.fuelState(),
+      brakeTemp: this.brakeTemp,
+      brakeFade: this.brakeFade,
+      brakeState: this.brakeState(),
       grip: this.grip,
       flowScore: this.flowScore,
       flowState: this.flowState(),
@@ -472,6 +480,8 @@ export class SimcadeRaceModel {
     this.tireTemp = 0.52;
     this.tireWear = 0;
     this.fuelLoad = 1;
+    this.brakeTemp = 0.34;
+    this.brakeFade = 0;
     this.trackRubber = 0;
     this.dryingLine = 0;
     this.frontWingDamage = 0;
@@ -612,9 +622,11 @@ export class SimcadeRaceModel {
     this.lockup = approach(this.lockup, lockupTarget, dt * 10);
     this.understeer = approach(this.understeer, understeerTarget, dt * 6);
     this.updateTireState(dt, speedRatio, throttle, brake, Math.abs(steer), surface.roughness, onTrack);
+    this.updateBrakeState(dt, brake, speedRatio, roadWetness);
 
     const acceleration = throttle * (112 - speedRatio * 52) * (1 - this.wheelspin * 0.34) * (1 - fuelWeightPenalty);
-    const braking = brake * 248 * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45);
+    const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
+    const braking = brake * 248 * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
     const boostPower = boost * 72;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
@@ -849,6 +861,13 @@ export class SimcadeRaceModel {
   private updateFuelLoad(dt: number, throttle: number, boost: number, speedRatio: number) {
     const burnRate = throttle * (0.0028 + speedRatio * 0.0052) + boost * 0.0024;
     this.fuelLoad = clamp(this.fuelLoad - burnRate * dt, 0.38, 1);
+  }
+
+  private updateBrakeState(dt: number, brake: number, speedRatio: number, roadWetness: number) {
+    const heat = brake * speedRatio * (0.32 + brake * 0.42 + this.lockup * 0.18);
+    const cooling = (1 - brake) * (0.08 + speedRatio * 0.12) + roadWetness * 0.04;
+    this.brakeTemp = clamp(this.brakeTemp + (heat - cooling) * dt * 0.34, 0.16, 1.1);
+    this.brakeFade = clamp((this.brakeTemp - 0.86) / 0.2, 0, 1);
   }
 
   private fuelMassKg() {
@@ -1104,6 +1123,13 @@ export class SimcadeRaceModel {
     if (this.fuelLoad > 0.82) return "Heavy fuel";
     if (this.fuelLoad > 0.62) return "Fuel coming down";
     return "Light car";
+  }
+
+  private brakeState() {
+    if (this.brakeFade > 0.35) return "Brake fade";
+    if (this.brakeTemp > 0.72) return "Brakes hot";
+    if (this.brakeTemp < 0.28) return "Cold brakes";
+    return "Brakes ready";
   }
 
   private trackEvolutionState() {

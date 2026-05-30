@@ -252,6 +252,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.fuelLoad = telemetry.fuelLoad.toFixed(3);
     this.renderer.domElement.dataset.fuelMassKg = telemetry.fuelMassKg.toFixed(1);
     this.renderer.domElement.dataset.fuelState = telemetry.fuelState;
+    this.renderer.domElement.dataset.brakeTemp = telemetry.brakeTemp.toFixed(3);
+    this.renderer.domElement.dataset.brakeFade = telemetry.brakeFade.toFixed(3);
+    this.renderer.domElement.dataset.brakeState = telemetry.brakeState;
     this.renderer.domElement.dataset.assistSteer = telemetry.assistSteer.toFixed(3);
     this.renderer.domElement.dataset.assistBrake = telemetry.assistBrake.toFixed(3);
     this.renderer.domElement.dataset.assistThrottleTrim = telemetry.assistThrottleTrim.toFixed(3);
@@ -281,7 +284,7 @@ export class ThreeRaceRenderer {
       distance: telemetry.car.z,
       speedKph: telemetry.speedKph,
       steering: telemetry.car.yawRate * 0.9,
-      braking: telemetry.car.braking + telemetry.car.lockup * 0.65,
+      braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12,
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
       rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
@@ -290,7 +293,7 @@ export class ThreeRaceRenderer {
       frontWingDamage: telemetry.frontWingDamage
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
-    this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65, 0, 1).toFixed(2);
+    this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12, 0, 1).toFixed(2);
     this.renderer.domElement.dataset.rearRainLight = clamp(
       telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
       0,
