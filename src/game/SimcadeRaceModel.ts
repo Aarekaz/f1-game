@@ -1006,9 +1006,11 @@ export class SimcadeRaceModel {
     const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5) * rollingRoadForce;
     const splitGripPull = tireContact.sideBias * speedRatio * (0.42 + contactRoughness * 0.6) * (1 - Math.abs(rawSteer) * 0.35) * rollingRoadForce;
     const steeringSaturationPush = Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8) * rollingSteerFactor;
+    const chassisTravelBlend = (0.36 + this.roadAdhesion * 0.18) * (onTrack ? 1 : 0.58 + this.tireContactGrip * 0.28);
+    const steeringSideForce = steer * (0.86 + speedRatio * 1.18) * steeringSlipLimit * steeringLoad * this.roadAdhesion * rollingSteerFactor;
     const lateralIntent =
-      Math.sin(this.heading) * metersPerSecond * 0.28 +
-      steer * (1.32 + speedRatio * 1.78) * steeringSlipLimit * steeringLoad * this.roadAdhesion * rollingSteerFactor +
+      Math.sin(this.heading) * metersPerSecond * chassisTravelBlend +
+      steeringSideForce +
       curveFollow +
       camberForce +
       splitGripPull +
@@ -1254,10 +1256,9 @@ export class SimcadeRaceModel {
     surfaceRoughness: number,
     roadWetness: number
   ) {
-    const pickup =
-      gripContext.marbles * speedRatio * (1 - gripContext.lineQuality * 0.72) * (0.8 + this.tireWear * 0.28) +
-      (onTrack ? 0 : surfaceRoughness * speedRatio * 0.55);
-    const cleanLineScrub = gripContext.lineQuality * (1 - gripContext.offLine) * speedRatio * (0.38 + roadWetness * 0.08);
+    const looseSurfacePickup = onTrack ? 0 : surfaceRoughness * (0.14 + speedRatio * 0.66);
+    const pickup = gripContext.marbles * speedRatio * (1 - gripContext.lineQuality * 0.72) * (0.8 + this.tireWear * 0.28) + looseSurfacePickup;
+    const cleanLineScrub = gripContext.lineQuality * (1 - gripContext.offLine) * speedRatio * (0.72 + roadWetness * 0.12);
     const wetWash = roadWetness * 0.025;
     this.dirtyTirePickup = clamp(this.dirtyTirePickup + pickup * dt - (cleanLineScrub + wetWash) * dt, 0, 1);
   }
