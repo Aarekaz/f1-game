@@ -220,9 +220,20 @@ function moveToward(current: number, target: number, maxDelta: number) {
   return current + Math.sign(delta) * maxDelta;
 }
 
+function surfaceReliefAt(track: ReturnType<typeof sampleTrack>, lateral: number) {
+  const absoluteLateral = Math.abs(lateral);
+  const kerbInnerEdge = track.halfWidth - 0.55;
+  const kerbOuterEdge = track.halfWidth + 0.35;
+  const kerbRampIn = clamp((absoluteLateral - kerbInnerEdge) / 0.32, 0, 1);
+  const kerbRampOut = 1 - clamp((absoluteLateral - (kerbOuterEdge - 0.18)) / 0.52, 0, 1);
+  const kerbCrown = Math.min(kerbRampIn, kerbRampOut) * 0.052;
+  const shoulderDrop = -clamp((absoluteLateral - kerbOuterEdge) / 2.25, 0, 1) * 0.038;
+  return kerbCrown + shoulderDrop;
+}
+
 function surfaceHeightAt(distance: number, lateral: number, track: ReturnType<typeof sampleTrack>, offset = 0) {
   const normalized = clamp(lateral / Math.max(1, track.halfWidth), -1.35, 1.35);
-  const bankedRoad = track.elevation + track.bank * normalized;
+  const bankedRoad = track.elevation + track.bank * normalized + surfaceReliefAt(track, lateral);
   const terrain = terrainHeightAt(distance, lateral);
   const terrainBlend = clamp((Math.abs(lateral) - track.halfWidth - 1.9) / 2.2, 0, 1);
   return bankedRoad * (1 - terrainBlend) + terrain * terrainBlend + offset;
@@ -714,9 +725,9 @@ export class SimcadeRaceModel {
       this.positionGainLockout = Math.max(this.positionGainLockout, 3.4);
     }
     const speedRatio = clamp(this.speed / MAX_SPEED, 0, 1);
-    const edgeTarget = clamp(this.trackEdgeLoad(track, surface, speedRatio) * 0.55 + tireContact.edgeLoad * 0.65, 0, 1);
+    const edgeTarget = clamp(this.trackEdgeLoad(track, surface, speedRatio) * 0.55 + tireContact.edgeLoad * 0.65 + tireContact.heightSpread * 0.18, 0, 1);
     this.surfaceEdgeLoad = approach(this.surfaceEdgeLoad, edgeTarget, dt * (edgeTarget > this.surfaceEdgeLoad ? 18 : 7));
-    const contactRoughness = Math.max(surface.roughness, tireContact.roughness);
+    const contactRoughness = clamp(Math.max(surface.roughness, tireContact.roughness) + tireContact.heightSpread * 0.16, 0, 1);
     this.updateTrackEvolution(dt, speedRatio, onTrack, contactRoughness);
     const roadWetness = this.dynamicRoadWetness();
     const gripContext = this.trackGripContext(track);
@@ -928,6 +939,7 @@ export class SimcadeRaceModel {
         cornerLoad * 0.08 +
         contactRoughness * 0.1 +
         this.surfaceEdgeLoad * 0.16 +
+        tireContact.heightSpread * speedRatio * 0.12 +
         suspensionOscillation -
         roadWetness * 0.035,
       0.62,
@@ -940,6 +952,7 @@ export class SimcadeRaceModel {
         (this.suspensionLoad - 1) * 0.44 +
           contactRoughness * speedRatio * 0.12 +
           this.surfaceEdgeLoad * 0.08 +
+          tireContact.heightSpread * speedRatio * 0.075 +
           Math.max(0, this.roadCompression) * 0.1 -
           Math.max(0, -this.roadCompression) * 0.08 +
           brake * 0.035 -
@@ -1126,7 +1139,11 @@ export class SimcadeRaceModel {
       0.15
     );
     const rollTarget = clamp(
-      -roadCamber * 0.36 - this.yawRate * 0.24 - Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 + contactRoughness * speedRatio * 0.04,
+      -roadCamber * 0.36 -
+        this.yawRate * 0.24 -
+        Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 +
+        contactRoughness * speedRatio * 0.04 +
+        tireContact.heightRollBias * speedRatio * 0.42,
       -0.16,
       0.16
     );
@@ -1249,14 +1266,19 @@ export class SimcadeRaceModel {
     let runoffShare = 0;
     let edgeLoad = 0;
     let sideBias = 0;
+    let heightRollBias = 0;
+    let minHeight = Infinity;
+    let maxHeight = -Infinity;
     let count = 0;
 
     for (const axleOffset of axleOffsets) {
       const wheelTrack = sampleTrack(this.z + axleOffset);
       const axleCenterLateral = this.x - wheelTrack.center;
+      const axleCenterHeight = surfaceHeightAt(this.z + axleOffset, axleCenterLateral, wheelTrack);
       for (const side of [-1, 1]) {
         const wheelLateral = axleCenterLateral + side * wheelHalfTrack;
         const wheelSurface = this.surfaceForLateral(wheelTrack, wheelLateral);
+        const wheelHeight = surfaceHeightAt(this.z + axleOffset, wheelLateral, wheelTrack);
         const asphaltEdge = wheelTrack.halfWidth - 0.55;
         const kerbOuterEdge = wheelTrack.halfWidth + 0.35;
         const wheelAbs = Math.abs(wheelLateral);
@@ -1270,17 +1292,24 @@ export class SimcadeRaceModel {
         runoffShare += wheelSurface.trackLegal ? 0 : 1;
         edgeLoad += Math.max(asphaltStrike * 0.62, kerbDrop * 0.56, surfaceBite);
         sideBias += side * (1 - wheelSurface.grip + wheelSurface.roughness * 0.18);
+        heightRollBias += side * (wheelHeight - axleCenterHeight);
+        minHeight = Math.min(minHeight, wheelHeight);
+        maxHeight = Math.max(maxHeight, wheelHeight);
         count += 1;
       }
     }
+
+    const heightSpread = Number.isFinite(minHeight) ? clamp((maxHeight - minHeight) * 8.4, 0, 1) : 0;
 
     return {
       grip: grip / count,
       roughness: roughness / count,
       drag: drag / count,
       runoffShare: runoffShare / count,
-      edgeLoad: clamp(edgeLoad / count + Math.abs(carLateral) / Math.max(1, sampleTrack(this.z).halfWidth + 4) * 0.04, 0, 1),
-      sideBias: clamp(sideBias / count, -1, 1)
+      edgeLoad: clamp(edgeLoad / count + heightSpread * 0.2 + Math.abs(carLateral) / Math.max(1, sampleTrack(this.z).halfWidth + 4) * 0.04, 0, 1),
+      sideBias: clamp(sideBias / count, -1, 1),
+      heightSpread,
+      heightRollBias: clamp((heightRollBias / count) * 7.5, -0.28, 0.28)
     };
   }
 
