@@ -809,10 +809,10 @@ export class ThreeRaceRenderer {
   }
 
   private updateRacingLineAssist(telemetry: RaceTelemetry) {
-    const visible = telemetry.phase === "countdown" || telemetry.phase === "racing";
+    const visible = telemetry.assistName !== "Manual" && (telemetry.phase === "countdown" || telemetry.phase === "racing");
     this.racingLineAssist.visible = visible;
     if (!visible) {
-      this.renderer.domElement.dataset.racingLineAssist = "hidden";
+      this.renderer.domElement.dataset.racingLineAssist = telemetry.assistName === "Manual" ? "manual-off" : "hidden";
       this.renderer.domElement.dataset.dynamicRacingLineSegments = "0";
       this.renderer.domElement.dataset.racingLineCue = "";
       return;

@@ -16,6 +16,7 @@ try {
   await waitForServer(url);
   const browser = await chromium.launch({ headless: true });
   await checkDesktop(browser);
+  await checkManualAssist(browser);
   await checkMobile(browser);
   await browser.close();
   console.log("Smoke test passed");
@@ -396,6 +397,35 @@ async function checkMobile(browser) {
   assert(state.statusWidth <= 170, `mobile racing status panel was too wide: ${state.statusWidth}`);
   assert(state.statusBottom < state.controlsTop - 20, "mobile HUD overlaps touch controls");
   assert(state.throttleWidth >= 56, "mobile throttle button is too small");
+}
+
+async function checkManualAssist(browser) {
+  const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });
+  await page.goto(url, { waitUntil: "networkidle" });
+  await page.selectOption("#assist-select", "manual");
+  await page.click("#start-race");
+  await page.keyboard.down("ArrowUp");
+  await page.waitForTimeout(4200);
+  await page.keyboard.up("ArrowUp");
+
+  const state = await page.evaluate(() => ({
+    hudPhase: document.querySelector(".hud")?.dataset.phase ?? "",
+    sessionWeather: document.querySelector("#session-weather")?.textContent ?? "",
+    racingLineAssist: document.querySelector("#game canvas")?.dataset.racingLineAssist ?? "",
+    dynamicRacingLineSegments: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLineSegments ?? 0),
+    assistSteer: Number(document.querySelector("#game canvas")?.dataset.assistSteer ?? 0),
+    assistBrake: Number(document.querySelector("#game canvas")?.dataset.assistBrake ?? 0),
+    assistThrottleTrim: Number(document.querySelector("#game canvas")?.dataset.assistThrottleTrim ?? 0)
+  }));
+
+  await page.close();
+  assert(state.hudPhase === "racing", `manual smoke did not enter racing phase: ${state.hudPhase}`);
+  assert(/Manual/.test(state.sessionWeather), `manual session readout did not expose manual assist: ${state.sessionWeather}`);
+  assert(state.racingLineAssist === "manual-off", `manual racing line assist stayed visible: ${state.racingLineAssist}`);
+  assert(state.dynamicRacingLineSegments === 0, `manual racing line segments stayed active: ${state.dynamicRacingLineSegments}`);
+  assert(state.assistSteer === 0, `manual steering assist was not zero: ${state.assistSteer}`);
+  assert(state.assistBrake === 0, `manual brake assist was not zero: ${state.assistBrake}`);
+  assert(state.assistThrottleTrim === 0, `manual throttle assist was not zero: ${state.assistThrottleTrim}`);
 }
 
 async function waitForServer(target) {
