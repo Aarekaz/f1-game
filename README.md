@@ -56,6 +56,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Tire temperature and wear now build from wheelspin, lockups, surface abuse, and wet cooling, with a live tire meter in the race HUD.
 - A small persistent audio toggle for quiet play sessions.
 - Wet sessions pulse rear rain lights and soft red glows on the fictional formula cars, with rival spray plumes and lens droplets so storm traffic has clearer depth and race presence.
+- Storm sessions now add distant lightning forks and a restrained sky flash, giving wet weather its own atmosphere without hiding braking references.
 - Keyboard, touch, and gamepad controls, with held pedals, edge-safe command inputs, and browser-safe controller rumble for kerbs, wet road, and traction mistakes.
 - Unit tests for the race model and a Playwright smoke test for the playable browser build.
 
