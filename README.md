@@ -9,6 +9,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
 - A lightweight simcade handling model: throttle, brake, steering, ERS, grip, slip, asphalt/kerb/runoff/gravel surface feel, adaptive race traffic, and overtakes.
 - Track sections, braking zones, chevron-style racing-line assist, boards, a real circuit minimap, rhythm scoring, and HUD cues.
+- The active checkpoint gate is highlighted in-world, so the next objective is readable through the circuit instead of only through the HUD.
 - A pre-race circuit briefing with selected-track outline, difficulty, grip, weather, and assist status.
 - A more readable track surface with a rubbered racing groove, wet sheen, standing water, painted grid slots, and braking marks.
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.

@@ -80,6 +80,9 @@ export type RaceTelemetry = {
   trackLimitWarnings: number;
   penaltySeconds: number;
   nextCheckpoint: string;
+  nextCheckpointDistance: number;
+  nextCheckpointIndex: number;
+  checkpointCount: number;
   checkpointProgress: string;
   sectorSplits: [number | null, number | null, number | null];
   lapValid: boolean;
@@ -346,6 +349,9 @@ export class SimcadeRaceModel {
       trackLimitWarnings: this.trackLimitWarnings,
       penaltySeconds: director.penaltySeconds,
       nextCheckpoint: director.nextCheckpoint.name,
+      nextCheckpointDistance: director.nextCheckpoint.distance,
+      nextCheckpointIndex: director.checkpointIndex,
+      checkpointCount: director.checkpointCount,
       checkpointProgress: `${Math.min(director.checkpointIndex + 1, director.checkpointCount)}/${director.checkpointCount}`,
       sectorSplits: director.sectorSplits,
       lapValid: director.lapValid,

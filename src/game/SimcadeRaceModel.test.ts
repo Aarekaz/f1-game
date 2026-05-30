@@ -234,6 +234,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.lapValid).toBe(true);
     expect(telemetry.penaltySeconds).toBe(0);
     expect(telemetry.nextCheckpoint).toBe("Basilica Hairpin Entry");
+    expect(telemetry.nextCheckpointDistance).toBeGreaterThan(0);
+    expect(telemetry.nextCheckpointIndex).toBe(0);
+    expect(telemetry.checkpointCount).toBe(7);
     expect(telemetry.checkpointProgress).toBe("1/7");
     expect(telemetry.sectorSplits).toEqual([null, null, null]);
     expect(telemetry.gear).toBeGreaterThanOrEqual(1);

@@ -125,6 +125,7 @@ export class ThreeRaceRenderer {
   private readonly lensRain = this.buildLensRain();
   private readonly proximityMarkers = this.buildProximityMarkers();
   private readonly racingLineAssist = this.buildRacingLineAssist();
+  private readonly checkpointBeacon = this.buildCheckpointBeacon();
   private readonly cameraPosition = new THREE.Vector3(0, 5.8, 22.5);
   private readonly cameraTarget = new THREE.Vector3(0, 0.72, -16.5);
   private readonly desiredCameraPosition = new THREE.Vector3();
@@ -168,6 +169,7 @@ export class ThreeRaceRenderer {
     this.scene.add(this.waterSpray);
     this.scene.add(this.proximityMarkers);
     this.scene.add(this.racingLineAssist);
+    this.scene.add(this.checkpointBeacon);
     this.scene.add(this.car);
     void this.loadRaceAssets();
     this.resize();
@@ -294,6 +296,7 @@ export class ThreeRaceRenderer {
     this.updateBrakePressureTrail(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.braking, telemetry.car.lockup);
     this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
     this.updateRacingLineAssist(telemetry);
+    this.updateCheckpointBeacon(telemetry);
     const podMode = this.cameraMode === "pod";
     this.camera.fov = podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 6 + telemetry.car.braking * 1.6;
 
@@ -562,6 +565,165 @@ export class ThreeRaceRenderer {
   private hideRivalLabel(id: number) {
     const label = this.rivalLabels.get(id);
     if (label) label.visible = false;
+  }
+
+  private buildCheckpointBeacon() {
+    const group = new THREE.Group();
+    group.name = "next-checkpoint-beacon";
+    group.visible = false;
+
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: "#72f7ff",
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+    const spokeMaterial = new THREE.MeshBasicMaterial({
+      color: "#fff1a8",
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+    const labelMaterial = new THREE.MeshBasicMaterial({
+      color: "#ffffff",
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      side: THREE.DoubleSide
+    });
+
+    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(3.8, 0.055, 8, 48), ringMaterial);
+    outerRing.name = "checkpoint-beacon-outer-ring";
+    outerRing.renderOrder = 6;
+    group.add(outerRing);
+
+    const innerRing = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.04, 8, 36), ringMaterial);
+    innerRing.name = "checkpoint-beacon-inner-ring";
+    innerRing.renderOrder = 6;
+    group.add(innerRing);
+
+    for (const x of [-5.6, 5.6]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 7.2, 8), ringMaterial);
+      post.name = "checkpoint-beacon-post";
+      post.position.set(x, -0.72, 0);
+      post.renderOrder = 6;
+      group.add(post);
+    }
+
+    const overhead = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 11.2, 8), spokeMaterial);
+    overhead.name = "checkpoint-beacon-overhead";
+    overhead.position.y = 2.85;
+    overhead.rotation.z = Math.PI / 2;
+    overhead.renderOrder = 7;
+    group.add(overhead);
+
+    for (let index = 0; index < 4; index += 1) {
+      const spoke = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 1.25), spokeMaterial);
+      spoke.name = "checkpoint-beacon-spoke";
+      spoke.position.y = index < 2 ? 3.65 : -3.65;
+      spoke.position.x = index % 2 === 0 ? -1.1 : 1.1;
+      spoke.renderOrder = 7;
+      group.add(spoke);
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 384;
+    canvas.height = 112;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    labelMaterial.map = texture;
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 1.8), labelMaterial);
+    label.name = "checkpoint-beacon-label";
+    label.position.y = 5.65;
+    label.renderOrder = 8;
+    group.add(label);
+
+    group.userData.ringMaterial = ringMaterial;
+    group.userData.spokeMaterial = spokeMaterial;
+    group.userData.labelMaterial = labelMaterial;
+    group.userData.labelCanvas = canvas;
+    group.userData.labelTexture = texture;
+    group.userData.labelText = "";
+    return group;
+  }
+
+  private updateCheckpointBeacon(telemetry: RaceTelemetry) {
+    const rawAhead = telemetry.nextCheckpointDistance - (telemetry.car.z % TRACK_LOOP_LENGTH);
+    const ahead = (rawAhead + TRACK_LOOP_LENGTH) % TRACK_LOOP_LENGTH;
+    const active = telemetry.phase === "countdown" || telemetry.phase === "racing";
+    const label = `${telemetry.checkpointProgress} ${telemetry.nextCheckpoint}`;
+    this.renderer.domElement.dataset.nextCheckpointBeacon = active ? "active" : "idle";
+    this.renderer.domElement.dataset.nextCheckpointBeaconDistance = ahead.toFixed(1);
+    this.renderer.domElement.dataset.nextCheckpointBeaconLabel = label;
+
+    if (!active || !Number.isFinite(telemetry.nextCheckpointDistance)) {
+      this.checkpointBeacon.visible = false;
+      this.renderer.domElement.dataset.nextCheckpointBeaconVisible = "false";
+      return;
+    }
+
+    const track = sampleTrack(telemetry.nextCheckpointDistance);
+    const point = trackWorldPointAt(telemetry.nextCheckpointDistance, 0);
+    const heading = trackWorldHeadingAt(telemetry.nextCheckpointDistance);
+    const pulse = 0.5 + Math.sin(performance.now() * 0.006 + telemetry.nextCheckpointIndex * 0.9) * 0.5;
+    const distanceFade = clamp(1 - ahead / 760, 0.36, 1);
+    const opacity = (0.56 + pulse * 0.28) * distanceFade;
+    const spokeOpacity = (0.72 + pulse * 0.24) * distanceFade;
+    const scale = 1.18 + pulse * 0.12 + clamp(1 - ahead / 220, 0, 1) * 0.22;
+
+    this.checkpointBeacon.visible = ahead > 6 && ahead < TRACK_LOOP_LENGTH - 4;
+    this.renderer.domElement.dataset.nextCheckpointBeaconVisible = String(this.checkpointBeacon.visible);
+    this.checkpointBeacon.position.set(point.x, track.elevation + 4.4, point.z);
+    this.checkpointBeacon.rotation.y = heading;
+    this.checkpointBeacon.scale.setScalar(scale);
+    const beaconScreen = this.checkpointBeacon.position.clone().project(this.camera);
+    this.renderer.domElement.dataset.nextCheckpointBeaconScreenX = beaconScreen.x.toFixed(3);
+    this.renderer.domElement.dataset.nextCheckpointBeaconScreenY = beaconScreen.y.toFixed(3);
+    this.renderer.domElement.dataset.nextCheckpointBeaconScreenZ = beaconScreen.z.toFixed(3);
+
+    const ringMaterial = this.checkpointBeacon.userData.ringMaterial as THREE.MeshBasicMaterial | undefined;
+    const spokeMaterial = this.checkpointBeacon.userData.spokeMaterial as THREE.MeshBasicMaterial | undefined;
+    const labelMaterial = this.checkpointBeacon.userData.labelMaterial as THREE.MeshBasicMaterial | undefined;
+    if (ringMaterial) ringMaterial.opacity = opacity;
+    if (spokeMaterial) spokeMaterial.opacity = spokeOpacity;
+    if (labelMaterial) labelMaterial.opacity = 0.68 * distanceFade;
+
+    if (this.checkpointBeacon.userData.labelText !== label) {
+      this.drawCheckpointBeaconLabel(label);
+    }
+  }
+
+  private drawCheckpointBeaconLabel(text: string) {
+    const canvas = this.checkpointBeacon.userData.labelCanvas as HTMLCanvasElement | undefined;
+    const texture = this.checkpointBeacon.userData.labelTexture as THREE.CanvasTexture | undefined;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !texture || !ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(8, 16, 18, 0.58)";
+    ctx.strokeStyle = "rgba(114, 247, 255, 0.74)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(18, 26, 348, 58, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 241, 168, 0.95)";
+    ctx.fillRect(38, 42, 36, 10);
+    ctx.fillStyle = "#effffd";
+    ctx.font = "800 26px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text.toUpperCase(), 88, 55, 250);
+
+    this.checkpointBeacon.userData.labelText = text;
+    texture.needsUpdate = true;
   }
 
   private animateFormulaCar(
