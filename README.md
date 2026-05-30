@@ -73,6 +73,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Loose-surface mistakes now crawl back when the driver releases full-lock steering, so runoff and gravel cost time without turning the car into a dead stop.
 - High-speed full-lock steering now eats into the same tire budget before the car leaves the track, so the front tires scrub and the engine stops pulling like it is still on a straight.
 - Steering now needs rolling speed before it can yaw or sidestep the car, so turning the wheel at a full stop no longer rotates the chassis in place.
+- Road centering, camber, and rejoin pull now need rolling speed or active throttle, so a stopped off-line car stays planted instead of being dragged sideways by invisible forces.
 - Steering, throttle, and braking now share one tire-force budget, so asking for full power, brake, and rotation together creates saturation, understeer, lockup, and weaker drive instead of three independent arcade inputs.
 - Forward bite and road alignment now reduce track progress when the car is crossed up or sliding, so speed only becomes useful when the car is actually pointed and planted.
 - Road-relative slip angle now compares where the car is pointing with where the tires are actually traveling, so a crossed-up car scrubs speed and loses bite while normal small tire angles still feel clean.
