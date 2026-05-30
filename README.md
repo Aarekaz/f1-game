@@ -55,6 +55,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Mobile racing uses a smaller, softer instrument cluster so portrait play keeps more road visible.
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
 - Road adhesion and lateral scrub now share the tire budget, so heavy steering, dirty tires, kerbs, and runoff change speed and grip instead of feeling like a flat lateral script.
+- Track-edge load now turns asphalt-to-kerb/runoff crossings into suspension, rumble, and contact-patch events instead of simple surface-label swaps.
 - Balanced recovery keeps forced-wide moments on the visible runoff apron, so the car does not spend the camera view floating through empty grass.
 - Forward bite and road alignment now reduce track progress when the car is crossed up or sliding, so speed only becomes useful when the car is actually pointed and planted.
 - Suspension load, road grade, chassis pitch, and chassis roll are now part of the sim state, so braking, banking, rough surfaces, and runoff visibly and physically load the car.
