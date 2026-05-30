@@ -641,7 +641,7 @@ export class ThreeRaceRenderer {
 
   private buildCheckpointBeacon() {
     const group = new THREE.Group();
-    group.name = "next-checkpoint-beacon";
+    group.name = "low-chrome-checkpoint-beacon";
     group.visible = false;
 
     const ringMaterial = new THREE.MeshBasicMaterial({
@@ -672,36 +672,36 @@ export class ThreeRaceRenderer {
       side: THREE.DoubleSide
     });
 
-    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(3.8, 0.055, 8, 48), ringMaterial);
+    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.034, 8, 42), ringMaterial);
     outerRing.name = "checkpoint-beacon-outer-ring";
     outerRing.renderOrder = 6;
     group.add(outerRing);
 
-    const innerRing = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.04, 8, 36), ringMaterial);
+    const innerRing = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.026, 8, 32), ringMaterial);
     innerRing.name = "checkpoint-beacon-inner-ring";
     innerRing.renderOrder = 6;
     group.add(innerRing);
 
-    for (const x of [-5.6, 5.6]) {
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 7.2, 8), ringMaterial);
+    for (const x of [-3.45, 3.45]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 4.45, 8), ringMaterial);
       post.name = "checkpoint-beacon-post";
-      post.position.set(x, -0.72, 0);
+      post.position.set(x, -0.48, 0);
       post.renderOrder = 6;
       group.add(post);
     }
 
-    const overhead = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 11.2, 8), spokeMaterial);
+    const overhead = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 6.9, 8), spokeMaterial);
     overhead.name = "checkpoint-beacon-overhead";
-    overhead.position.y = 2.85;
+    overhead.position.y = 1.78;
     overhead.rotation.z = Math.PI / 2;
     overhead.renderOrder = 7;
     group.add(overhead);
 
     for (let index = 0; index < 4; index += 1) {
-      const spoke = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 1.25), spokeMaterial);
+      const spoke = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.78), spokeMaterial);
       spoke.name = "checkpoint-beacon-spoke";
-      spoke.position.y = index < 2 ? 3.65 : -3.65;
-      spoke.position.x = index % 2 === 0 ? -1.1 : 1.1;
+      spoke.position.y = index < 2 ? 2.28 : -2.28;
+      spoke.position.x = index % 2 === 0 ? -0.68 : 0.68;
       spoke.renderOrder = 7;
       group.add(spoke);
     }
@@ -712,9 +712,9 @@ export class ThreeRaceRenderer {
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     labelMaterial.map = texture;
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 1.8), labelMaterial);
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.18), labelMaterial);
     label.name = "checkpoint-beacon-label";
-    label.position.y = 5.65;
+    label.position.y = 3.55;
     label.renderOrder = 8;
     group.add(label);
 
@@ -733,6 +733,7 @@ export class ThreeRaceRenderer {
     const active = telemetry.phase === "countdown" || telemetry.phase === "racing";
     const label = `${telemetry.checkpointProgress} ${telemetry.nextCheckpoint}`;
     this.renderer.domElement.dataset.nextCheckpointBeacon = active ? "active" : "idle";
+    this.renderer.domElement.dataset.nextCheckpointBeaconStyle = "low-chrome";
     this.renderer.domElement.dataset.nextCheckpointBeaconDistance = ahead.toFixed(1);
     this.renderer.domElement.dataset.nextCheckpointBeaconLabel = label;
 
@@ -746,16 +747,19 @@ export class ThreeRaceRenderer {
     const point = trackWorldPointAt(telemetry.nextCheckpointDistance, 0);
     const heading = trackWorldHeadingAt(telemetry.nextCheckpointDistance);
     const pulse = 0.5 + Math.sin(performance.now() * 0.006 + telemetry.nextCheckpointIndex * 0.9) * 0.5;
-    const distanceFade = clamp(1 - ahead / 760, 0.36, 1);
-    const opacity = (0.56 + pulse * 0.28) * distanceFade;
-    const spokeOpacity = (0.72 + pulse * 0.24) * distanceFade;
-    const scale = 1.18 + pulse * 0.12 + clamp(1 - ahead / 220, 0, 1) * 0.22;
+    const distanceFade = clamp(1 - ahead / 900, 0.24, 0.76);
+    const proximityShrink = clamp(ahead / 220, 0.54, 1);
+    const opacity = (0.24 + pulse * 0.12) * distanceFade;
+    const spokeOpacity = (0.32 + pulse * 0.12) * distanceFade;
+    const scale = (0.64 + pulse * 0.035 + clamp(ahead / 580, 0, 1) * 0.26) * proximityShrink;
 
     this.checkpointBeacon.visible = ahead > 6 && ahead < TRACK_LOOP_LENGTH - 4;
     this.renderer.domElement.dataset.nextCheckpointBeaconVisible = String(this.checkpointBeacon.visible);
-    this.checkpointBeacon.position.set(point.x, track.elevation + 4.4, point.z);
+    this.checkpointBeacon.position.set(point.x, track.elevation + 5.55, point.z);
     this.checkpointBeacon.rotation.y = heading;
     this.checkpointBeacon.scale.setScalar(scale);
+    this.renderer.domElement.dataset.nextCheckpointBeaconScale = scale.toFixed(3);
+    this.renderer.domElement.dataset.nextCheckpointBeaconOpacity = opacity.toFixed(3);
     const beaconScreen = this.checkpointBeacon.position.clone().project(this.camera);
     this.renderer.domElement.dataset.nextCheckpointBeaconScreenX = beaconScreen.x.toFixed(3);
     this.renderer.domElement.dataset.nextCheckpointBeaconScreenY = beaconScreen.y.toFixed(3);

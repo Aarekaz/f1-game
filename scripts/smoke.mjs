@@ -335,9 +335,12 @@ async function checkDesktop(browser) {
     dynamicRacingLinePieces: Number(document.querySelector("#game canvas")?.dataset.dynamicRacingLinePieces ?? 0),
     racingLineCue: document.querySelector("#game canvas")?.dataset.racingLineCue ?? "",
     nextCheckpointBeacon: document.querySelector("#game canvas")?.dataset.nextCheckpointBeacon ?? "",
+    nextCheckpointBeaconStyle: document.querySelector("#game canvas")?.dataset.nextCheckpointBeaconStyle ?? "",
     nextCheckpointBeaconVisible: document.querySelector("#game canvas")?.dataset.nextCheckpointBeaconVisible ?? "",
     nextCheckpointBeaconDistance: Number(document.querySelector("#game canvas")?.dataset.nextCheckpointBeaconDistance ?? 0),
     nextCheckpointBeaconLabel: document.querySelector("#game canvas")?.dataset.nextCheckpointBeaconLabel ?? "",
+    nextCheckpointBeaconScale: Number(document.querySelector("#game canvas")?.dataset.nextCheckpointBeaconScale ?? 0),
+    nextCheckpointBeaconOpacity: Number(document.querySelector("#game canvas")?.dataset.nextCheckpointBeaconOpacity ?? 0),
     assetWeather: document.querySelector("#game canvas")?.dataset.weather ?? "",
     trackLayout: document.querySelector("#game canvas")?.dataset.trackLayout ?? "",
     horizonTrack: document.querySelector("#game canvas")?.dataset.horizonTrack ?? "",
@@ -605,12 +608,18 @@ async function checkDesktop(browser) {
   assert(state.dynamicRacingLinePieces >= state.dynamicRacingLineSegments * 2, `desktop racing line chevron pieces missing: ${state.dynamicRacingLinePieces}`);
   assert(["brake", "apex", "exit", "commit"].includes(state.racingLineCue), `desktop racing line cue was missing: ${state.racingLineCue}`);
   assert(state.nextCheckpointBeacon === "active", `desktop next-checkpoint beacon did not activate: ${state.nextCheckpointBeacon}`);
+  assert(state.nextCheckpointBeaconStyle === "low-chrome", `desktop next-checkpoint beacon style was too heavy: ${state.nextCheckpointBeaconStyle}`);
   assert(state.nextCheckpointBeaconVisible === "true", `desktop next-checkpoint beacon was not visible: ${state.nextCheckpointBeaconVisible}`);
   assert(
     state.nextCheckpointBeaconDistance > 0 && state.nextCheckpointBeaconDistance < 2200,
     `desktop next-checkpoint beacon distance was invalid: ${state.nextCheckpointBeaconDistance}`
   );
   assert(/^\d\/[67] .+/.test(state.nextCheckpointBeaconLabel), `desktop next-checkpoint beacon label was missing: ${state.nextCheckpointBeaconLabel}`);
+  assert(state.nextCheckpointBeaconScale > 0.3 && state.nextCheckpointBeaconScale < 1, `desktop next-checkpoint beacon scale was intrusive: ${state.nextCheckpointBeaconScale}`);
+  assert(
+    state.nextCheckpointBeaconOpacity > 0.04 && state.nextCheckpointBeaconOpacity < 0.3,
+    `desktop next-checkpoint beacon opacity was intrusive: ${state.nextCheckpointBeaconOpacity}`
+  );
   assert(state.assetWeather === "Wet Storm", `desktop weather did not reach renderer, weather=${state.assetWeather}`);
   assert(state.trackLayout === "northstar", `desktop selected layout did not reach renderer, layout=${state.trackLayout}`);
   assert(state.horizonTrack === "northstar", `desktop selected layout did not rebuild horizon, horizon=${state.horizonTrack}`);
