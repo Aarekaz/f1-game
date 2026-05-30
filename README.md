@@ -23,7 +23,9 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Racing-style gear, RPM, shift-cut, traction-bite, and shift-light feedback in the HUD and handling model.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
+- The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
+- Trackside posts near the chase camera are culled when they would cut across the car, which keeps the view usable in dense circuit sections.
 - The chase camera now lifts and pulls back during runoff or gravel mistakes, keeping rejoin moments readable instead of letting foreground geometry swallow the car.
 - Rejoin framing now recenters on the actual car when it runs wide, instead of letting the ideal racing line pull the player into the HUD.
 - A tiny Apex Series ladder that turns the fictional tracks into three authored events with local progress.
@@ -41,6 +43,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Steering input is shaped for finer center control and quicker opposite-lock recovery, so keyboard and gamepad corrections feel less twitchy.
 - A driver-aid HUD chip that shows when balanced assist is actively steering, braking, or trimming throttle.
 - Race radio and control messages use different visual tones for launch, sector, overtake, and warning events.
+- The racing HUD collapses into a lighter instrument cluster once the car is moving, leaving more of the circuit visible.
 - Fuel load burns down during a run, making the car gradually lighter and sharper instead of keeping identical handling for every lap.
 - Predictive balanced-assist behavior that looks ahead to wet fast bends and trims steering/brake/throttle before casual players run wide.
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
