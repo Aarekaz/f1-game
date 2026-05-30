@@ -61,6 +61,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Longitudinal grip now gates throttle and braking, so running wide over kerbs/runoff costs drive and stopping power instead of only changing the scenery label.
 - Steering, throttle, and braking now share one tire-force budget, so asking for full power, brake, and rotation together creates saturation, understeer, lockup, and weaker drive instead of three independent arcade inputs.
 - Forward bite and road alignment now reduce track progress when the car is crossed up or sliding, so speed only becomes useful when the car is actually pointed and planted.
+- Elevation changes now alter road load, so crests lighten the tire contact patch and compressions add suspension load instead of grade acting only like an uphill/downhill speed term.
 - Suspension load, road grade, chassis pitch, and chassis roll are now part of the sim state, so braking, banking, rough surfaces, and runoff visibly and physically load the car.
 - Car and rival ride height now follows the lateral surface, so banking and runoff edges move the chassis instead of rendering every vehicle at the centerline elevation.
 - Road camber now feeds the handling model, giving banked surfaces a subtle downhill pull and chassis response instead of being only visual scenery.
