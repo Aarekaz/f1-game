@@ -52,6 +52,9 @@ export type RaceTelemetry = {
   selfAlignTorque: number;
   yawInertiaLoad: number;
   yawDamping: number;
+  counterSteerLoad: number;
+  slipRecovery: number;
+  chassisStability: number;
   roadAlignment: number;
   roadCamber: number;
   roadGrade: number;
@@ -349,6 +352,9 @@ export class SimcadeRaceModel {
   private selfAlignTorque = 0;
   private yawInertiaLoad = 0;
   private yawDamping = 1;
+  private counterSteerLoad = 0;
+  private slipRecovery = 0;
+  private chassisStability = 1;
   private roadAlignment = 1;
   private roadGrade = 0;
   private roadLoad = 1;
@@ -519,6 +525,9 @@ export class SimcadeRaceModel {
       selfAlignTorque: this.selfAlignTorque,
       yawInertiaLoad: this.yawInertiaLoad,
       yawDamping: this.yawDamping,
+      counterSteerLoad: this.counterSteerLoad,
+      slipRecovery: this.slipRecovery,
+      chassisStability: this.chassisStability,
       roadAlignment: this.roadAlignment,
       roadCamber: surfaceBankAt(carLateral, track),
       roadGrade: this.roadGrade,
@@ -757,6 +766,9 @@ export class SimcadeRaceModel {
     this.selfAlignTorque = 0;
     this.yawInertiaLoad = 0;
     this.yawDamping = 1;
+    this.counterSteerLoad = 0;
+    this.slipRecovery = 0;
+    this.chassisStability = 1;
     this.roadAlignment = 1;
     this.roadGrade = 0;
     this.roadLoad = 1;
@@ -1788,6 +1800,7 @@ export class SimcadeRaceModel {
         this.roadAdhesion * 0.34 +
         this.tireGroundContact * 0.16 +
         this.frontAeroLoad * 0.18 +
+        this.slipRecovery * 0.18 +
         Math.abs(this.selfAlignTorque) * 0.12 -
         this.tireSaturation * 0.22 -
         this.lockup * 0.14 -
@@ -1797,6 +1810,7 @@ export class SimcadeRaceModel {
     );
     this.yawRate += yawMoment * yawResponseRate * dt;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * (1.05 + this.yawDamping * 1.35));
+    this.yawRate = approach(this.yawRate, 0, dt * this.slipRecovery * (0.58 + speedRatio * 0.42));
     this.yawRate = approach(this.yawRate, 0, dt * this.yawDamping * (0.14 + speedRatio * 0.18));
     this.yawRate = clamp(this.yawRate, -0.74, 0.74);
     const yawInertiaLoadTarget = clamp(
@@ -1837,7 +1851,59 @@ export class SimcadeRaceModel {
     this.velocityYaw = approach(this.velocityYaw, roadRelativeVelocityYaw, dt * 10);
     const slipAngleTarget = clamp(this.heading - this.velocityYaw, -0.72, 0.72);
     this.slipAngle = approach(this.slipAngle, slipAngleTarget, dt * (Math.abs(slipAngleTarget) > Math.abs(this.slipAngle) ? 12 : 7));
-    const slipAngleLoad = clamp((Math.abs(this.slipAngle) - 0.085) / 0.395, 0, 1);
+    let slipAngleLoad = clamp((Math.abs(this.slipAngle) - 0.085) / 0.395, 0, 1);
+    const rotationDirection = Math.sign(this.slipAngle || this.yawRate || this.rearTractionRotation || steer || 1);
+    const counterInput = clamp((-steer * rotationDirection - 0.08) / 0.78, 0, 1);
+    const crossedInput = clamp((steer * rotationDirection - 0.08) / 0.78, 0, 1);
+    const rotationRecoveryWindow = clamp((Math.abs(this.slipAngle) + Math.abs(this.yawRate) * 0.52 + Math.abs(this.rearTractionRotation) * 0.32 - 0.045) / 0.52, 0, 1);
+    const counterSteerTarget = clamp(
+      counterInput *
+        rotationRecoveryWindow *
+        speedRatio *
+        (0.42 + this.roadAdhesion * 0.36 + this.tireGripReserve * 0.22) *
+        (1 - this.lockup * 0.42) *
+        (1 - this.frontLockRisk * 0.2),
+      0,
+      1
+    );
+    this.counterSteerLoad = approach(
+      this.counterSteerLoad,
+      counterSteerTarget,
+      dt * (counterSteerTarget > this.counterSteerLoad ? 12 : 5.2)
+    );
+    const slipRecoveryTarget = clamp(
+      this.counterSteerLoad *
+        (0.36 +
+          this.yawDamping * 0.28 +
+          this.tireGripReserve * 0.18 +
+          this.rearBrakeStability * 0.1 -
+          this.insideRearSlip * 0.12 -
+          roadWetness * 0.12),
+      0,
+      1
+    );
+    this.slipRecovery = approach(this.slipRecovery, slipRecoveryTarget, dt * (slipRecoveryTarget > this.slipRecovery ? 11 : 4.8));
+    this.slipAngle = approach(this.slipAngle, 0, dt * this.slipRecovery * (0.42 + speedRatio * 0.5));
+    slipAngleLoad = clamp((Math.abs(this.slipAngle) - 0.085) / 0.395, 0, 1);
+    const chassisStabilityTarget = clamp(
+      1 -
+        slipAngleLoad * 0.34 -
+        this.yawInertiaLoad * 0.14 -
+        this.tireSaturation * 0.18 -
+        Math.abs(this.rearTractionRotation) * 0.16 -
+        this.insideRearSlip * 0.14 -
+        Math.max(0, 1 - this.rearBrakeStability) * 0.12 -
+        crossedInput * rotationRecoveryWindow * 0.12 +
+        this.slipRecovery * 0.28 +
+        this.yawDamping * 0.06,
+      0.34,
+      1.08
+    );
+    this.chassisStability = approach(
+      this.chassisStability,
+      chassisStabilityTarget,
+      dt * (chassisStabilityTarget < this.chassisStability ? 10.5 : 5.2)
+    );
     this.slip = Math.max(this.slip, slipAngleLoad * 0.5);
     const tireRelaxationTarget = clamp(
       this.tireSaturation * 0.36 +
@@ -1852,6 +1918,8 @@ export class SimcadeRaceModel {
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
         Math.abs(this.rearTractionRotation) * 0.14 +
         Math.max(0, 1 - this.rearBrakeStability) * 0.16 +
+        Math.max(0, 1 - this.chassisStability) * 0.12 -
+        this.slipRecovery * 0.18 -
         this.damperImpulse * 0.16 +
         this.surfaceEdgeLoad * 0.12 +
         Math.abs(this.splitSurfaceLoad) * 0.16 +
@@ -1871,7 +1939,14 @@ export class SimcadeRaceModel {
     );
 
     const steeringSlipLimit = clamp(
-      this.grip - this.understeer * 0.24 - this.lockup * 0.12 - this.tireSaturation * 0.2 - this.tireRelaxation * 0.07 - slipAngleLoad * 0.16,
+      this.grip -
+        this.understeer * 0.24 -
+        this.lockup * 0.12 -
+        this.tireSaturation * 0.2 -
+        this.tireRelaxation * 0.07 -
+        slipAngleLoad * 0.16 +
+        this.slipRecovery * 0.1 +
+        this.chassisStability * 0.025,
       0.2,
       1
     );
@@ -1929,6 +2004,7 @@ export class SimcadeRaceModel {
       (7.4 + speedRatio * 10.6) *
       this.roadAdhesion *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
+      clamp(0.92 + this.chassisStability * 0.08 + this.slipRecovery * 0.04, 0.82, 1.04) *
       (onTrack ? 1 : 0.5 + this.tireContactGrip * 0.34);
     this.lateralVelocity = moveToward(this.lateralVelocity, lateralIntent, lateralAccelLimit * clamp(0.82 + this.tireGroundContact * 0.18, 0.82, 1.04) * dt);
     const slipVelocity = Math.abs(this.lateralVelocity - curveFollow);
@@ -1945,6 +2021,8 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.12 +
         Math.abs(this.splitSurfaceLoad) * 0.14 +
         Math.abs(this.rearTractionRotation) * 0.12 +
+        Math.max(0, 1 - this.chassisStability) * 0.12 -
+        this.slipRecovery * 0.16 +
         Math.max(0, 1 - this.tireGroundContact) * 0.1,
       0,
       1
@@ -1958,6 +2036,8 @@ export class SimcadeRaceModel {
         slipAngleLoad * 0.22 +
         lateralLoadStress * 0.16 +
         this.tireRelaxation * 0.14 +
+        Math.max(0, 1 - this.chassisStability) * 0.12 -
+        this.slipRecovery * 0.1 +
         this.damperImpulse * 0.12 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
@@ -2004,7 +2084,12 @@ export class SimcadeRaceModel {
     this.speed = clamp(this.speed - scrubPenalty * (7 + speedRatio * 24) * dt, 0, MAX_SPEED);
     const alignmentSlip = Math.abs(this.lateralVelocity - curveFollow);
     const alignmentTarget = clamp(
-      Math.cos(this.heading) - alignmentSlip / Math.max(12, metersPerSecond * 0.9) - scrubPenalty * 0.34 - slipAngleLoad * 0.18 - (onTrack ? 0 : 0.08),
+      Math.cos(this.heading) -
+        alignmentSlip / Math.max(12, metersPerSecond * 0.9) -
+        scrubPenalty * 0.34 -
+        slipAngleLoad * 0.18 -
+        (onTrack ? 0 : 0.08) +
+        this.slipRecovery * 0.12,
       0.32,
       1
     );
@@ -2226,6 +2311,9 @@ export class SimcadeRaceModel {
     this.selfAlignTorque = 0;
     this.yawInertiaLoad = 0;
     this.yawDamping = 1;
+    this.counterSteerLoad = 0;
+    this.slipRecovery = 0;
+    this.chassisStability = 1;
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;

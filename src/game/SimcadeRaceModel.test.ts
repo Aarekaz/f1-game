@@ -654,6 +654,56 @@ describe("SimcadeRaceModel", () => {
     expect(settled.yawInertiaLoad).toBeLessThan(turnIn.yawInertiaLoad);
   });
 
+  it("rewards countersteer catches during rear slip recovery", () => {
+    const catchModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    catchModel.update(1 / 60, { ...idle, launch: true });
+    run(catchModel, 4.8, { throttle: 1, ers: true });
+    const loose = run(catchModel, 0.9, { throttle: 1, steer: 0.88, ers: true });
+    const looseCounterSteerLoad = loose.counterSteerLoad;
+    const catchSteer = -Math.sign(loose.slipAngle || loose.car.yawRate || 1) * 0.56;
+    let caught = loose;
+    let caughtFirstCounter = 0;
+    let caughtPeakCounter = 0;
+    let caughtPeakRecovery = 0;
+    for (let elapsed = 0; elapsed < 0.85; elapsed += 1 / 60) {
+      caught = catchModel.update(1 / 60, { ...idle, throttle: 0.28, steer: catchSteer });
+      if (elapsed === 0) {
+        caughtFirstCounter = caught.counterSteerLoad;
+      }
+      caughtPeakCounter = Math.max(caughtPeakCounter, caught.counterSteerLoad);
+      caughtPeakRecovery = Math.max(caughtPeakRecovery, caught.slipRecovery);
+    }
+
+    const crossedModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    crossedModel.update(1 / 60, { ...idle, launch: true });
+    run(crossedModel, 4.8, { throttle: 1, ers: true });
+    const crossedLoose = run(crossedModel, 0.9, { throttle: 1, steer: 0.88, ers: true });
+    const crossedLooseCounterSteerLoad = crossedLoose.counterSteerLoad;
+    let crossed = crossedLoose;
+    let crossedFirstCounter = 0;
+    for (let elapsed = 0; elapsed < 0.85; elapsed += 1 / 60) {
+      crossed = crossedModel.update(1 / 60, { ...idle, throttle: 0.28, steer: -catchSteer });
+      if (elapsed === 0) {
+        crossedFirstCounter = crossed.counterSteerLoad;
+      }
+    }
+
+    expect(loose.chassisStability).toBeLessThan(0.95);
+    expect(caughtFirstCounter - looseCounterSteerLoad).toBeGreaterThan(crossedFirstCounter - crossedLooseCounterSteerLoad + 0.002);
+    expect(caughtPeakCounter).toBeGreaterThan(0.08);
+    expect(caughtPeakRecovery).toBeGreaterThan(0.03);
+    expect(Math.abs(caught.slipAngle)).toBeLessThan(Math.abs(crossed.slipAngle));
+    expect(caught.chassisStability).toBeGreaterThan(loose.chassisStability);
+  });
+
   it("makes committed steering travel through chassis heading instead of a sideways lane shift", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1640,6 +1690,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.selfAlignTorque).toBe(0);
     expect(telemetry.yawInertiaLoad).toBe(0);
     expect(telemetry.yawDamping).toBe(1);
+    expect(telemetry.counterSteerLoad).toBe(0);
+    expect(telemetry.slipRecovery).toBe(0);
+    expect(telemetry.chassisStability).toBe(1);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
