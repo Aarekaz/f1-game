@@ -300,6 +300,7 @@ async function checkDesktop(browser) {
     rearAeroFlap: Number(document.querySelector("#game canvas")?.dataset.rearAeroFlap ?? 0),
     shiftCut: Number(document.querySelector("#game canvas")?.dataset.shiftCut ?? 0),
     tractionBite: Number(document.querySelector("#game canvas")?.dataset.tractionBite ?? 0),
+    engineBraking: Number(document.querySelector("#game canvas")?.dataset.engineBraking ?? 0),
     powerState: document.querySelector("#game canvas")?.dataset.powerState ?? "",
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
@@ -664,7 +665,8 @@ async function checkDesktop(browser) {
   assert(boostHeldState.rearAeroFlap > 0.35, `desktop rear aero flap did not open: ${JSON.stringify(boostHeldState)}`);
   assert(state.shiftCut >= 0 && state.shiftCut <= 1, `desktop shift-cut telemetry was invalid: ${state.shiftCut}`);
   assert(state.tractionBite >= 0 && state.tractionBite <= 1, `desktop traction-bite telemetry was invalid: ${state.tractionBite}`);
-  assert(/Power|Shift|Traction|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
+  assert(state.engineBraking >= 0 && state.engineBraking <= 1, `desktop engine-braking telemetry was invalid: ${state.engineBraking}`);
+  assert(/Power|Shift|Traction|Engine|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.playerWaterSpray === "active", `desktop player spray did not render in storm weather: ${state.playerWaterSpray}`);

@@ -486,7 +486,7 @@ describe("SimcadeRaceModel", () => {
     expect(peakShiftCut).toBeGreaterThan(0.2);
     expect(peakTractionBite).toBeGreaterThan(0.2);
     expect(telemetry.rpm).toBeGreaterThan(4200);
-    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited"]).toContain(telemetry.powerState);
+    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited", "Engine braking"]).toContain(telemetry.powerState);
   });
 
   it("steers with grip limits and loses grip off track", () => {
@@ -1083,6 +1083,25 @@ describe("SimcadeRaceModel", () => {
     expect(released.forwardBite).toBeLessThan(settled.forwardBite);
   });
 
+  it("loads the nose and slows the car through lift-off engine braking", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const powered = run(model, 5, { throttle: 1, ers: true });
+    const lifted = run(model, 0.75, { throttle: 0, steer: 0.42 });
+
+    expect(powered.engineBraking).toBeLessThan(0.08);
+    expect(lifted.engineBraking).toBeGreaterThan(0.08);
+    expect(lifted.frontAxleLoad).toBeGreaterThan(powered.frontAxleLoad);
+    expect(lifted.rearAxleLoad).toBeLessThan(powered.rearAxleLoad);
+    expect(lifted.speedKph).toBeLessThan(powered.speedKph);
+    expect(lifted.car.pitch).toBeGreaterThan(powered.car.pitch);
+    expect(lifted.tireRelaxation).toBeGreaterThan(powered.tireRelaxation);
+  });
+
   it("lets tire relaxation decay instead of staying permanently damaged", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1303,6 +1322,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.aeroDragReduction).toBe(0);
     expect(telemetry.shiftCut).toBe(0);
     expect(telemetry.tractionBite).toBe(0);
+    expect(telemetry.engineBraking).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);
