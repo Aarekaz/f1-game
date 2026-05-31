@@ -363,6 +363,12 @@ async function checkDesktop(browser) {
     lateralLoadTransfer: Number(document.querySelector("#game canvas")?.dataset.lateralLoadTransfer ?? 0),
     chassisPitch: Number(document.querySelector("#game canvas")?.dataset.chassisPitch ?? 0),
     chassisRoll: Number(document.querySelector("#game canvas")?.dataset.chassisRoll ?? 0),
+    carVisualPitch: Number(document.querySelector("#game canvas")?.dataset.carVisualPitch ?? 0),
+    carVisualRoll: Number(document.querySelector("#game canvas")?.dataset.carVisualRoll ?? 0),
+    frontWheelSteer: Number(document.querySelector("#game canvas")?.dataset.frontWheelSteer ?? 0),
+    tireVisualSquash: Number(document.querySelector("#game canvas")?.dataset.tireVisualSquash ?? 0),
+    loadedWheelBias: Number(document.querySelector("#game canvas")?.dataset.loadedWheelBias ?? 0),
+    chassisVisualLoad: Number(document.querySelector("#game canvas")?.dataset.chassisVisualLoad ?? 0),
     trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
     dryingLine: Number(document.querySelector("#game canvas")?.dataset.dryingLine ?? 0),
     trackEvolutionState: document.querySelector("#game canvas")?.dataset.trackEvolutionState ?? "",
@@ -640,6 +646,13 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carSteering), "desktop physical steering telemetry was missing");
   assert(Math.abs(state.carSteering) <= 1, `desktop physical steering telemetry was invalid: ${state.carSteering}`);
   assert(Number.isFinite(state.wheelSpin) && Math.abs(state.wheelSpin) > 10, "desktop animated wheel spin telemetry was missing");
+  assert(Number.isFinite(state.carVisualPitch), "desktop car visual pitch telemetry was missing");
+  assert(Number.isFinite(state.carVisualRoll), "desktop car visual roll telemetry was missing");
+  assert(Number.isFinite(state.frontWheelSteer), "desktop front wheel steering visual telemetry was missing");
+  assert(Math.abs(state.frontWheelSteer) <= 0.42, `desktop front wheel steering visual was invalid: ${state.frontWheelSteer}`);
+  assert(state.tireVisualSquash > 0.02 && state.tireVisualSquash < 0.16, `desktop loaded tire squash was missing or extreme: ${state.tireVisualSquash}`);
+  assert(Math.abs(state.loadedWheelBias) < 0.8, `desktop loaded wheel bias was invalid: ${state.loadedWheelBias}`);
+  assert(state.chassisVisualLoad > 0.08 && state.chassisVisualLoad <= 1, `desktop chassis visual load was missing: ${state.chassisVisualLoad}`);
   assert(state.carGroundShadow === "planted", `desktop formula car ground shadow was missing: ${state.carGroundShadow}`);
   assert(
     state.carGroundShadowOpacity > 0.12 && state.carGroundShadowOpacity < 0.42,
