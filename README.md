@@ -138,6 +138,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP differential corner exit](readme-assets/screenshots/35-aurelia-differential-corner-exit.png) |
 
+| Countersteer recovery |
+| --- |
+| ![Aurelia GP countersteer recovery](readme-assets/screenshots/36-aurelia-countersteer-recovery.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -162,6 +166,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Threshold braking now rewards measured brake pressure before lockup, so easing off after a panic stop can recover longitudinal grip instead of dragging flat tires forever.
 - Brake-balance stability now separates front lock risk from rear lightness under braking, so panic stops wash wide while trail braking can rotate the car without feeling random.
 - Differential corner-exit load now tracks drive torque, diff lock, and inside-rear slip, so throttle application can rotate or tighten the rear axle instead of behaving like a simple speed button.
+- Countersteer recovery now turns an opposite-lock catch into slip-angle recovery, chassis stability, tire sound, haptics, HUD feedback, and visible loaded-wheel motion.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
 - Combined grip reserve now exposes how much of the tire envelope is left when steering, throttle, and brake overlap, then trims drive, steering, visual tire load, audio, haptics, and HUD feedback from that shared signal.
 - Steering-load feedback now rises from tire force, saturation, slip angle, front axle load, and driver steering, then feeds the HUD, tire audio, and gamepad haptics together.
