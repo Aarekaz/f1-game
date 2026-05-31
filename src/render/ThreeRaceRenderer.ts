@@ -640,7 +640,7 @@ export class ThreeRaceRenderer {
     );
     this.camera.rotation.z += cameraRoll;
     this.camera.updateProjectionMatrix();
-    const cameraFrameGuard = this.applyChaseFrameGuard(carX, carY, carZ, rejoinCameraLift, podMode, telemetry.phase, cameraRoll);
+    const cameraFrameGuard = this.applyChaseFrameGuard(carX, carY, carZ, rejoinCameraLift, podMode, telemetry.phase, cameraRoll, roadSpeedFraming);
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
     this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
     this.updateWaterSpray(carX, carY, carZ, carWorldYaw, clamp(telemetry.roadWetness + telemetry.standingWater * 0.38, 0, 1), speedRatio, telemetry.car.slip);
@@ -1512,13 +1512,16 @@ export class ThreeRaceRenderer {
     rejoinCameraLift: number,
     podMode: boolean,
     phase: string,
-    cameraRoll: number
+    cameraRoll: number,
+    roadSpeedFraming: number
   ) {
     if (podMode || phase === "ready") return 0;
 
     this.projectCarVisualAnchor();
-    const horizontalEscape = clamp((Math.abs(this.carScreenPosition.x) - 0.58) / 0.46, 0, 1);
-    const bottomEscape = clamp((-this.carScreenPosition.y - 0.5) / 0.26, 0, 1);
+    const horizontalGuardStart = 0.58 - roadSpeedFraming * 0.24;
+    const bottomGuardStart = 0.5 - roadSpeedFraming * 0.08;
+    const horizontalEscape = clamp((Math.abs(this.carScreenPosition.x) - horizontalGuardStart) / 0.46, 0, 1);
+    const bottomEscape = clamp((-this.carScreenPosition.y - bottomGuardStart) / 0.26, 0, 1);
     const frameGuard = Math.max(horizontalEscape, bottomEscape);
     if (frameGuard <= 0.001) return 0;
 
