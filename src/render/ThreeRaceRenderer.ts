@@ -169,6 +169,7 @@ export class ThreeRaceRenderer {
   private cameraLongitudinalInertia = 0;
   private cameraLateralInertia = 0;
   private cameraVerticalInertia = 0;
+  private cameraRoadFrameDrift = 0;
   private cameraSpeedDeltaKphPerSecond = 0;
 
   constructor(private readonly parent: HTMLElement) {
@@ -460,6 +461,21 @@ export class ThreeRaceRenderer {
     this.cameraLongitudinalInertia = THREE.MathUtils.lerp(this.cameraLongitudinalInertia, cameraLongitudinalTarget, cameraInertiaBlend);
     this.cameraLateralInertia = THREE.MathUtils.lerp(this.cameraLateralInertia, cameraLateralTarget, cameraInertiaBlend * 1.15);
     this.cameraVerticalInertia = THREE.MathUtils.lerp(this.cameraVerticalInertia, cameraVerticalTarget, cameraInertiaBlend * 0.9);
+    const roadFrameDriftTarget =
+      telemetry.phase === "ready" || podMode
+        ? 0
+        : clamp(
+            (telemetry.slipAngle * 2.8 +
+              telemetry.velocityYaw * 1.15 +
+              telemetry.car.yawRate * 1.65 +
+              telemetry.lateralLoadTransfer * 1.3 -
+              telemetry.curve * 0.48) *
+              speedRatio *
+              (1 - rejoinFocus * 0.8),
+            -2.35,
+            2.35
+          );
+    this.cameraRoadFrameDrift = THREE.MathUtils.lerp(this.cameraRoadFrameDrift, roadFrameDriftTarget, cameraInertiaBlend * 0.9);
     this.car.visible = !podMode || telemetry.phase === "ready";
     this.renderer.domElement.dataset.externalCarVisible = String(this.car.visible);
     this.updateCockpitFrame(telemetry, podMode);
@@ -507,12 +523,14 @@ export class ThreeRaceRenderer {
       : carLateral * (0.18 + speedRatio * 0.06) * (1 - clamp(rejoinCameraLift * 0.18, 0, 0.34)) -
         telemetry.car.yawRate * 0.62 -
         powertrainLateralKick * 0.55 +
-        this.cameraLateralInertia;
+        this.cameraLateralInertia * 0.82 -
+        this.cameraRoadFrameDrift * 0.26;
     const idealTargetLateral =
       (podMode ? carLateral * 0.08 + telemetry.car.yawRate * 0.34 - telemetry.curve * 0.4 : carLateral * 0.24 + telemetry.car.yawRate * 1.4 - telemetry.curve * 0.85) +
       apexSample.racingLineOffset * (podMode ? 0.28 : 0.46) +
       cameraApexBias +
-      powertrainLateralKick * (podMode ? 0.22 : 1.65);
+      powertrainLateralKick * (podMode ? 0.22 : 1.65) +
+      this.cameraRoadFrameDrift * (podMode ? 0.18 : 0.72);
     const roadRecoveryLateral = clamp(
       carLateral,
       -currentTrack.halfWidth + 1.35 + currentTrack.racingLineOffset * 0.12,
@@ -602,6 +620,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraLongitudinalInertia = this.cameraLongitudinalInertia.toFixed(3);
     this.renderer.domElement.dataset.cameraLateralInertia = this.cameraLateralInertia.toFixed(3);
     this.renderer.domElement.dataset.cameraVerticalInertia = this.cameraVerticalInertia.toFixed(3);
+    this.renderer.domElement.dataset.cameraRoadFrameDrift = this.cameraRoadFrameDrift.toFixed(3);
     this.renderer.domElement.dataset.cameraSpeedDeltaKphPerSecond = this.cameraSpeedDeltaKphPerSecond.toFixed(1);
     this.renderer.domElement.dataset.cameraApexBias = cameraApexBias.toFixed(3);
     this.renderer.domElement.dataset.cameraStructureLift = cameraStructureLift.toFixed(3);
