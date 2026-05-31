@@ -351,6 +351,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.engineBraking = telemetry.engineBraking.toFixed(3);
     this.renderer.domElement.dataset.trailBraking = telemetry.trailBraking.toFixed(3);
     this.renderer.domElement.dataset.thresholdBraking = telemetry.thresholdBraking.toFixed(3);
+    this.renderer.domElement.dataset.brakeBalanceLoad = telemetry.brakeBalanceLoad.toFixed(3);
+    this.renderer.domElement.dataset.frontLockRisk = telemetry.frontLockRisk.toFixed(3);
+    this.renderer.domElement.dataset.rearBrakeStability = telemetry.rearBrakeStability.toFixed(3);
     this.renderer.domElement.dataset.powerState = telemetry.powerState;
     this.renderer.domElement.dataset.tireTemp = telemetry.tireTemp.toFixed(2);
     this.renderer.domElement.dataset.tireWear = telemetry.tireWear.toFixed(3);
@@ -410,6 +413,7 @@ export class ThreeRaceRenderer {
     const visualPitch =
       telemetry.car.pitch +
       telemetry.car.braking * 0.035 -
+      telemetry.brakeBalanceLoad * 0.018 -
       telemetry.car.throttle * speedRatio * 0.018 +
       telemetry.shiftCut * 0.018 +
       telemetry.tractionBite * 0.014 +
@@ -428,12 +432,14 @@ export class ThreeRaceRenderer {
       telemetry.car.yawRate * 0.3 +
       telemetry.car.understeer * 0.04 -
       telemetry.car.lockup * 0.024 -
+      telemetry.frontLockRisk * 0.018 +
       telemetry.car.bank * 0.16 -
       telemetry.lateralLoadTransfer * 0.15 -
       tireLoadVisual * telemetry.car.yawRate * 0.08 +
       telemetry.roadFeelFeedback * Math.sign(telemetry.car.roll || telemetry.roadCamber || 1) * 0.018 +
       telemetry.splitSurfaceLoad * 0.036 +
       telemetry.rearTractionRotation * 0.055 +
+      Math.max(0, 1 - telemetry.rearBrakeStability) * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.034 +
       telemetry.aeroBalance * 0.025 -
       telemetry.aeroWashout * Math.sign(telemetry.car.yawRate || telemetry.curve || 1) * 0.012 +
       telemetry.selfAlignTorque * 0.018 -
@@ -451,13 +457,17 @@ export class ThreeRaceRenderer {
         telemetry.car.steering * 0.42 +
         telemetry.car.yawRate * 0.58 +
         telemetry.rearTractionRotation * 0.2 +
+        Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * Math.max(0, 1 - telemetry.rearBrakeStability) * 0.18 +
         telemetry.selfAlignTorque * 0.08,
-      braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12,
+      braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.frontLockRisk * 0.22 + telemetry.brakeTemp * 0.12,
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
       tireLoadFeedback: telemetry.tireLoadFeedback,
       combinedSlipLoad: telemetry.combinedSlipLoad,
       tireGripReserve: telemetry.tireGripReserve,
+      brakeBalanceLoad: telemetry.brakeBalanceLoad,
+      frontLockRisk: telemetry.frontLockRisk,
+      rearBrakeStability: telemetry.rearBrakeStability,
       tireGroundContact: telemetry.tireGroundContact,
       splitSurfaceLoad: telemetry.splitSurfaceLoad,
       rearTractionRotation: telemetry.rearTractionRotation,
@@ -470,7 +480,9 @@ export class ThreeRaceRenderer {
           telemetry.damperImpulse * 0.24 +
           Math.max(0, 1 - telemetry.tireGroundContact) * 0.26 +
           Math.abs(telemetry.splitSurfaceLoad) * 0.22 +
-          Math.abs(telemetry.rearTractionRotation) * 0.2,
+          Math.abs(telemetry.rearTractionRotation) * 0.2 +
+          telemetry.frontLockRisk * 0.3 +
+          Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22,
         0,
         1
       ),
@@ -489,7 +501,7 @@ export class ThreeRaceRenderer {
       instrument: true
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
-    this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12, 0, 1).toFixed(2);
+    this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.frontLockRisk * 0.22 + telemetry.brakeTemp * 0.12, 0, 1).toFixed(2);
     this.renderer.domElement.dataset.rearRainLight = clamp(
       telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
       0,
@@ -831,6 +843,9 @@ export class ThreeRaceRenderer {
         tireLoadFeedback: clamp(rival.speedKph / 320, 0, 1) * 0.28,
         combinedSlipLoad: 0,
         tireGripReserve: 1,
+        brakeBalanceLoad: 0,
+        frontLockRisk: 0,
+        rearBrakeStability: 1,
         tireGroundContact: 1,
         splitSurfaceLoad: 0,
         rearTractionRotation: 0,
@@ -1373,6 +1388,9 @@ export class ThreeRaceRenderer {
       tireLoadFeedback: number;
       combinedSlipLoad: number;
       tireGripReserve: number;
+      brakeBalanceLoad: number;
+      frontLockRisk: number;
+      rearBrakeStability: number;
       tireGroundContact: number;
       splitSurfaceLoad: number;
       rearTractionRotation: number;
@@ -1416,6 +1434,9 @@ export class ThreeRaceRenderer {
     const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
     const combinedSlipLoad = clamp(state.combinedSlipLoad, 0, 1);
     const tireGripReserve = clamp(state.tireGripReserve, 0.52, 1.04);
+    const brakeBalanceLoad = clamp(state.brakeBalanceLoad, 0, 1);
+    const frontLockRisk = clamp(state.frontLockRisk, 0, 1);
+    const rearBrakeLightness = clamp(1 - state.rearBrakeStability, 0, 1);
     const tireGroundContact = clamp(state.tireGroundContact, 0, 1.08);
     const splitSurfaceLoad = clamp(state.splitSurfaceLoad, -1, 1);
     const rearTractionRotation = clamp(state.rearTractionRotation, -1, 1);
@@ -1434,11 +1455,12 @@ export class ThreeRaceRenderer {
 
       const side = wheelName.includes("left") ? -1 : 1;
       const frontLoad = wheelName.startsWith("front")
-        ? state.braking * 0.22 + frontAeroLoad * 0.12
-        : state.throttle * 0.08 + rearAeroLoad * 0.1;
+        ? state.braking * 0.22 + brakeBalanceLoad * 0.16 + frontLockRisk * 0.1 + frontAeroLoad * 0.12
+        : state.throttle * 0.08 + rearAeroLoad * 0.1 - rearBrakeLightness * 0.08;
       const cornerLoad = clamp(
         tireLoad * 0.58 +
           combinedSlipLoad * 0.16 +
+          brakeBalanceLoad * 0.12 +
           suspensionCompression * 0.32 +
           frontLoad -
           side * lateralLoad * 0.55 +
@@ -1455,6 +1477,8 @@ export class ThreeRaceRenderer {
         surfaceKick * 0.018 +
         combinedSlipLoad * 0.008 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
+        brakeBalanceLoad * 0.01 +
+        (wheelName.startsWith("front") ? frontLockRisk * 0.014 : rearBrakeLightness * 0.008) +
         yawInertiaLoad * 0.01 +
         (wheelName.startsWith("front") ? steeringRackLoad * 0.012 + (1.2 - yawDamping) * 0.004 : 0);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
@@ -1485,6 +1509,9 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.tireGripReserveVisual = tireGripReserve.toFixed(3);
+      this.renderer.domElement.dataset.brakeBalanceVisualLoad = brakeBalanceLoad.toFixed(3);
+      this.renderer.domElement.dataset.frontLockRiskVisual = frontLockRisk.toFixed(3);
+      this.renderer.domElement.dataset.rearBrakeLightnessVisual = rearBrakeLightness.toFixed(3);
       this.renderer.domElement.dataset.frontAeroVisualLoad = frontAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.rearAeroVisualLoad = rearAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.steeringRackVisualLoad = steeringRackLoad.toFixed(3);

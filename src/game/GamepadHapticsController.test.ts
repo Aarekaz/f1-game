@@ -14,6 +14,9 @@ const baseTelemetry = {
   tireLoadFeedback: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
+  brakeBalanceLoad: 0,
+  frontLockRisk: 0,
+  rearBrakeStability: 1,
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
   selfAlignTorque: 0,
@@ -115,6 +118,21 @@ describe("raceHapticEffect", () => {
       speedKph: 205,
       combinedSlipLoad: 0.54,
       tireGripReserve: 0.68
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns brake balance instability into tire texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      brakeBalanceLoad: 0.5,
+      frontLockRisk: 0.36,
+      rearBrakeStability: 0.72,
+      car: { ...baseTelemetry.car, braking: 0.72 }
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

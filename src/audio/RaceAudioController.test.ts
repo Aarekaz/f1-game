@@ -15,6 +15,9 @@ const baseTelemetry = {
   tireLoadFeedback: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
+  brakeBalanceLoad: 0,
+  frontLockRisk: 0,
+  rearBrakeStability: 1,
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
   selfAlignTorque: 0,
@@ -105,6 +108,21 @@ describe("raceAudioMix", () => {
       speedKph: 205,
       combinedSlipLoad: 0.54,
       tireGripReserve: 0.68
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from brake balance instability", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 205,
+      brakeBalanceLoad: 0.48,
+      frontLockRisk: 0.34,
+      rearBrakeStability: 0.72,
+      car: { ...baseTelemetry.car, braking: 0.72 }
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

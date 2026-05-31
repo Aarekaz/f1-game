@@ -310,6 +310,9 @@ async function checkDesktop(browser) {
     engineBraking: Number(document.querySelector("#game canvas")?.dataset.engineBraking ?? 0),
     trailBraking: Number(document.querySelector("#game canvas")?.dataset.trailBraking ?? 0),
     thresholdBraking: Number(document.querySelector("#game canvas")?.dataset.thresholdBraking ?? 0),
+    brakeBalanceLoad: Number(document.querySelector("#game canvas")?.dataset.brakeBalanceLoad ?? 0),
+    frontLockRisk: Number(document.querySelector("#game canvas")?.dataset.frontLockRisk ?? 0),
+    rearBrakeStability: Number(document.querySelector("#game canvas")?.dataset.rearBrakeStability ?? 0),
     powerState: document.querySelector("#game canvas")?.dataset.powerState ?? "",
     wetRivalSprays: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprays ?? 0),
     wetRivalSprayStrength: Number(document.querySelector("#game canvas")?.dataset.wetRivalSprayStrength ?? 0),
@@ -357,6 +360,9 @@ async function checkDesktop(browser) {
     tireForceLoad: Number(document.querySelector("#game canvas")?.dataset.tireForceLoad ?? 0),
     combinedSlipLoad: Number(document.querySelector("#game canvas")?.dataset.combinedSlipLoad ?? 0),
     tireGripReserve: Number(document.querySelector("#game canvas")?.dataset.tireGripReserve ?? 0),
+    brakeBalanceVisualLoad: Number(document.querySelector("#game canvas")?.dataset.brakeBalanceVisualLoad ?? 0),
+    frontLockRiskVisual: Number(document.querySelector("#game canvas")?.dataset.frontLockRiskVisual ?? 0),
+    rearBrakeLightnessVisual: Number(document.querySelector("#game canvas")?.dataset.rearBrakeLightnessVisual ?? 0),
     tireSaturation: Number(document.querySelector("#game canvas")?.dataset.tireSaturation ?? 0),
     tireRelaxation: Number(document.querySelector("#game canvas")?.dataset.tireRelaxation ?? 0),
     tireLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.tireLoadFeedback ?? 0),
@@ -715,6 +721,9 @@ async function checkDesktop(browser) {
   assert(state.engineBraking >= 0 && state.engineBraking <= 1, `desktop engine-braking telemetry was invalid: ${state.engineBraking}`);
   assert(state.trailBraking >= 0 && state.trailBraking <= 1, `desktop trail-braking telemetry was invalid: ${state.trailBraking}`);
   assert(state.thresholdBraking >= 0 && state.thresholdBraking <= 1, `desktop threshold-braking telemetry was invalid: ${state.thresholdBraking}`);
+  assert(state.brakeBalanceLoad >= 0 && state.brakeBalanceLoad <= 1, `desktop brake balance load was invalid: ${state.brakeBalanceLoad}`);
+  assert(state.frontLockRisk >= 0 && state.frontLockRisk <= 1, `desktop front lock risk was invalid: ${state.frontLockRisk}`);
+  assert(state.rearBrakeStability >= 0.42 && state.rearBrakeStability <= 1.05, `desktop rear brake stability was invalid: ${state.rearBrakeStability}`);
   assert(/Power|Shift|Traction|Rear|Engine|Trail|Threshold|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
@@ -766,6 +775,9 @@ async function checkDesktop(browser) {
   assert(state.tireGripReserve >= 0.52 && state.tireGripReserve <= 1.05, `desktop tire grip reserve telemetry was invalid: ${state.tireGripReserve}`);
   assert(Number.isFinite(state.combinedSlipVisualLoad) && state.combinedSlipVisualLoad >= 0, "desktop combined slip visual load was missing");
   assert(state.tireGripReserveVisual >= 0.52 && state.tireGripReserveVisual <= 1.05, `desktop tire grip reserve visual load was invalid: ${state.tireGripReserveVisual}`);
+  assert(state.brakeBalanceVisualLoad >= 0 && state.brakeBalanceVisualLoad <= 1, `desktop brake balance visual load was invalid: ${state.brakeBalanceVisualLoad}`);
+  assert(state.frontLockRiskVisual >= 0 && state.frontLockRiskVisual <= 1, `desktop front lock risk visual load was invalid: ${state.frontLockRiskVisual}`);
+  assert(state.rearBrakeLightnessVisual >= 0 && state.rearBrakeLightnessVisual <= 1, `desktop rear brake lightness visual load was invalid: ${state.rearBrakeLightnessVisual}`);
   assert(state.tireSaturation >= 0 && state.tireSaturation <= 1, `desktop tire saturation telemetry was invalid: ${state.tireSaturation}`);
   assert(state.tireRelaxation >= 0 && state.tireRelaxation <= 1, `desktop tire relaxation telemetry was invalid: ${state.tireRelaxation}`);
   assert(state.tireLoadFeedback >= 0 && state.tireLoadFeedback <= 1, `desktop tire load feedback telemetry was invalid: ${state.tireLoadFeedback}`);
