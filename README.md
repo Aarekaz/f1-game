@@ -86,6 +86,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP loaded car visuals](readme-assets/screenshots/22-aurelia-loaded-car-visuals.png) |
 
+| Road-speed chase framing |
+| --- |
+| ![Aurelia GP road-speed chase framing](readme-assets/screenshots/23-aurelia-road-speed-framing.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -115,6 +119,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
 - The chase camera now has a small inertial rig, so acceleration, braking, aero load, and lateral slip tug the view instead of leaving the car screen-pinned.
 - The chase camera now has road-frame drift, letting slip angle and lateral load move the car inside the view while the road stays readable as the reference.
+- The chase camera now opens up with speed, tire load, traffic, and braking zones, giving the road more room when the car is moving quickly through a pack.
 - A chase-frame guard now pulls the look target back toward the car when hard cornering or rejoin motion tries to push it out of frame.
 - Off-track recovery keeps the road in frame instead of letting the view become a giant car over empty grass.
 - Portrait screens get a backed-off chase camera, so mobile play shows the road instead of filling the screen with the rear wing.
