@@ -50,6 +50,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP inertial chase camera](readme-assets/screenshots/13-aurelia-inertial-chase-camera.png) |
 
+| Load-transfer braking |
+| --- |
+| ![Aurelia GP load-transfer braking](readme-assets/screenshots/14-aurelia-load-transfer-braking.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -129,6 +133,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - High-speed runs now get peripheral ground-rush streaks and stronger player spray, so speed reads through the world instead of only through the speedometer.
 - Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
 - Clean high-speed running now builds aero platform load, adding planted grip and suspension compression while water, kerbs, runoff, dirty air, and wing damage take it away.
+- Braking, lift-off, throttle, and aero now move load between the front and rear axles, changing turn-in, lockup, traction, and chassis pitch.
 - Panic braking now bleeds steering authority through lockup and tire saturation, so full brake plus full lock scrubs forward instead of rotating like an arcade handbrake.
 - Hard brake release now leaves a short unsettled load-transfer window, so grip recovers through suspension movement instead of snapping instantly clean.
 - Full braking can now bring the car all the way to rest, and throttle has to build speed back up instead of snapping to a hidden rolling minimum.

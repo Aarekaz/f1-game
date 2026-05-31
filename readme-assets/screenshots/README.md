@@ -16,3 +16,4 @@ The current set was refreshed on 2026-05-30 from live gameplay rather than stage
 - `11-aurelia-standing-water-grip-loss.png`: wet-track puddle contact with local grip loss, spray, and lockup/understeer pressure.
 - `12-aurelia-aero-platform-load.png`: front-straight aero-platform run with speed, active rear aero, and planted suspension load.
 - `13-aurelia-inertial-chase-camera.png`: high-speed chase view with inertial camera lag, lateral load, and safe car framing.
+- `14-aurelia-load-transfer-braking.png`: braking and turn-in moment with forward axle load, brake glow, and the car still framed.
