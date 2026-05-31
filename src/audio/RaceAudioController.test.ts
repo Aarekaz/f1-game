@@ -17,6 +17,8 @@ const baseTelemetry = {
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
+  suspensionVelocity: 0,
+  damperImpulse: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -94,6 +96,19 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       roadFeelFeedback: 0.62
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from damper impulses", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      suspensionVelocity: -0.36,
+      damperImpulse: 0.42
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

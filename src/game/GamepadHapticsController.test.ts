@@ -16,6 +16,8 @@ const baseTelemetry = {
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
+  suspensionVelocity: 0,
+  damperImpulse: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -103,6 +105,18 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       roadFeelFeedback: 0.62
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns damper impulses into suspension chatter", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      suspensionVelocity: 0.38,
+      damperImpulse: 0.44
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
