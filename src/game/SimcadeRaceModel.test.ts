@@ -1514,6 +1514,43 @@ describe("SimcadeRaceModel", () => {
     expect(exitTurn.longitudinalGrip).toBeLessThan(tidyTurn.longitudinalGrip);
   });
 
+  it("uses differential lock to shape corner-exit traction", () => {
+    const straightModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    straightModel.update(1 / 60, { ...idle, launch: true });
+    run(straightModel, 4.8, { throttle: 1, ers: true });
+    const straight = run(straightModel, 0.82, { throttle: 1, ers: true });
+
+    const partialModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    partialModel.update(1 / 60, { ...idle, launch: true });
+    run(partialModel, 4.8, { throttle: 1, ers: true });
+    const partial = run(partialModel, 0.82, { throttle: 0.42, steer: 0.72 });
+
+    const exitModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    exitModel.update(1 / 60, { ...idle, launch: true });
+    run(exitModel, 4.8, { throttle: 1, ers: true });
+    const exit = run(exitModel, 0.82, { throttle: 1, steer: 0.72, ers: true });
+
+    expect(straight.driveTorqueLoad).toBeGreaterThan(0.08);
+    expect(straight.insideRearSlip).toBeLessThan(exit.insideRearSlip);
+    expect(exit.driveTorqueLoad).toBeGreaterThan(partial.driveTorqueLoad + 0.04);
+    expect(exit.differentialLock).toBeGreaterThan(partial.differentialLock + 0.04);
+    expect(exit.insideRearSlip).toBeGreaterThan(partial.insideRearSlip + 0.03);
+    expect(Math.abs(exit.rearTractionRotation)).toBeGreaterThan(Math.abs(partial.rearTractionRotation) + 0.01);
+    expect(exit.car.wheelspin).toBeGreaterThan(partial.car.wheelspin);
+  });
+
   it("loads the outside tires during sustained cornering", () => {
     const right = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1676,6 +1713,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.shiftCut).toBe(0);
     expect(telemetry.tractionBite).toBe(0);
     expect(telemetry.rearTractionRotation).toBe(0);
+    expect(telemetry.driveTorqueLoad).toBe(0);
+    expect(telemetry.differentialLock).toBe(0);
+    expect(telemetry.insideRearSlip).toBe(0);
     expect(telemetry.engineBraking).toBe(0);
     expect(telemetry.trailBraking).toBe(0);
     expect(telemetry.thresholdBraking).toBe(0);

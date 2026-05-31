@@ -104,6 +104,9 @@ export type RaceTelemetry = {
   shiftCut: number;
   tractionBite: number;
   rearTractionRotation: number;
+  driveTorqueLoad: number;
+  differentialLock: number;
+  insideRearSlip: number;
   engineBraking: number;
   trailBraking: number;
   thresholdBraking: number;
@@ -378,6 +381,9 @@ export class SimcadeRaceModel {
   private shiftCut = 0;
   private tractionBite = 0;
   private rearTractionRotation = 0;
+  private driveTorqueLoad = 0;
+  private differentialLock = 0;
+  private insideRearSlip = 0;
   private engineBraking = 0;
   private trailBraking = 0;
   private thresholdBraking = 0;
@@ -565,6 +571,9 @@ export class SimcadeRaceModel {
       shiftCut: this.shiftCut,
       tractionBite: this.tractionBite,
       rearTractionRotation: this.rearTractionRotation,
+      driveTorqueLoad: this.driveTorqueLoad,
+      differentialLock: this.differentialLock,
+      insideRearSlip: this.insideRearSlip,
       engineBraking: this.engineBraking,
       trailBraking: this.trailBraking,
       thresholdBraking: this.thresholdBraking,
@@ -711,6 +720,9 @@ export class SimcadeRaceModel {
     this.trailBraking = 0;
     this.thresholdBraking = 0;
     this.rearTractionRotation = 0;
+    this.driveTorqueLoad = 0;
+    this.differentialLock = 0;
+    this.insideRearSlip = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
     this.fuelLoad = 1;
@@ -1108,6 +1120,61 @@ export class SimcadeRaceModel {
       0.78,
       1.08
     );
+    const driveTorqueLoadTarget = clamp(
+      throttle *
+        speedRatio *
+        (0.18 +
+          boost * 0.18 +
+          Math.max(0, -this.longitudinalLoadTransfer) * 0.42 +
+          Math.abs(steer) * speedRatio * 0.2 +
+          this.tractionBite * 0.2 +
+          Math.max(0, 1 - this.tireGripReserve) * 0.22) *
+        (1 - brake * 0.82),
+      0,
+      1
+    );
+    this.driveTorqueLoad = approach(this.driveTorqueLoad, driveTorqueLoadTarget, dt * (driveTorqueLoadTarget > this.driveTorqueLoad ? 11 : 5.2));
+    const insideRearUnload = clamp(
+      lateralLoad * (0.75 + speedRatio * 0.35) +
+        Math.abs(steer) * speedRatio * 0.18 +
+        Math.max(0, 1.02 - this.rearAxleLoad) * 0.42 +
+        Math.max(0, 1 - this.tireGroundContact) * 0.28 +
+        this.surfaceEdgeLoad * 0.12 -
+        this.rearAeroLoad * 0.12,
+      0,
+      1
+    );
+    const insideRearSlipTarget = clamp(
+      this.driveTorqueLoad *
+        (0.12 +
+          insideRearUnload * 0.78 +
+          this.tractionBite * 0.22 +
+          this.tireSaturation * 0.16 +
+          this.standingWater * 0.22 +
+          (gripContext.marbles + this.dirtyTirePickup) * 0.14) *
+        (1 - brake * 0.86),
+      0,
+      1
+    );
+    this.insideRearSlip = approach(this.insideRearSlip, insideRearSlipTarget, dt * (insideRearSlipTarget > this.insideRearSlip ? 13 : 5.6));
+    const differentialLockTarget = clamp(
+      this.driveTorqueLoad *
+        (0.28 +
+          speedRatio * 0.12 +
+          Math.abs(steer) * 0.22 +
+          this.insideRearSlip * 0.44 +
+          this.tractionBite * 0.24 +
+          boost * 0.16 -
+          this.tireRunoffShare * 0.08) *
+        (1 - brake * 0.78),
+      0,
+      1
+    );
+    this.differentialLock = approach(
+      this.differentialLock,
+      differentialLockTarget,
+      dt * (differentialLockTarget > this.differentialLock ? 10.5 : 4.8)
+    );
     const rearTractionSpeedWindow = clamp((speedRatio - 0.08) / 0.18, 0, 1);
     const rearRotationDemand = throttle * Math.abs(steer) * speedRatio * rearTractionSpeedWindow * (0.24 + cornerDemand * 0.64) * (1 - brake * 0.82);
     const rearTractionSlipWindow = clamp(
@@ -1115,6 +1182,9 @@ export class SimcadeRaceModel {
         this.tractionBite * 0.34 +
         this.tireSaturation * 0.3 +
         this.wheelspin * 0.24 +
+        this.driveTorqueLoad * 0.08 +
+        this.insideRearSlip * 0.5 +
+        this.differentialLock * 0.12 +
         Math.max(0, 1.02 - rearTractionSupport) * 0.75 +
         Math.max(0, 1 - this.tireGroundContact) * 0.26 -
         this.aeroPlatformLoad * 0.12,
@@ -1126,7 +1196,8 @@ export class SimcadeRaceModel {
         rearRotationDemand *
         rearTractionSlipWindow *
         (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.28) *
-        clamp(0.72 + this.rearAxleLoad * 0.22, 0.72, 1.05),
+        clamp(0.72 + this.rearAxleLoad * 0.22, 0.72, 1.05) *
+        clamp(0.94 + this.differentialLock * 0.14 + this.insideRearSlip * 0.12, 0.92, 1.18),
       -0.42,
       0.42
     );
@@ -1279,6 +1350,9 @@ export class SimcadeRaceModel {
             this.tireSaturation * throttle * 0.34 +
             this.tireRelaxation * throttle * 0.08 +
             this.engineBraking * Math.abs(steer) * 0.08 +
+            this.driveTorqueLoad * throttle * 0.1 +
+            this.insideRearSlip * 0.58 -
+            this.differentialLock * 0.08 +
             Math.abs(this.rearTractionRotation) * throttle * 0.32 +
             (gripContext.marbles + this.dirtyTirePickup) * throttle * 0.18,
           0,
@@ -1382,6 +1456,7 @@ export class SimcadeRaceModel {
       clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08 - this.tireRelaxation * 0.035, 0.52, 1.06) *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
       rearTractionSupport *
+      clamp(1 + this.differentialLock * 0.035 - this.insideRearSlip * 0.16 - this.driveTorqueLoad * this.tireSaturation * 0.08, 0.78, 1.04) *
       clamp(0.86 + this.tireGroundContact * 0.14, 0.86, 1.04) *
       (1 - this.tireRelaxation * 0.03) *
       (1 - steeringPowerTrim) *
@@ -1772,6 +1847,9 @@ export class SimcadeRaceModel {
         this.lockup * 0.22 +
         this.frontLockRisk * 0.16 +
         this.wheelspin * 0.18 +
+        this.driveTorqueLoad * 0.06 +
+        this.insideRearSlip * 0.18 +
+        this.differentialLock * Math.abs(rawSteer) * 0.06 +
         Math.abs(this.rearTractionRotation) * 0.14 +
         Math.max(0, 1 - this.rearBrakeStability) * 0.16 +
         this.damperImpulse * 0.16 +
@@ -1808,7 +1886,11 @@ export class SimcadeRaceModel {
     const splitSurfaceTug =
       this.splitSurfaceLoad * speedRatio * (0.56 + contactRoughness * 1.05 + this.surfaceEdgeLoad * 0.46) * (1 - Math.abs(rawSteer) * 0.26) * rollingRoadForce;
     const rearTractionSideSlip =
-      this.rearTractionRotation * speedRatio * (0.82 + cornerDemand * 0.52) * (1 - brake * 0.64) * rollingRoadForce;
+      this.rearTractionRotation *
+      speedRatio *
+      (0.82 + cornerDemand * 0.52 + this.differentialLock * 0.14 + this.insideRearSlip * 0.18) *
+      (1 - brake * 0.64) *
+      rollingRoadForce;
     const rearBrakeSideSlip =
       Math.sign(steer) *
       Math.max(0, 1 - this.rearBrakeStability) *
@@ -1959,6 +2041,9 @@ export class SimcadeRaceModel {
         this.lockup * 0.06 -
         this.frontLockRisk * 0.08 -
         Math.max(0, 1 - this.rearBrakeStability) * 0.035 -
+        this.insideRearSlip * 0.09 -
+        this.driveTorqueLoad * this.tireSaturation * 0.035 +
+        this.differentialLock * 0.025 -
         this.brakeReleaseShock * 0.22 -
         this.engineBraking * (0.035 + Math.abs(rawSteer) * 0.03) -
         trailBrakeInstability * 0.04 -
@@ -1995,6 +2080,7 @@ export class SimcadeRaceModel {
         this.splitSurfaceLoad * 0.06 +
         Math.max(0, 1 - this.rearBrakeStability) * Math.sign(rawSteer || this.yawRate || 1) * 0.028 +
         this.rearTractionRotation * -0.07 +
+        this.insideRearSlip * Math.sign(rawSteer || this.yawRate || 1) * -0.035 +
         contactRoughness * speedRatio * 0.04 +
         tireContact.heightRollBias * speedRatio * 0.42,
       -0.16,
@@ -2114,6 +2200,10 @@ export class SimcadeRaceModel {
     this.engineBraking = 0;
     this.trailBraking = 0;
     this.thresholdBraking = 0;
+    this.rearTractionRotation = 0;
+    this.driveTorqueLoad = 0;
+    this.differentialLock = 0;
+    this.insideRearSlip = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
@@ -2747,6 +2837,8 @@ export class SimcadeRaceModel {
     if (this.engineBraking > 0.11) return "Engine braking";
     if (this.trailBraking > 0.08) return "Trail braking";
     if (this.thresholdBraking > 0.16) return "Threshold braking";
+    if (this.insideRearSlip > 0.16) return "Inside rear slip";
+    if (this.differentialLock > 0.18) return "Diff locking";
     if (Math.abs(this.rearTractionRotation) > 0.16) return "Rear rotation";
     if (this.tractionBite > 0.42) return "Traction limited";
     if (this.rpm() > 9200) return "Near redline";
