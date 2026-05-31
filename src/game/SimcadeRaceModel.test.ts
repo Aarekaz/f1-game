@@ -1043,9 +1043,39 @@ describe("SimcadeRaceModel", () => {
     expect(lightest.roadLoad).toBeLessThan(0.995);
     expect(heaviest.roadLoad).toBeGreaterThan(1.005);
     expect(heaviest.suspensionLoad).toBeGreaterThan(lightest.suspensionLoad);
+    expect(lightest.tireGroundContact).toBeLessThan(0.99);
+    expect(heaviest.tireGroundContact).toBeGreaterThan(lightest.tireGroundContact);
     expect(Math.abs(lightest.roadCompression)).toBeGreaterThan(0.002);
     expect(Math.abs(heaviest.car.pitch - lightest.car.pitch)).toBeGreaterThan(0.004);
     expect(Math.max(lightest.roadFeelFeedback, heaviest.roadFeelFeedback)).toBeGreaterThan(0.04);
+  });
+
+  it("unloads contact over crests without turning normal road camber into a surface split", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.5, { throttle: 1 });
+
+    let lightest = model.telemetry();
+    let compressed = model.telemetry();
+    let telemetry = model.telemetry();
+    for (let elapsed = 0; elapsed < 18; elapsed += 1 / 60) {
+      const track = sampleTrack(telemetry.trackOffset);
+      const steer = clamp(-(telemetry.carX - track.racingLineOffset) / 3.2 - telemetry.car.heading * 0.9, -0.7, 0.7);
+      telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true, steer });
+      if (telemetry.tireGroundContact < lightest.tireGroundContact) lightest = telemetry;
+      if (telemetry.tireGroundContact > compressed.tireGroundContact) compressed = telemetry;
+    }
+
+    expect(lightest.roadLoad).toBeLessThan(0.995);
+    expect(lightest.tireGroundContact).toBeLessThan(0.98);
+    expect(lightest.roadFeelFeedback).toBeGreaterThan(0.04);
+    expect(Math.abs(lightest.splitSurfaceLoad)).toBeLessThan(0.1);
+    expect(compressed.tireGroundContact).toBeGreaterThan(lightest.tireGroundContact);
+    expect(compressed.longitudinalGrip).toBeGreaterThan(lightest.longitudinalGrip);
   });
 
   it("loads and sheds the aero platform through clean and disrupted contact", () => {
@@ -1399,6 +1429,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.longitudinalGrip).toBe(1);
     expect(telemetry.tireContactGrip).toBe(1);
     expect(telemetry.tireRunoffShare).toBe(0);
+    expect(telemetry.tireGroundContact).toBe(1);
     expect(telemetry.tireForceLoad).toBe(0);
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
