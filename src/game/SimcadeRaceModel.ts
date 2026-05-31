@@ -53,6 +53,7 @@ export type RaceTelemetry = {
   frontAxleLoad: number;
   rearAxleLoad: number;
   longitudinalLoadTransfer: number;
+  lateralLoadTransfer: number;
   roadWetness: number;
   standingWater: number;
   rainIntensity: number;
@@ -321,6 +322,7 @@ export class SimcadeRaceModel {
   private frontAxleLoad = 1;
   private rearAxleLoad = 1;
   private longitudinalLoadTransfer = 0;
+  private lateralLoadTransfer = 0;
   private standingWater = 0;
   private chassisPitch = 0;
   private chassisRoll = 0;
@@ -464,6 +466,7 @@ export class SimcadeRaceModel {
       frontAxleLoad: this.frontAxleLoad,
       rearAxleLoad: this.rearAxleLoad,
       longitudinalLoadTransfer: this.longitudinalLoadTransfer,
+      lateralLoadTransfer: this.lateralLoadTransfer,
       roadWetness: this.dynamicRoadWetness(),
       standingWater: this.standingWater,
       rainIntensity: this.session.weather.rainIntensity,
@@ -666,6 +669,7 @@ export class SimcadeRaceModel {
     this.frontAxleLoad = 1;
     this.rearAxleLoad = 1;
     this.longitudinalLoadTransfer = 0;
+    this.lateralLoadTransfer = 0;
     this.chassisPitch = 0;
     this.chassisRoll = 0;
     this.frontWingDamage = 0;
@@ -882,6 +886,22 @@ export class SimcadeRaceModel {
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const cornerDemand = track.section.kind === "straight" ? 0.18 : track.section.difficulty;
     const longitudinalForceDemand = throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52);
+    const signedLateralLoadTarget = clamp(
+      (steer * speedRatio * speedRatio * (0.34 + cornerDemand * 0.62) +
+        track.curve * speedRatio * (0.95 + cornerDemand * 0.5) +
+        this.lateralVelocity * 0.018) *
+        (1 + this.aeroPlatformLoad * 0.16) *
+        (1 - this.tireRunoffShare * 0.24),
+      -0.42,
+      0.42
+    );
+    this.lateralLoadTransfer = approach(
+      this.lateralLoadTransfer,
+      signedLateralLoadTarget,
+      dt * (Math.abs(signedLateralLoadTarget) > Math.abs(this.lateralLoadTransfer) ? 9.2 : 5.4)
+    );
+    const lateralLoad = Math.abs(this.lateralLoadTransfer);
+    const lateralLoadStress = Math.max(0, lateralLoad - 0.3);
     const frontLoadGrip = clamp(0.9 + this.frontAxleLoad * 0.1 - Math.max(0, this.frontAxleLoad - 1.18) * 0.22, 0.82, 1.06);
     const rearLoadGrip = clamp(0.88 + this.rearAxleLoad * 0.12 - Math.max(0, this.rearAxleLoad - 1.16) * 0.18, 0.82, 1.07);
     const rearTractionSupport = clamp(0.86 + this.rearAxleLoad * 0.14 - Math.max(0, this.longitudinalLoadTransfer) * 0.12, 0.78, 1.08);
@@ -961,6 +981,7 @@ export class SimcadeRaceModel {
           this.standingWater * 0.38 +
           this.tireSaturation * 0.52 +
           this.tireRelaxation * 0.1 +
+          lateralLoadStress * 0.04 +
           this.dirtyTirePickup * 0.2),
       0,
       1
@@ -1043,7 +1064,7 @@ export class SimcadeRaceModel {
     const looseSurfaceRecoveryDrive = onTrack
       ? 0
       : settledRecoveryInput * (surface.name === "Gravel" ? 78 : 110) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
-    const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 170 : 98) * crawlRecoveryWindow;
+    const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 178 : 106) * crawlRecoveryWindow;
     const crawlDragCut = onTrack ? 0 : recoverySteerGrip * settledRecoveryInput * crawlRecoveryWindow * (surface.name === "Gravel" ? 0.42 : 0.28);
     const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief) * (1 - crawlDragCut));
     this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42 + this.standingWater * speedRatio * 0.08, 0, 1), dt * 12);
@@ -1075,6 +1096,7 @@ export class SimcadeRaceModel {
         brake * (0.16 + speedRatio * 0.08) -
         throttle * 0.035 +
         Math.abs(this.longitudinalLoadTransfer) * 0.08 +
+        lateralLoad * (0.025 + speedRatio * 0.025) +
         camberLoad +
         Math.max(0, this.roadCompression) * (0.5 + speedRatio * 0.45) -
         Math.max(0, -this.roadCompression) * (0.44 + speedRatio * 0.32) +
@@ -1157,7 +1179,8 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.2 +
         this.standingWater * (0.18 + speedRatio * 0.22) +
         this.tireSaturation * 0.2 +
-        this.tireRelaxation * 0.06,
+        this.tireRelaxation * 0.06 +
+        lateralLoadStress * 0.045,
       0,
       0.86
     );
@@ -1220,7 +1243,8 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.18 +
         this.surfaceEdgeLoad * 0.12 +
         this.standingWater * (0.12 + speedRatio * 0.1) +
-        this.brakeReleaseShock * 0.18,
+        this.brakeReleaseShock * 0.18 +
+        lateralLoadStress * 0.085,
       0,
       1
     );
@@ -1267,6 +1291,7 @@ export class SimcadeRaceModel {
         Math.max(0, 0.58 - this.roadAdhesion) * 0.42 +
         this.tireSaturation * 0.1 +
         this.tireRelaxation * 0.04 +
+        lateralLoadStress * 0.028 +
         slipAngleLoad * 0.12 +
         this.surfaceEdgeLoad * 0.12,
       0,
@@ -1338,6 +1363,7 @@ export class SimcadeRaceModel {
     const rollTarget = clamp(
       -roadCamber * 0.36 -
         this.yawRate * 0.24 -
+        Math.sign(this.lateralLoadTransfer || rawSteer) * lateralLoad * 0.08 -
         Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 +
         contactRoughness * speedRatio * 0.04 +
         tireContact.heightRollBias * speedRatio * 0.42,
@@ -1470,6 +1496,7 @@ export class SimcadeRaceModel {
     this.frontAxleLoad = Math.max(this.frontAxleLoad, 0.92);
     this.rearAxleLoad = Math.max(this.rearAxleLoad, 0.92);
     this.longitudinalLoadTransfer = 0;
+    this.lateralLoadTransfer = 0;
     this.chassisPitch = 0;
     this.chassisRoll = 0;
     this.cleanLap = false;
@@ -1680,6 +1707,7 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.62 -
         this.understeer * 0.58 -
         this.tireRelaxation * 0.18 -
+        Math.abs(this.lateralLoadTransfer) * 0.18 -
         this.frontWingDamage * 0.24 -
         this.dirtyTirePickup * 0.18,
       0,
