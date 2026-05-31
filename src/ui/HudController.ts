@@ -352,6 +352,7 @@ export class HudController {
     if (telemetry.surfaceName === "Gravel") return `Gravel ${(telemetry.surfaceRumble * 100).toFixed(0)}%`;
     if (telemetry.surfaceName === "Runoff") return "Runoff";
     if (telemetry.surfaceName === "Kerb" && telemetry.surfaceRumble > 0.18) return "Kerb vibration";
+    if (telemetry.standingWater > 0.22) return `Standing water ${(telemetry.standingWater * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;

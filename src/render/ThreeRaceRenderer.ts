@@ -308,6 +308,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.racecraftState = telemetry.racecraftState;
     this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
+    this.renderer.domElement.dataset.standingWater = telemetry.standingWater.toFixed(3);
     this.renderer.domElement.dataset.launchCharge = telemetry.launchCharge.toFixed(2);
     this.renderer.domElement.dataset.launchQuality = telemetry.launchQuality.toFixed(2);
     this.renderer.domElement.dataset.aeroBoostAvailable = String(telemetry.aeroBoostAvailable);
@@ -530,7 +531,7 @@ export class ThreeRaceRenderer {
     const cameraFrameGuard = this.applyChaseFrameGuard(carX, carY, carZ, rejoinCameraLift, podMode, telemetry.phase, cameraRoll);
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
     this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
-    this.updateWaterSpray(carX, carY, carZ, carWorldYaw, telemetry.roadWetness, speedRatio, telemetry.car.slip);
+    this.updateWaterSpray(carX, carY, carZ, carWorldYaw, clamp(telemetry.roadWetness + telemetry.standingWater * 0.38, 0, 1), speedRatio, telemetry.car.slip);
     this.updateCameraObstructionCulling(carX, carZ);
     this.projectCarVisualAnchor();
     this.renderer.domElement.dataset.cameraWorldX = this.camera.position.x.toFixed(2);
