@@ -42,6 +42,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP standing water grip loss](readme-assets/screenshots/11-aurelia-standing-water-grip-loss.png) |
 
+| High-speed aero platform |
+| --- |
+| ![Aurelia GP high-speed aero platform](readme-assets/screenshots/12-aurelia-aero-platform-load.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -119,6 +123,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Slipstream and dirty air are visible and physical, with wake ribbons and light camera buffet when traffic disturbs the car.
 - High-speed runs now get peripheral ground-rush streaks and stronger player spray, so speed reads through the world instead of only through the speedometer.
 - Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
+- Clean high-speed running now builds aero platform load, adding planted grip and suspension compression while water, kerbs, runoff, dirty air, and wing damage take it away.
 - Panic braking now bleeds steering authority through lockup and tire saturation, so full brake plus full lock scrubs forward instead of rotating like an arcade handbrake.
 - Hard brake release now leaves a short unsettled load-transfer window, so grip recovers through suspension movement instead of snapping instantly clean.
 - Full braking can now bring the car all the way to rest, and throttle has to build speed back up instead of snapping to a hidden rolling minimum.
