@@ -298,6 +298,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.selfAlignTorque = telemetry.selfAlignTorque.toFixed(3);
     this.renderer.domElement.dataset.yawInertiaLoad = telemetry.yawInertiaLoad.toFixed(3);
     this.renderer.domElement.dataset.yawDamping = telemetry.yawDamping.toFixed(3);
+    this.renderer.domElement.dataset.counterSteerLoad = telemetry.counterSteerLoad.toFixed(3);
+    this.renderer.domElement.dataset.slipRecovery = telemetry.slipRecovery.toFixed(3);
+    this.renderer.domElement.dataset.chassisStability = telemetry.chassisStability.toFixed(3);
     this.renderer.domElement.dataset.roadAlignment = telemetry.roadAlignment.toFixed(3);
     this.renderer.domElement.dataset.roadCamber = telemetry.roadCamber.toFixed(3);
     this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
@@ -430,6 +433,7 @@ export class ThreeRaceRenderer {
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.024 +
       rumblePulse * 0.018;
     const yawInertiaDirection = Math.sign(telemetry.car.yawRate || telemetry.slipAngle || telemetry.car.steering || 1);
+    const recoveryDirection = Math.sign(telemetry.car.steering || -telemetry.slipAngle || telemetry.car.yawRate || 1);
     const visualRoll =
       telemetry.car.roll -
       telemetry.car.yawRate * 0.3 +
@@ -450,6 +454,9 @@ export class ThreeRaceRenderer {
       telemetry.selfAlignTorque * 0.018 -
       telemetry.steeringRackLoad * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.01 +
       telemetry.yawInertiaLoad * yawInertiaDirection * 0.014 +
+      telemetry.counterSteerLoad * recoveryDirection * 0.018 -
+      telemetry.slipRecovery * recoveryDirection * 0.012 +
+      Math.max(0, 1 - telemetry.chassisStability) * yawInertiaDirection * 0.016 +
       rumblePulse * 0.014;
     this.car.rotation.x = visualPitch;
     this.car.rotation.z = visualRoll;
@@ -471,6 +478,9 @@ export class ThreeRaceRenderer {
       tireLoadFeedback: telemetry.tireLoadFeedback,
       combinedSlipLoad: telemetry.combinedSlipLoad,
       tireGripReserve: telemetry.tireGripReserve,
+      counterSteerLoad: telemetry.counterSteerLoad,
+      slipRecovery: telemetry.slipRecovery,
+      chassisStability: telemetry.chassisStability,
       brakeBalanceLoad: telemetry.brakeBalanceLoad,
       frontLockRisk: telemetry.frontLockRisk,
       rearBrakeStability: telemetry.rearBrakeStability,
@@ -490,6 +500,9 @@ export class ThreeRaceRenderer {
           Math.max(0, 1 - telemetry.tireGroundContact) * 0.26 +
           Math.abs(telemetry.splitSurfaceLoad) * 0.22 +
           Math.abs(telemetry.rearTractionRotation) * 0.2 +
+          telemetry.counterSteerLoad * 0.24 +
+          telemetry.slipRecovery * 0.18 +
+          Math.max(0, 1 - telemetry.chassisStability) * 0.22 +
           telemetry.frontLockRisk * 0.3 +
           Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22 +
           telemetry.insideRearSlip * 0.28 +
@@ -854,6 +867,9 @@ export class ThreeRaceRenderer {
         tireLoadFeedback: clamp(rival.speedKph / 320, 0, 1) * 0.28,
         combinedSlipLoad: 0,
         tireGripReserve: 1,
+        counterSteerLoad: 0,
+        slipRecovery: 0,
+        chassisStability: 1,
         brakeBalanceLoad: 0,
         frontLockRisk: 0,
         rearBrakeStability: 1,
@@ -1402,6 +1418,9 @@ export class ThreeRaceRenderer {
       tireLoadFeedback: number;
       combinedSlipLoad: number;
       tireGripReserve: number;
+      counterSteerLoad: number;
+      slipRecovery: number;
+      chassisStability: number;
       brakeBalanceLoad: number;
       frontLockRisk: number;
       rearBrakeStability: number;
@@ -1451,6 +1470,9 @@ export class ThreeRaceRenderer {
     const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
     const combinedSlipLoad = clamp(state.combinedSlipLoad, 0, 1);
     const tireGripReserve = clamp(state.tireGripReserve, 0.52, 1.04);
+    const counterSteerLoad = clamp(state.counterSteerLoad, 0, 1);
+    const slipRecovery = clamp(state.slipRecovery, 0, 1);
+    const chassisStability = clamp(state.chassisStability, 0.34, 1.08);
     const brakeBalanceLoad = clamp(state.brakeBalanceLoad, 0, 1);
     const frontLockRisk = clamp(state.frontLockRisk, 0, 1);
     const rearBrakeLightness = clamp(1 - state.rearBrakeStability, 0, 1);
@@ -1488,6 +1510,9 @@ export class ThreeRaceRenderer {
           side * lateralLoad * 0.55 +
           side * splitSurfaceLoad * 0.34 -
           side * rearTractionRotation * 0.22 +
+          side * Math.sign(state.steering || -rearTractionRotation || 1) * counterSteerLoad * 0.14 -
+          Math.max(0, 1 - chassisStability) * 0.12 +
+          slipRecovery * 0.08 +
           side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
@@ -1503,6 +1528,9 @@ export class ThreeRaceRenderer {
         Math.max(0, 1 - tireGripReserve) * 0.012 +
         brakeBalanceLoad * 0.01 +
         driveTorqueLoad * 0.006 +
+        counterSteerLoad * 0.01 +
+        Math.max(0, 1 - chassisStability) * 0.014 -
+        slipRecovery * 0.006 +
         (wheelName.startsWith("rear") ? differentialLock * 0.008 + insideRearSlip * 0.014 : 0) +
         (wheelName.startsWith("front") ? frontLockRisk * 0.014 : rearBrakeLightness * 0.008) +
         yawInertiaLoad * 0.01 +
@@ -1535,6 +1563,9 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.tireGripReserveVisual = tireGripReserve.toFixed(3);
+      this.renderer.domElement.dataset.counterSteerVisualLoad = counterSteerLoad.toFixed(3);
+      this.renderer.domElement.dataset.slipRecoveryVisual = slipRecovery.toFixed(3);
+      this.renderer.domElement.dataset.chassisStabilityVisual = chassisStability.toFixed(3);
       this.renderer.domElement.dataset.brakeBalanceVisualLoad = brakeBalanceLoad.toFixed(3);
       this.renderer.domElement.dataset.frontLockRiskVisual = frontLockRisk.toFixed(3);
       this.renderer.domElement.dataset.rearBrakeLightnessVisual = rearBrakeLightness.toFixed(3);

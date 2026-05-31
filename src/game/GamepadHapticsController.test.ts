@@ -25,6 +25,9 @@ const baseTelemetry = {
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
+  counterSteerLoad: 0,
+  slipRecovery: 0,
+  chassisStability: 1,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
@@ -176,6 +179,20 @@ describe("raceHapticEffect", () => {
       speedKph: 205,
       yawInertiaLoad: 0.52,
       yawDamping: 0.58
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns countersteer recovery into catch texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 210,
+      counterSteerLoad: 0.46,
+      slipRecovery: 0.32,
+      chassisStability: 0.72
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

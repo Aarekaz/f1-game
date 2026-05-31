@@ -377,6 +377,9 @@ async function checkDesktop(browser) {
     selfAlignTorque: Number(document.querySelector("#game canvas")?.dataset.selfAlignTorque ?? 0),
     yawInertiaLoad: Number(document.querySelector("#game canvas")?.dataset.yawInertiaLoad ?? 0),
     yawDamping: Number(document.querySelector("#game canvas")?.dataset.yawDamping ?? 0),
+    counterSteerLoad: Number(document.querySelector("#game canvas")?.dataset.counterSteerLoad ?? 0),
+    slipRecovery: Number(document.querySelector("#game canvas")?.dataset.slipRecovery ?? 0),
+    chassisStability: Number(document.querySelector("#game canvas")?.dataset.chassisStability ?? 0),
     roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadCamber: Number(document.querySelector("#game canvas")?.dataset.roadCamber ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
@@ -401,6 +404,9 @@ async function checkDesktop(browser) {
     chassisVisualLoad: Number(document.querySelector("#game canvas")?.dataset.chassisVisualLoad ?? 0),
     combinedSlipVisualLoad: Number(document.querySelector("#game canvas")?.dataset.combinedSlipVisualLoad ?? 0),
     tireGripReserveVisual: Number(document.querySelector("#game canvas")?.dataset.tireGripReserveVisual ?? 0),
+    counterSteerVisualLoad: Number(document.querySelector("#game canvas")?.dataset.counterSteerVisualLoad ?? 0),
+    slipRecoveryVisual: Number(document.querySelector("#game canvas")?.dataset.slipRecoveryVisual ?? 0),
+    chassisStabilityVisual: Number(document.querySelector("#game canvas")?.dataset.chassisStabilityVisual ?? 0),
     steeringRackVisualLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackVisualLoad ?? 0),
     yawInertiaVisualLoad: Number(document.querySelector("#game canvas")?.dataset.yawInertiaVisualLoad ?? 0),
     yawDampingVisual: Number(document.querySelector("#game canvas")?.dataset.yawDampingVisual ?? 0),
@@ -800,8 +806,17 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.steeringRackVisualLoad) && state.steeringRackVisualLoad >= 0, "desktop steering rack visual load was missing");
   assert(state.yawInertiaLoad >= 0 && state.yawInertiaLoad <= 1, `desktop yaw inertia load telemetry was invalid: ${state.yawInertiaLoad}`);
   assert(state.yawDamping >= 0.2 && state.yawDamping <= 1.2, `desktop yaw damping telemetry was invalid: ${state.yawDamping}`);
+  assert(state.counterSteerLoad >= 0 && state.counterSteerLoad <= 1, `desktop countersteer telemetry was invalid: ${state.counterSteerLoad}`);
+  assert(state.slipRecovery >= 0 && state.slipRecovery <= 1, `desktop slip recovery telemetry was invalid: ${state.slipRecovery}`);
+  assert(state.chassisStability >= 0.34 && state.chassisStability <= 1.08, `desktop chassis stability telemetry was invalid: ${state.chassisStability}`);
   assert(Number.isFinite(state.yawInertiaVisualLoad) && state.yawInertiaVisualLoad >= 0, "desktop yaw inertia visual load was missing");
   assert(state.yawDampingVisual >= 0.2 && state.yawDampingVisual <= 1.2, `desktop yaw damping visual load was invalid: ${state.yawDampingVisual}`);
+  assert(state.counterSteerVisualLoad >= 0 && state.counterSteerVisualLoad <= 1, `desktop countersteer visual load was invalid: ${state.counterSteerVisualLoad}`);
+  assert(state.slipRecoveryVisual >= 0 && state.slipRecoveryVisual <= 1, `desktop slip recovery visual load was invalid: ${state.slipRecoveryVisual}`);
+  assert(
+    state.chassisStabilityVisual >= 0.34 && state.chassisStabilityVisual <= 1.08,
+    `desktop chassis stability visual load was invalid: ${state.chassisStabilityVisual}`
+  );
   assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadCamber), "desktop road camber telemetry was missing");
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");

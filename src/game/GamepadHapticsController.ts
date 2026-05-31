@@ -25,6 +25,9 @@ type HapticTelemetry = Pick<
   | "selfAlignTorque"
   | "yawInertiaLoad"
   | "yawDamping"
+  | "counterSteerLoad"
+  | "slipRecovery"
+  | "chassisStability"
   | "roadFeelFeedback"
   | "tireGroundContact"
   | "rearTractionRotation"
@@ -92,6 +95,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.steeringRackLoad * 0.52,
       Math.abs(telemetry.selfAlignTorque) * 0.34,
       telemetry.yawInertiaLoad * 0.42,
+      telemetry.counterSteerLoad * 0.56,
+      telemetry.slipRecovery * 0.34,
+      Math.max(0, 1 - telemetry.chassisStability) * 0.6,
       telemetry.roadFeelFeedback * 0.46,
       telemetry.damperImpulse * 0.7,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.52,
@@ -116,6 +122,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.driveTorqueLoad * 0.1 +
       telemetry.differentialLock * 0.14 +
       telemetry.insideRearSlip * 0.24 +
+      telemetry.counterSteerLoad * 0.18 +
+      telemetry.slipRecovery * 0.08 +
+      Math.max(0, 1 - telemetry.chassisStability) * 0.24 +
       telemetry.aeroWashout * 0.24 +
       Math.abs(telemetry.aeroBalance) * 0.1 +
       surface * 0.34 +
@@ -140,6 +149,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.selfAlignTorque) * 0.08 +
       telemetry.yawInertiaLoad * 0.12 +
       Math.max(0, 1 - telemetry.yawDamping) * 0.05 +
+      telemetry.counterSteerLoad * 0.16 +
+      telemetry.slipRecovery * 0.08 +
+      Math.max(0, 1 - telemetry.chassisStability) * 0.16 +
       telemetry.roadFeelFeedback * 0.16 +
       telemetry.damperImpulse * 0.18 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.16 +

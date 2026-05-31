@@ -26,6 +26,9 @@ const baseTelemetry = {
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
+  counterSteerLoad: 0,
+  slipRecovery: 0,
+  chassisStability: 1,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
@@ -167,6 +170,20 @@ describe("raceAudioMix", () => {
       speedKph: 205,
       yawInertiaLoad: 0.48,
       yawDamping: 0.62
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from countersteer recovery", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 210,
+      counterSteerLoad: 0.48,
+      slipRecovery: 0.34,
+      chassisStability: 0.74
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
