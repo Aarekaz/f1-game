@@ -46,6 +46,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP high-speed aero platform](readme-assets/screenshots/12-aurelia-aero-platform-load.png) |
 
+| Inertial chase camera |
+| --- |
+| ![Aurelia GP inertial chase camera](readme-assets/screenshots/13-aurelia-inertial-chase-camera.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -68,6 +72,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
+- The chase camera now has a small inertial rig, so acceleration, braking, aero load, and lateral slip tug the view instead of leaving the car screen-pinned.
 - A chase-frame guard now pulls the look target back toward the car when hard cornering or rejoin motion tries to push it out of frame.
 - Off-track recovery keeps the road in frame instead of letting the view become a giant car over empty grass.
 - Portrait screens get a backed-off chase camera, so mobile play shows the road instead of filling the screen with the rear wing.
