@@ -42,6 +42,7 @@ export type RaceTelemetry = {
   tireForceLoad: number;
   tireSaturation: number;
   tireRelaxation: number;
+  tireLoadFeedback: number;
   roadAlignment: number;
   roadCamber: number;
   roadGrade: number;
@@ -315,6 +316,7 @@ export class SimcadeRaceModel {
   private tireForceLoad = 0;
   private tireSaturation = 0;
   private tireRelaxation = 0;
+  private tireLoadFeedback = 0;
   private roadAlignment = 1;
   private roadGrade = 0;
   private roadLoad = 1;
@@ -461,6 +463,7 @@ export class SimcadeRaceModel {
       tireForceLoad: this.tireForceLoad,
       tireSaturation: this.tireSaturation,
       tireRelaxation: this.tireRelaxation,
+      tireLoadFeedback: this.tireLoadFeedback,
       roadAlignment: this.roadAlignment,
       roadCamber: surfaceBankAt(carLateral, track),
       roadGrade: this.roadGrade,
@@ -671,6 +674,7 @@ export class SimcadeRaceModel {
     this.tireForceLoad = 0;
     this.tireSaturation = 0;
     this.tireRelaxation = 0;
+    this.tireLoadFeedback = 0;
     this.roadAlignment = 1;
     this.roadGrade = 0;
     this.roadLoad = 1;
@@ -1365,6 +1369,22 @@ export class SimcadeRaceModel {
       1
     );
     this.lateralScrub = approach(this.lateralScrub, scrubTarget, dt * 9);
+    const tireLoadFeedbackTarget = clamp(
+      this.tireForceLoad * 0.24 +
+        this.tireSaturation * 0.28 +
+        this.lateralScrub * 0.36 +
+        slipAngleLoad * 0.22 +
+        lateralLoadStress * 0.16 +
+        this.tireRelaxation * 0.14 +
+        this.surfaceEdgeLoad * 0.08,
+      0,
+      1
+    );
+    this.tireLoadFeedback = approach(
+      this.tireLoadFeedback,
+      tireLoadFeedbackTarget,
+      dt * (tireLoadFeedbackTarget > this.tireLoadFeedback ? 12 : 4.8)
+    );
     const scrubPenalty = Math.max(0, this.lateralScrub - 0.06);
     this.dirtyTirePickup = clamp(
       this.dirtyTirePickup + (scrubPenalty * Math.abs(rawSteer) * 0.46 + (onTrack ? 0 : surface.roughness * 0.16)) * speedRatio * dt,
@@ -1562,6 +1582,7 @@ export class SimcadeRaceModel {
     this.tireContactGrip = Math.max(this.tireContactGrip, 0.82);
     this.tireRunoffShare = 0;
     this.tireRelaxation = 0;
+    this.tireLoadFeedback = 0;
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;
