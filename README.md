@@ -118,6 +118,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP aero balance in traffic](readme-assets/screenshots/30-aurelia-aero-balance-washout.png) |
 
+| Steering rack load |
+| --- |
+| ![Aurelia GP steering rack load](readme-assets/screenshots/31-aurelia-steering-rack-load.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -142,6 +146,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Threshold braking now rewards measured brake pressure before lockup, so easing off after a panic stop can recover longitudinal grip instead of dragging flat tires forever.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
 - Steering-load feedback now rises from tire force, saturation, slip angle, front axle load, and driver steering, then feeds the HUD, tire audio, and gamepad haptics together.
+- Steering rack load now models self-aligning torque from front tire slip, so hard turn-in pushes back through steering, chassis motion, audio, haptics, and the HUD instead of feeling like a loose digital input.
 - Road-feel feedback now turns road compression, suspension load, travel, camber, and surface edge load into one shared signal for the HUD, tire audio, haptics, car body, and camera.
 - Split-surface contact now notices when the left and right side of the car are on different grip or height, then tugs yaw, lateral motion, tire scrub, sound, haptics, and camera feel together.
 - Vertical tire contact now drops over light crests and recovers under compression/downforce, feeding traction, braking, steering authority, tire noise, haptics, camera float, and chassis motion.
