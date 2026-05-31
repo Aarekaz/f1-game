@@ -726,6 +726,7 @@ export class ThreeRaceRenderer {
         throttle: 0.72,
         wheelspin: 0,
         tireLoadFeedback: clamp(rival.speedKph / 320, 0, 1) * 0.28,
+        splitSurfaceLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
         suspensionTravel: 0,
         surfaceRumble: 0,
