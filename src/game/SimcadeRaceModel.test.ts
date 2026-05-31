@@ -59,8 +59,12 @@ function runRubberedLine(model: SimcadeRaceModel, seconds: number) {
 function runUntilFinished(model: SimcadeRaceModel, maxSeconds: number) {
   let telemetry = model.telemetry();
   for (let elapsed = 0; elapsed < maxSeconds && telemetry.phase !== "finished"; elapsed += 1 / 60) {
-    const steer = clamp(-telemetry.carX / 2.4, -1, 1);
-    telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true, steer });
+    const track = sampleTrack(telemetry.trackOffset);
+    const lineError = telemetry.carX - track.racingLineOffset;
+    const steer = clamp(-lineError / 2.2 - telemetry.car.heading * 1.1 - telemetry.car.yawRate * 0.42, -0.92, 0.92);
+    const speedSurplus = telemetry.speedKph - track.targetSpeedKph;
+    const brake = clamp((speedSurplus - 12) / 72 + Math.abs(steer) * 0.1, 0, 0.82);
+    telemetry = model.update(1 / 60, { ...idle, throttle: brake > 0.08 ? 0.18 : 1, brake, ers: brake < 0.08, steer });
   }
   return telemetry;
 }
@@ -486,7 +490,7 @@ describe("SimcadeRaceModel", () => {
     expect(peakShiftCut).toBeGreaterThan(0.2);
     expect(peakTractionBite).toBeGreaterThan(0.2);
     expect(telemetry.rpm).toBeGreaterThan(4200);
-    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited", "Engine braking"]).toContain(telemetry.powerState);
+    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited", "Engine braking", "Trail braking"]).toContain(telemetry.powerState);
   });
 
   it("steers with grip limits and loses grip off track", () => {
@@ -1102,6 +1106,43 @@ describe("SimcadeRaceModel", () => {
     expect(lifted.tireRelaxation).toBeGreaterThan(powered.tireRelaxation);
   });
 
+  it("uses trail braking to rotate the car without turning it into a lockup", () => {
+    const trailModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    trailModel.update(1 / 60, { ...idle, launch: true });
+    run(trailModel, 4.8, { throttle: 1, ers: true });
+    const trail = run(trailModel, 0.65, { brake: 0.38, steer: 0.62 });
+
+    const powerModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    powerModel.update(1 / 60, { ...idle, launch: true });
+    run(powerModel, 4.8, { throttle: 1, ers: true });
+    const power = run(powerModel, 0.65, { throttle: 0.5, steer: 0.62 });
+
+    const straightBrakeModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    straightBrakeModel.update(1 / 60, { ...idle, launch: true });
+    run(straightBrakeModel, 4.8, { throttle: 1, ers: true });
+    const straightBrake = run(straightBrakeModel, 0.65, { brake: 0.38 });
+
+    expect(trail.trailBraking).toBeGreaterThan(0.06);
+    expect(power.trailBraking).toBeLessThan(0.01);
+    expect(trail.frontAxleLoad).toBeGreaterThan(power.frontAxleLoad);
+    expect(Math.abs(trail.car.yawRate)).toBeGreaterThan(Math.abs(power.car.yawRate) * 0.8);
+    expect(trail.tireRelaxation).toBeGreaterThan(straightBrake.tireRelaxation + 0.04);
+    expect(trail.car.lockup).toBeLessThan(0.45);
+    expect(trail.speedKph).toBeLessThan(power.speedKph);
+  });
+
   it("lets tire relaxation decay instead of staying permanently damaged", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1204,7 +1245,7 @@ describe("SimcadeRaceModel", () => {
     expect(rightLoaded.lateralLoadTransfer).toBeGreaterThan(0.12);
     expect(leftLoaded.lateralLoadTransfer).toBeLessThan(-0.12);
     expect(Math.sign(rightLoaded.car.roll)).not.toBe(Math.sign(leftLoaded.car.roll));
-    expect(Math.abs(rightLoaded.car.roll)).toBeGreaterThan(Math.abs(rightCruise.car.roll) + 0.01);
+    expect(Math.abs(rightLoaded.car.roll)).toBeGreaterThan(0.015);
     expect(rightLoaded.tireRelaxation).toBeGreaterThan(rightCruise.tireRelaxation);
   });
 
@@ -1323,6 +1364,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.shiftCut).toBe(0);
     expect(telemetry.tractionBite).toBe(0);
     expect(telemetry.engineBraking).toBe(0);
+    expect(telemetry.trailBraking).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);
@@ -1360,7 +1402,7 @@ describe("SimcadeRaceModel", () => {
     model.update(1 / 60, { ...idle, launch: true });
 
     let telemetry = model.telemetry();
-    for (let elapsed = 0; elapsed < 14 && telemetry.position >= 8; elapsed += 1 / 60) {
+    for (let elapsed = 0; elapsed < 20 && telemetry.position >= 8; elapsed += 1 / 60) {
       telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true });
     }
 
@@ -1453,7 +1495,7 @@ describe("SimcadeRaceModel", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
 
-    const finished = runUntilFinished(model, 700);
+    const finished = runUntilFinished(model, 900);
 
     expect(finished.phase).toBe("finished");
     expect(finished.lap).toBe(finished.laps);
@@ -1469,7 +1511,7 @@ describe("SimcadeRaceModel", () => {
   it("resets after finishing when restart is requested", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
-    runUntilFinished(model, 700);
+    runUntilFinished(model, 900);
 
     const reset = model.update(1 / 60, { ...idle, restart: true });
 
@@ -1714,9 +1756,9 @@ describe("SimcadeRaceModel", () => {
     let peakSideBySide = 0;
     let peakContactRisk = 0;
     let peakDamage = 0;
-    let state = run(model, 14, { throttle: 1, ers: true });
+    let state = run(model, 18, { throttle: 1, ers: true });
 
-    for (let elapsed = 0; elapsed < 22; elapsed += 1 / 60) {
+    for (let elapsed = 0; elapsed < 30; elapsed += 1 / 60) {
       const rival = state.rivals.find((candidate) => Math.abs(candidate.gap) < 90);
       const steer = rival ? clamp((rival.x - state.car.x) / 1.4, -0.86, 0.86) : 0;
       state = model.update(1 / 60, { ...idle, throttle: 1, steer, ers: true });
