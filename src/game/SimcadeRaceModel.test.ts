@@ -1083,6 +1083,52 @@ describe("SimcadeRaceModel", () => {
     expect(released.suspensionTravel).toBeGreaterThan(0.045);
   });
 
+  it("moves axle load forward under braking and rearward under throttle", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const powered = run(model, 4.8, { throttle: 1, ers: true });
+    const braking = run(model, 0.75, { brake: 1 });
+    const relaunched = run(model, 0.9, { throttle: 1 });
+
+    expect(powered.rearAxleLoad).toBeGreaterThan(powered.frontAxleLoad);
+    expect(powered.longitudinalLoadTransfer).toBeLessThan(0);
+    expect(braking.frontAxleLoad).toBeGreaterThan(powered.frontAxleLoad + 0.08);
+    expect(braking.frontAxleLoad).toBeGreaterThan(braking.rearAxleLoad);
+    expect(braking.longitudinalLoadTransfer).toBeGreaterThan(0.12);
+    expect(relaunched.rearAxleLoad).toBeGreaterThan(braking.rearAxleLoad);
+    expect(relaunched.longitudinalLoadTransfer).toBeLessThan(braking.longitudinalLoadTransfer);
+  });
+
+  it("uses forward load transfer to support turn-in without free rear traction", () => {
+    const brakeTurn = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    brakeTurn.update(1 / 60, { ...idle, launch: true });
+    run(brakeTurn, 4.8, { throttle: 1, ers: true });
+    const loadedFront = run(brakeTurn, 0.55, { brake: 0.48, steer: 0.66 });
+
+    const powerTurn = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    powerTurn.update(1 / 60, { ...idle, launch: true });
+    run(powerTurn, 4.8, { throttle: 1, ers: true });
+    const loadedRear = run(powerTurn, 0.55, { throttle: 1, steer: 0.66 });
+
+    expect(loadedFront.frontAxleLoad).toBeGreaterThan(loadedRear.frontAxleLoad);
+    expect(loadedFront.rearAxleLoad).toBeLessThan(loadedRear.rearAxleLoad);
+    expect(loadedFront.longitudinalLoadTransfer).toBeGreaterThan(loadedRear.longitudinalLoadTransfer);
+    expect(Math.abs(loadedFront.car.yawRate)).toBeGreaterThan(Math.abs(loadedRear.car.yawRate) * 0.82);
+    expect(loadedFront.car.lockup).toBeGreaterThanOrEqual(loadedRear.car.lockup);
+  });
+
   it("loads the suspension under braking and rough road contact", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -1142,6 +1188,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);
+    expect(telemetry.frontAxleLoad).toBe(1);
+    expect(telemetry.rearAxleLoad).toBe(1);
+    expect(telemetry.longitudinalLoadTransfer).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.trackRubber).toBe(0);
