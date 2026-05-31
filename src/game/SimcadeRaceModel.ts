@@ -83,6 +83,7 @@ export type RaceTelemetry = {
   aeroDragReduction: number;
   shiftCut: number;
   tractionBite: number;
+  engineBraking: number;
   powerState: string;
   tireTemp: number;
   tireWear: number;
@@ -333,6 +334,7 @@ export class SimcadeRaceModel {
   private currentGear = 1;
   private shiftCut = 0;
   private tractionBite = 0;
+  private engineBraking = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
   private fuelLoad = 1;
@@ -496,6 +498,7 @@ export class SimcadeRaceModel {
       aeroDragReduction: this.aeroDragReduction,
       shiftCut: this.shiftCut,
       tractionBite: this.tractionBite,
+      engineBraking: this.engineBraking,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
       tireWear: this.tireWear,
@@ -634,6 +637,7 @@ export class SimcadeRaceModel {
     this.currentGear = 1;
     this.shiftCut = 0;
     this.tractionBite = 0;
+    this.engineBraking = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
     this.fuelLoad = 1;
@@ -794,6 +798,7 @@ export class SimcadeRaceModel {
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     this.updateFuelLoad(dt, throttle, boost, speedRatio);
     this.updatePowertrainState(dt, throttle, brake, roadWetness, onTrack, contactRoughness);
+    this.updateEngineBraking(dt, previousThrottle, throttle, throttleTarget, brake, speedRatio, roadWetness, onTrack);
     const fuelWeightPenalty = this.fuelLoad * 0.075;
     const overspeed = clamp((this.speed - track.targetSpeedKph) / 120, 0, 1);
     const grade = (sampleTrack(this.z + 14).elevation - sampleTrack(this.z - 14).elevation) / 28;
@@ -860,7 +865,8 @@ export class SimcadeRaceModel {
     const throttleRelease = clamp((previousThrottle - throttle) * (0.72 + speedRatio * 0.52), 0, 1);
     const transferTarget = clamp(
       brake * (0.32 + speedRatio * 0.64) +
-        throttleRelease * (0.22 + speedRatio * 0.28) -
+        throttleRelease * (0.22 + speedRatio * 0.28) +
+        this.engineBraking * (0.1 + speedRatio * 0.24) -
         throttle * (0.14 + speedRatio * 0.16) * (1 - brake * 0.72) -
         this.aeroPlatformLoad * 0.035,
       -0.28,
@@ -904,7 +910,7 @@ export class SimcadeRaceModel {
     const lateralLoadStress = Math.max(0, lateralLoad - 0.3);
     const frontLoadGrip = clamp(0.9 + this.frontAxleLoad * 0.1 - Math.max(0, this.frontAxleLoad - 1.18) * 0.22, 0.82, 1.06);
     const rearLoadGrip = clamp(0.88 + this.rearAxleLoad * 0.12 - Math.max(0, this.rearAxleLoad - 1.16) * 0.18, 0.82, 1.07);
-    const rearTractionSupport = clamp(0.86 + this.rearAxleLoad * 0.14 - Math.max(0, this.longitudinalLoadTransfer) * 0.12, 0.78, 1.08);
+    const rearTractionSupport = clamp(0.86 + this.rearAxleLoad * 0.14 - Math.max(0, this.longitudinalLoadTransfer) * 0.12 - this.engineBraking * 0.035, 0.78, 1.08);
     const steeringLoadDemand =
       Math.pow(Math.abs(rawSteer), 1.25) *
       speedRatio *
@@ -949,6 +955,7 @@ export class SimcadeRaceModel {
             this.standingWater * throttle * (0.32 + speedRatio * 0.34) +
             this.tireSaturation * throttle * 0.34 +
             this.tireRelaxation * throttle * 0.08 +
+            this.engineBraking * Math.abs(steer) * 0.08 +
             (gripContext.marbles + this.dirtyTirePickup) * throttle * 0.18,
           0,
           1
@@ -1010,6 +1017,8 @@ export class SimcadeRaceModel {
       standingStartTraction;
     const acceleration =
       throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
+    const engineBrakeDrag =
+      this.engineBraking * (16 + speedRatio * 62) * (1 - brake * 0.45) * (1 + Math.abs(steer) * speedRatio * 0.2) * (onTrack ? 1 : 0.62 + this.tireContactGrip * 0.28);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
     const brakingGrip = clamp(
       0.58 +
@@ -1078,6 +1087,7 @@ export class SimcadeRaceModel {
         looseSurfaceCrawlDrive +
         gradeForce -
         braking -
+        engineBrakeDrag -
         Math.max(0, drag - this.aeroDragReduction) -
         instabilityDrag -
         steeringScrubDrag -
@@ -1180,6 +1190,7 @@ export class SimcadeRaceModel {
         this.standingWater * (0.18 + speedRatio * 0.22) +
         this.tireSaturation * 0.2 +
         this.tireRelaxation * 0.06 +
+        this.engineBraking * (0.045 + Math.abs(rawSteer) * 0.045) +
         lateralLoadStress * 0.045,
       0,
       0.86
@@ -1244,6 +1255,7 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.12 +
         this.standingWater * (0.12 + speedRatio * 0.1) +
         this.brakeReleaseShock * 0.18 +
+        this.engineBraking * (0.06 + Math.abs(rawSteer) * 0.05) +
         lateralLoadStress * 0.085,
       0,
       1
@@ -1339,6 +1351,7 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.08 -
         this.lockup * 0.06 -
         this.brakeReleaseShock * 0.22 -
+        this.engineBraking * (0.035 + Math.abs(rawSteer) * 0.03) -
         this.standingWater * 0.14 -
         roadWetness * (onTrack ? 0.025 : 0.075),
       onTrack ? 0.42 : 0.2,
@@ -1355,6 +1368,7 @@ export class SimcadeRaceModel {
         brake * 0.04 -
         throttle * speedRatio * 0.028 +
         this.longitudinalLoadTransfer * 0.075 +
+        this.engineBraking * 0.035 +
         this.suspensionTravel * 0.08 +
         this.brakeReleaseShock * 0.03,
       -0.15,
@@ -1476,6 +1490,7 @@ export class SimcadeRaceModel {
     this.controlThrottle = 0;
     this.controlBrake = 0;
     this.lastSteering = 0;
+    this.engineBraking = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
@@ -1748,6 +1763,27 @@ export class SimcadeRaceModel {
   private updateFuelLoad(dt: number, throttle: number, boost: number, speedRatio: number) {
     const burnRate = throttle * (0.0028 + speedRatio * 0.0052) + boost * 0.0024;
     this.fuelLoad = clamp(this.fuelLoad - burnRate * dt, 0.38, 1);
+  }
+
+  private updateEngineBraking(
+    dt: number,
+    previousThrottle: number,
+    throttle: number,
+    throttleTarget: number,
+    brake: number,
+    speedRatio: number,
+    roadWetness: number,
+    onTrack: boolean
+  ) {
+    const lowGearLoad = clamp((6 - this.currentGear) / 5, 0, 1);
+    const driverLift = clamp(1 - Math.max(throttle, throttleTarget), 0, 1);
+    const throttleDrop = throttleTarget < 0.45 ? clamp(previousThrottle - throttle, 0, 1) : 0;
+    const coastLoad = clamp(driverLift * (1 - brake * 0.7) * speedRatio * (0.12 + lowGearLoad * 0.28), 0, 1);
+    const liftImpulse = throttleDrop * (0.22 + speedRatio * 0.24 + lowGearLoad * 0.16) * (1 - brake * 0.45);
+    const wetStabilityTrim = 1 - roadWetness * 0.16;
+    const surfaceTrim = onTrack ? 1 : 0.55;
+    const target = clamp((coastLoad + liftImpulse + this.shiftCut * driverLift * 0.08) * wetStabilityTrim * surfaceTrim, 0, 1);
+    this.engineBraking = approach(this.engineBraking, target, dt * (target > this.engineBraking ? 9.5 : 3.4));
   }
 
   private updatePowertrainState(dt: number, throttle: number, brake: number, roadWetness: number, onTrack: boolean, surfaceRoughness: number) {
@@ -2053,6 +2089,7 @@ export class SimcadeRaceModel {
 
   private powerState() {
     if (this.shiftCut > 0.32) return "Shift cut";
+    if (this.engineBraking > 0.18) return "Engine braking";
     if (this.tractionBite > 0.42) return "Traction limited";
     if (this.rpm() > 9200) return "Near redline";
     return "Power hooked";
