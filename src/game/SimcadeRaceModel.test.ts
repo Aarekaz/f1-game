@@ -1121,10 +1121,40 @@ describe("SimcadeRaceModel", () => {
 
     expect(planted.speedKph).toBeGreaterThan(130);
     expect(planted.aeroPlatformLoad).toBeGreaterThan(0.18);
+    expect(planted.frontAeroLoad).toBeGreaterThan(0.08);
+    expect(planted.rearAeroLoad).toBeGreaterThan(0.08);
+    expect(Math.abs(planted.aeroBalance)).toBeLessThan(0.35);
     expect(planted.suspensionLoad).toBeGreaterThan(1.02);
     expect(disrupted.tireRunoffShare + disrupted.surfaceEdgeLoad).toBeGreaterThan(0.1);
     expect(disrupted.aeroPlatformLoad).toBeLessThan(planted.aeroPlatformLoad);
+    expect(disrupted.aeroWashout).toBeGreaterThan(planted.aeroWashout);
     expect(disrupted.roadAdhesion).toBeLessThan(planted.roadAdhesion);
+  });
+
+  it("uses front aero balance for high-speed turn-in and washout", () => {
+    const clean = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    clean.update(1 / 60, { ...idle, launch: true });
+    run(clean, 5.2, { throttle: 1, ers: true });
+    const loadedAero = run(clean, 0.75, { throttle: 0.72, steer: 0.55 });
+
+    const disrupted = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    disrupted.update(1 / 60, { ...idle, launch: true });
+    run(disrupted, 5.2, { throttle: 1, ers: true });
+    const washedOut = run(disrupted, 1.4, { throttle: 0.75, steer: 1 });
+
+    expect(loadedAero.frontAeroLoad).toBeGreaterThan(0.08);
+    expect(loadedAero.rearAeroLoad).toBeGreaterThan(0.08);
+    expect(loadedAero.aeroWashout).toBeLessThan(washedOut.aeroWashout);
+    expect(washedOut.car.understeer).toBeGreaterThan(loadedAero.car.understeer);
+    expect(washedOut.grip).toBeLessThan(loadedAero.grip);
   });
 
   it("reduces forward bite when the car is not aligned with the road", () => {
@@ -1501,6 +1531,10 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.suspensionVelocity).toBe(0);
     expect(telemetry.damperImpulse).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);
+    expect(telemetry.frontAeroLoad).toBe(0);
+    expect(telemetry.rearAeroLoad).toBe(0);
+    expect(telemetry.aeroBalance).toBe(0);
+    expect(telemetry.aeroWashout).toBe(0);
     expect(telemetry.frontAxleLoad).toBe(1);
     expect(telemetry.rearAxleLoad).toBe(1);
     expect(telemetry.longitudinalLoadTransfer).toBe(0);
