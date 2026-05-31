@@ -356,6 +356,8 @@ export class HudController {
     if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
+    if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
+    if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;
     if (telemetry.yawInertiaLoad > 0.18) return `Yaw inertia ${(telemetry.yawInertiaLoad * 100).toFixed(0)}%`;
     if (telemetry.steeringRackLoad > 0.22) return `Rack load ${(telemetry.steeringRackLoad * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.selfAlignTorque) > 0.18) return "Self-aligning";
