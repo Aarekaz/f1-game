@@ -278,6 +278,7 @@ async function checkDesktop(browser) {
     carWheelspin: Number(document.querySelector("#game canvas")?.dataset.carWheelspin ?? 0),
     carUndersteer: Number(document.querySelector("#game canvas")?.dataset.carUndersteer ?? 0),
     carLockup: Number(document.querySelector("#game canvas")?.dataset.carLockup ?? 0),
+    carSteering: Number(document.querySelector("#game canvas")?.dataset.carSteering ?? 0),
     carHeading: Number(document.querySelector("#game canvas")?.dataset.carHeading ?? 0),
     carYawRate: Number(document.querySelector("#game canvas")?.dataset.carYawRate ?? 0),
     wheelSpin: Number(document.querySelector("#game canvas")?.dataset.wheelSpin ?? 0),
@@ -625,6 +626,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.carWheelspin), "desktop wheelspin telemetry was missing");
   assert(Number.isFinite(state.carUndersteer), "desktop understeer telemetry was missing");
   assert(Number.isFinite(state.carLockup), "desktop brake-lock telemetry was missing");
+  assert(Number.isFinite(state.carSteering), "desktop physical steering telemetry was missing");
+  assert(Math.abs(state.carSteering) <= 1, `desktop physical steering telemetry was invalid: ${state.carSteering}`);
   assert(Number.isFinite(state.wheelSpin) && Math.abs(state.wheelSpin) > 10, "desktop animated wheel spin telemetry was missing");
   assert(state.carGroundShadow === "planted", `desktop formula car ground shadow was missing: ${state.carGroundShadow}`);
   assert(
