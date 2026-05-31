@@ -286,6 +286,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.roadCompression = telemetry.roadCompression.toFixed(3);
     this.renderer.domElement.dataset.suspensionLoad = telemetry.suspensionLoad.toFixed(3);
     this.renderer.domElement.dataset.suspensionTravel = telemetry.suspensionTravel.toFixed(3);
+    this.renderer.domElement.dataset.aeroPlatformLoad = telemetry.aeroPlatformLoad.toFixed(3);
     this.renderer.domElement.dataset.chassisPitch = telemetry.car.pitch.toFixed(3);
     this.renderer.domElement.dataset.chassisRoll = telemetry.car.roll.toFixed(3);
     this.renderer.domElement.dataset.trackRubber = telemetry.trackRubber.toFixed(3);

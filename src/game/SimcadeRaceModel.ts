@@ -48,6 +48,7 @@ export type RaceTelemetry = {
   roadCompression: number;
   suspensionLoad: number;
   suspensionTravel: number;
+  aeroPlatformLoad: number;
   roadWetness: number;
   standingWater: number;
   rainIntensity: number;
@@ -310,6 +311,7 @@ export class SimcadeRaceModel {
   private roadCompression = 0;
   private suspensionLoad = 1;
   private suspensionTravel = 0;
+  private aeroPlatformLoad = 0;
   private standingWater = 0;
   private chassisPitch = 0;
   private chassisRoll = 0;
@@ -444,6 +446,7 @@ export class SimcadeRaceModel {
       roadCompression: this.roadCompression,
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
+      aeroPlatformLoad: this.aeroPlatformLoad,
       roadWetness: this.dynamicRoadWetness(),
       standingWater: this.standingWater,
       rainIntensity: this.session.weather.rainIntensity,
@@ -636,6 +639,7 @@ export class SimcadeRaceModel {
     this.roadCompression = 0;
     this.suspensionLoad = 1;
     this.suspensionTravel = 0;
+    this.aeroPlatformLoad = 0;
     this.chassisPitch = 0;
     this.chassisRoll = 0;
     this.frontWingDamage = 0;
@@ -789,6 +793,21 @@ export class SimcadeRaceModel {
       }
     }
     this.downforceLoss = this.frontWingDamage * (0.06 + speedRatio * 0.18);
+    const aeroPlatformTarget = onTrack
+      ? speedRatio *
+        speedRatio *
+        clamp(0.35 + this.roadAdhesion * 0.65, 0.25, 1) *
+        (1 - this.surfaceEdgeLoad * 0.34) *
+        (1 - this.tireRunoffShare * 0.38) *
+        (1 - this.standingWater * 0.55) *
+        (1 - this.downforceLoss * 0.75) *
+        (1 - this.dirtyAir * 0.28)
+      : 0;
+    this.aeroPlatformLoad = approach(
+      this.aeroPlatformLoad,
+      aeroPlatformTarget,
+      dt * (aeroPlatformTarget > this.aeroPlatformLoad ? 5.5 : 10)
+    );
 
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
@@ -816,9 +835,10 @@ export class SimcadeRaceModel {
         (1 - this.standingWater * 0.2) *
         (1 - this.surfaceEdgeLoad * 0.12) *
         (1 - this.tireRunoffShare * 0.18) *
+        (1 + this.aeroPlatformLoad * 0.22) *
         (1 - this.downforceLoss * 0.45),
       0.24,
-      1.08
+      1.18
     );
     const forceLoadTarget = clamp(Math.hypot(longitudinalForceDemand, lateralForceDemand) / Math.max(0.24, forceCapacity), 0, 1.8);
     this.tireForceLoad = approach(this.tireForceLoad, forceLoadTarget, dt * (forceLoadTarget > this.tireForceLoad ? 12 : 7));
@@ -884,12 +904,21 @@ export class SimcadeRaceModel {
     const acceleration =
       throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
     const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
-    const brakingGrip = clamp(0.58 + this.longitudinalGrip * 0.5 - this.surfaceEdgeLoad * 0.08 - this.standingWater * 0.12 - this.tireSaturation * 0.12, 0.38, 1.06);
+    const brakingGrip = clamp(
+      0.58 +
+        this.longitudinalGrip * 0.5 +
+        this.aeroPlatformLoad * 0.08 -
+        this.surfaceEdgeLoad * 0.08 -
+        this.standingWater * 0.12 -
+        this.tireSaturation * 0.12,
+      0.38,
+      1.08
+    );
     const braking = brake * 248 * brakingGrip * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
     const boostPower = boost * 86;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
-    const drag = 0.045 * this.speed + speedRatio * speedRatio * 38;
+    const drag = 0.045 * this.speed + speedRatio * speedRatio * 38 + this.aeroPlatformLoad * (3 + speedRatio * 9);
     const gradeForce = -grade * (78 + speedRatio * 44);
     const instabilityDrag = (this.wheelspin * 18 + this.lockup * 24 + this.understeer * 14 + this.surfaceEdgeLoad * 6 + this.tireSaturation * 10) * driverDemand;
     const highSpeedSteeringWindow = clamp((this.speed - 190) / 95, 0, 1);
@@ -953,6 +982,7 @@ export class SimcadeRaceModel {
         camberLoad +
         Math.max(0, this.roadCompression) * (0.5 + speedRatio * 0.45) -
         Math.max(0, -this.roadCompression) * (0.44 + speedRatio * 0.32) +
+        this.aeroPlatformLoad * 0.18 +
         cornerLoad * 0.08 +
         contactRoughness * 0.1 +
         this.surfaceEdgeLoad * 0.16 +
@@ -969,6 +999,7 @@ export class SimcadeRaceModel {
         (this.suspensionLoad - 1) * 0.44 +
           contactRoughness * speedRatio * 0.12 +
           this.surfaceEdgeLoad * 0.08 +
+          this.aeroPlatformLoad * 0.025 +
           tireContact.heightSpread * speedRatio * 0.075 +
           Math.max(0, this.roadCompression) * 0.1 -
           Math.max(0, -this.roadCompression) * 0.08 +
@@ -994,9 +1025,10 @@ export class SimcadeRaceModel {
         Math.abs(this.suspensionLoad - 1) * 0.1 -
         contactRoughness * 0.05 -
         Math.max(0, 1 - this.roadLoad) * 0.24 +
-        Math.max(0, this.roadLoad - 1) * 0.08,
+        Math.max(0, this.roadLoad - 1) * 0.08 +
+        this.aeroPlatformLoad * 0.06,
       0.7,
-      1.08
+      1.12
     );
     const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05) + this.standingWater * (brake * 0.12 + throttle * 0.08 + Math.abs(steer) * 0.1);
     const bankingSupport = 1 + Math.min(0.12, Math.abs(roadCamber) * 0.24);
@@ -1039,6 +1071,7 @@ export class SimcadeRaceModel {
     const steerAuthority =
       (0.78 - speedRatio * 0.44) *
       this.roadAdhesion *
+      (1 + this.aeroPlatformLoad * 0.12) *
       (1 - this.understeer * 0.35) *
       (1 - this.tireSaturation * 0.24) *
       (1 - clamp(brake * speedRatio * (0.44 + this.lockup * 0.82 + this.tireSaturation * 0.28), 0, 0.82)) *
