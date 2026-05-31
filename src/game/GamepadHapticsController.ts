@@ -6,6 +6,7 @@ type HapticTelemetry = Pick<
   | "speedKph"
   | "surfaceName"
   | "surfaceRumble"
+  | "splitSurfaceLoad"
   | "roadWetness"
   | "draft"
   | "dirtyAir"
@@ -63,14 +64,23 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireLoadFeedback * 0.72,
       telemetry.steeringLoadFeedback * 0.58,
       telemetry.roadFeelFeedback * 0.46,
+      Math.abs(telemetry.splitSurfaceLoad) * 0.5,
       telemetry.car.braking * 0.16
     )
   );
-  const roadTexture = clamp01(telemetry.surfaceRumble * 0.64 + telemetry.roadFeelFeedback * 0.48 + surface * 0.34 + telemetry.roadWetness * speed * 0.18);
+  const roadTexture = clamp01(
+    telemetry.surfaceRumble * 0.64 + telemetry.roadFeelFeedback * 0.48 + Math.abs(telemetry.splitSurfaceLoad) * 0.38 + surface * 0.34 + telemetry.roadWetness * speed * 0.18
+  );
   const airBuffet = clamp01(telemetry.draft * 0.1 + telemetry.dirtyAir * 0.18 + telemetry.contactRisk * 0.22);
   const strongMagnitude = clamp01(surface * 0.38 + tractionStress * 0.62 + telemetry.contactRisk * 0.5);
   const weakMagnitude = clamp01(
-    speed * 0.07 + roadTexture * 0.58 + telemetry.tireLoadFeedback * 0.16 + telemetry.steeringLoadFeedback * 0.18 + telemetry.roadFeelFeedback * 0.16 + airBuffet
+    speed * 0.07 +
+      roadTexture * 0.58 +
+      telemetry.tireLoadFeedback * 0.16 +
+      telemetry.steeringLoadFeedback * 0.18 +
+      telemetry.roadFeelFeedback * 0.16 +
+      Math.abs(telemetry.splitSurfaceLoad) * 0.14 +
+      airBuffet
   );
 
   if (Math.max(strongMagnitude, weakMagnitude) < 0.045) return null;

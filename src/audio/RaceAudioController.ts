@@ -8,6 +8,7 @@ type AudioTelemetry = Pick<
   | "rpm"
   | "surfaceName"
   | "surfaceRumble"
+  | "splitSurfaceLoad"
   | "rainIntensity"
   | "roadWetness"
   | "ers"
@@ -60,6 +61,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.tireLoadFeedback * 0.84,
       telemetry.steeringLoadFeedback * 0.62,
       telemetry.roadFeelFeedback * 0.54,
+      Math.abs(telemetry.splitSurfaceLoad) * 0.5,
       telemetry.surfaceRumble * 0.62
     )
   );
@@ -76,12 +78,20 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
     harmonicGain: racing ? 0.012 + rpm * 0.032 + throttle * 0.018 : 0.003,
     intakeFrequency: 440 + rpm * 1260 + throttle * 170,
     intakeGain: racing ? throttle * (0.012 + rpm * 0.026) : 0,
-    tireFrequency: 260 + speed * 740 + telemetry.tireLoadFeedback * 160 + telemetry.steeringLoadFeedback * 90 + telemetry.roadFeelFeedback * 70 + looseSurface * 90,
+    tireFrequency:
+      260 +
+      speed * 740 +
+      telemetry.tireLoadFeedback * 160 +
+      telemetry.steeringLoadFeedback * 90 +
+      telemetry.roadFeelFeedback * 70 +
+      Math.abs(telemetry.splitSurfaceLoad) * 95 +
+      looseSurface * 90,
     tireGain: racing
       ? slip * 0.055 +
         telemetry.tireLoadFeedback * 0.018 +
         telemetry.steeringLoadFeedback * 0.012 +
         telemetry.roadFeelFeedback * 0.012 +
+        Math.abs(telemetry.splitSurfaceLoad) * 0.014 +
         telemetry.surfaceRumble * 0.018 +
         looseSurface * speed * 0.014
       : 0,

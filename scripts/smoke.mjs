@@ -339,6 +339,7 @@ async function checkDesktop(browser) {
     surfaceGripModifier: Number(document.querySelector("#game canvas")?.dataset.surfaceGripModifier ?? 0),
     surfaceRumble: Number(document.querySelector("#game canvas")?.dataset.surfaceRumble ?? 0),
     surfaceEdgeLoad: Number(document.querySelector("#game canvas")?.dataset.surfaceEdgeLoad ?? 0),
+    splitSurfaceLoad: Number(document.querySelector("#game canvas")?.dataset.splitSurfaceLoad ?? 0),
     roadAdhesion: Number(document.querySelector("#game canvas")?.dataset.roadAdhesion ?? 0),
     lateralScrub: Number(document.querySelector("#game canvas")?.dataset.lateralScrub ?? 0),
     slipAngle: Number(document.querySelector("#game canvas")?.dataset.slipAngle ?? 0),
@@ -726,6 +727,7 @@ async function checkDesktop(browser) {
   assert(state.surfaceGripModifier > 0 && state.surfaceGripModifier <= 1, `desktop surface grip modifier was invalid: ${state.surfaceGripModifier}`);
   assert(Number.isFinite(state.surfaceRumble), "desktop surface rumble telemetry was missing");
   assert(state.surfaceEdgeLoad >= 0 && state.surfaceEdgeLoad <= 1, `desktop surface edge-load telemetry was invalid: ${state.surfaceEdgeLoad}`);
+  assert(state.splitSurfaceLoad >= -1 && state.splitSurfaceLoad <= 1, `desktop split surface load telemetry was invalid: ${state.splitSurfaceLoad}`);
   assert(state.roadAdhesion > 0 && state.roadAdhesion <= 1.1, `desktop road adhesion telemetry was invalid: ${state.roadAdhesion}`);
   assert(state.lateralScrub >= 0 && state.lateralScrub <= 1, `desktop lateral scrub telemetry was invalid: ${state.lateralScrub}`);
   assert(Number.isFinite(state.slipAngle) && Math.abs(state.slipAngle) <= 0.75, `desktop slip-angle telemetry was invalid: ${state.slipAngle}`);
