@@ -1162,6 +1162,33 @@ describe("SimcadeRaceModel", () => {
     expect(loadedFront.car.lockup).toBeGreaterThanOrEqual(loadedRear.car.lockup);
   });
 
+  it("loads the outside tires during sustained cornering", () => {
+    const right = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    right.update(1 / 60, { ...idle, launch: true });
+    const rightCruise = run(right, 4.8, { throttle: 1, ers: true });
+    const rightLoaded = run(right, 0.8, { throttle: 1, steer: 0.85 });
+
+    const left = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    left.update(1 / 60, { ...idle, launch: true });
+    run(left, 4.8, { throttle: 1, ers: true });
+    const leftLoaded = run(left, 0.8, { throttle: 1, steer: -0.85 });
+
+    expect(Math.abs(rightCruise.lateralLoadTransfer)).toBeLessThan(0.12);
+    expect(rightLoaded.lateralLoadTransfer).toBeGreaterThan(0.12);
+    expect(leftLoaded.lateralLoadTransfer).toBeLessThan(-0.12);
+    expect(Math.sign(rightLoaded.car.roll)).not.toBe(Math.sign(leftLoaded.car.roll));
+    expect(Math.abs(rightLoaded.car.roll)).toBeGreaterThan(Math.abs(rightCruise.car.roll) + 0.01);
+    expect(rightLoaded.tireRelaxation).toBeGreaterThan(rightCruise.tireRelaxation);
+  });
+
   it("loads the suspension under braking and rough road contact", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -1225,6 +1252,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.frontAxleLoad).toBe(1);
     expect(telemetry.rearAxleLoad).toBe(1);
     expect(telemetry.longitudinalLoadTransfer).toBe(0);
+    expect(telemetry.lateralLoadTransfer).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.trackRubber).toBe(0);

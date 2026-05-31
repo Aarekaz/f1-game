@@ -355,6 +355,7 @@ async function checkDesktop(browser) {
     frontAxleLoad: Number(document.querySelector("#game canvas")?.dataset.frontAxleLoad ?? 0),
     rearAxleLoad: Number(document.querySelector("#game canvas")?.dataset.rearAxleLoad ?? 0),
     longitudinalLoadTransfer: Number(document.querySelector("#game canvas")?.dataset.longitudinalLoadTransfer ?? 0),
+    lateralLoadTransfer: Number(document.querySelector("#game canvas")?.dataset.lateralLoadTransfer ?? 0),
     chassisPitch: Number(document.querySelector("#game canvas")?.dataset.chassisPitch ?? 0),
     chassisRoll: Number(document.querySelector("#game canvas")?.dataset.chassisRoll ?? 0),
     trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
@@ -646,6 +647,7 @@ async function checkDesktop(browser) {
   assert(state.frontAxleLoad > 0.7 && state.frontAxleLoad < 1.4, `desktop front axle load telemetry was invalid: ${state.frontAxleLoad}`);
   assert(state.rearAxleLoad > 0.7 && state.rearAxleLoad < 1.4, `desktop rear axle load telemetry was invalid: ${state.rearAxleLoad}`);
   assert(Math.abs(state.longitudinalLoadTransfer) < 0.5, `desktop longitudinal load transfer telemetry was invalid: ${state.longitudinalLoadTransfer}`);
+  assert(Math.abs(state.lateralLoadTransfer) < 0.5, `desktop lateral load transfer telemetry was invalid: ${state.lateralLoadTransfer}`);
   assert(Number.isFinite(state.brakeGlow), "desktop brake glow telemetry was missing");
   assert(Number.isFinite(state.brakePressureTrail), "desktop brake pressure trail telemetry was missing");
   assert(brakingState.brakeGlow > state.brakeGlow, `desktop brake glow did not rise under braking: ${JSON.stringify(brakingState)}`);
