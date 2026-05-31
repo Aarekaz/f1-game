@@ -13,6 +13,8 @@ const baseTelemetry = {
   contactRisk: 0,
   tireLoadFeedback: 0,
   steeringLoadFeedback: 0,
+  steeringRackLoad: 0,
+  selfAlignTorque: 0,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
@@ -96,6 +98,18 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       steeringLoadFeedback: 0.68
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns steering rack load into wheel weight texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      steeringRackLoad: 0.56,
+      selfAlignTorque: -0.3
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

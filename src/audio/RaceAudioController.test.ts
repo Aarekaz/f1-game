@@ -14,6 +14,8 @@ const baseTelemetry = {
   roadWetness: 0,
   tireLoadFeedback: 0,
   steeringLoadFeedback: 0,
+  steeringRackLoad: 0,
+  selfAlignTorque: 0,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
@@ -86,6 +88,19 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       steeringLoadFeedback: 0.68
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from steering rack load and self alignment", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      steeringRackLoad: 0.52,
+      selfAlignTorque: -0.28
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

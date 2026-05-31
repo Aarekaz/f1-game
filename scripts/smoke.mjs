@@ -359,6 +359,8 @@ async function checkDesktop(browser) {
     tireRelaxation: Number(document.querySelector("#game canvas")?.dataset.tireRelaxation ?? 0),
     tireLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.tireLoadFeedback ?? 0),
     steeringLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.steeringLoadFeedback ?? 0),
+    steeringRackLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackLoad ?? 0),
+    selfAlignTorque: Number(document.querySelector("#game canvas")?.dataset.selfAlignTorque ?? 0),
     roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadCamber: Number(document.querySelector("#game canvas")?.dataset.roadCamber ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
@@ -381,6 +383,7 @@ async function checkDesktop(browser) {
     tireVisualSquash: Number(document.querySelector("#game canvas")?.dataset.tireVisualSquash ?? 0),
     loadedWheelBias: Number(document.querySelector("#game canvas")?.dataset.loadedWheelBias ?? 0),
     chassisVisualLoad: Number(document.querySelector("#game canvas")?.dataset.chassisVisualLoad ?? 0),
+    steeringRackVisualLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackVisualLoad ?? 0),
     trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
     dryingLine: Number(document.querySelector("#game canvas")?.dataset.dryingLine ?? 0),
     trackEvolutionState: document.querySelector("#game canvas")?.dataset.trackEvolutionState ?? "",
@@ -756,6 +759,9 @@ async function checkDesktop(browser) {
   assert(state.tireLoadFeedback >= 0 && state.tireLoadFeedback <= 1, `desktop tire load feedback telemetry was invalid: ${state.tireLoadFeedback}`);
   assert(state.steeringLoadFeedback >= 0 && state.steeringLoadFeedback <= 1, `desktop steering load feedback telemetry was invalid: ${state.steeringLoadFeedback}`);
   assert(state.steeringLoadFeedback > 0.12, `desktop steering load feedback stayed too quiet: ${state.steeringLoadFeedback}`);
+  assert(state.steeringRackLoad >= 0 && state.steeringRackLoad <= 1, `desktop steering rack load telemetry was invalid: ${state.steeringRackLoad}`);
+  assert(Number.isFinite(state.selfAlignTorque) && Math.abs(state.selfAlignTorque) <= 1, `desktop self-align torque telemetry was invalid: ${state.selfAlignTorque}`);
+  assert(Number.isFinite(state.steeringRackVisualLoad) && state.steeringRackVisualLoad >= 0, "desktop steering rack visual load was missing");
   assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadCamber), "desktop road camber telemetry was missing");
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
@@ -795,7 +801,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|aero|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|aero|rack|self-align|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
