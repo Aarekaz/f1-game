@@ -261,6 +261,7 @@ async function checkDesktop(browser) {
     cameraLongitudinalInertia: Number(document.querySelector("#game canvas")?.dataset.cameraLongitudinalInertia ?? 0),
     cameraLateralInertia: Number(document.querySelector("#game canvas")?.dataset.cameraLateralInertia ?? 0),
     cameraVerticalInertia: Number(document.querySelector("#game canvas")?.dataset.cameraVerticalInertia ?? 0),
+    cameraRoadFrameDrift: Number(document.querySelector("#game canvas")?.dataset.cameraRoadFrameDrift ?? 0),
     cameraSpeedDeltaKphPerSecond: Number(document.querySelector("#game canvas")?.dataset.cameraSpeedDeltaKphPerSecond ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
     cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
@@ -570,6 +571,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraLongitudinalInertia), "desktop camera longitudinal inertia telemetry was missing");
   assert(Number.isFinite(state.cameraLateralInertia), "desktop camera lateral inertia telemetry was missing");
   assert(Number.isFinite(state.cameraVerticalInertia), "desktop camera vertical inertia telemetry was missing");
+  assert(Number.isFinite(state.cameraRoadFrameDrift), "desktop camera road-frame drift telemetry was missing");
   assert(
     Math.abs(state.cameraLongitudinalInertia) + Math.abs(state.cameraLateralInertia) + Math.abs(state.cameraVerticalInertia) > 0.035,
     `desktop camera inertia stayed static at speed: ${JSON.stringify({
