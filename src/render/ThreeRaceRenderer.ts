@@ -348,6 +348,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.shiftCut = telemetry.shiftCut.toFixed(3);
     this.renderer.domElement.dataset.tractionBite = telemetry.tractionBite.toFixed(3);
     this.renderer.domElement.dataset.rearTractionRotation = telemetry.rearTractionRotation.toFixed(3);
+    this.renderer.domElement.dataset.driveTorqueLoad = telemetry.driveTorqueLoad.toFixed(3);
+    this.renderer.domElement.dataset.differentialLock = telemetry.differentialLock.toFixed(3);
+    this.renderer.domElement.dataset.insideRearSlip = telemetry.insideRearSlip.toFixed(3);
     this.renderer.domElement.dataset.engineBraking = telemetry.engineBraking.toFixed(3);
     this.renderer.domElement.dataset.trailBraking = telemetry.trailBraking.toFixed(3);
     this.renderer.domElement.dataset.thresholdBraking = telemetry.thresholdBraking.toFixed(3);
@@ -439,6 +442,8 @@ export class ThreeRaceRenderer {
       telemetry.roadFeelFeedback * Math.sign(telemetry.car.roll || telemetry.roadCamber || 1) * 0.018 +
       telemetry.splitSurfaceLoad * 0.036 +
       telemetry.rearTractionRotation * 0.055 +
+      telemetry.insideRearSlip * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.026 -
+      telemetry.differentialLock * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.01 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.034 +
       telemetry.aeroBalance * 0.025 -
       telemetry.aeroWashout * Math.sign(telemetry.car.yawRate || telemetry.curve || 1) * 0.012 +
@@ -457,6 +462,7 @@ export class ThreeRaceRenderer {
         telemetry.car.steering * 0.42 +
         telemetry.car.yawRate * 0.58 +
         telemetry.rearTractionRotation * 0.2 +
+        telemetry.insideRearSlip * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.16 +
         Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * Math.max(0, 1 - telemetry.rearBrakeStability) * 0.18 +
         telemetry.selfAlignTorque * 0.08,
       braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.frontLockRisk * 0.22 + telemetry.brakeTemp * 0.12,
@@ -468,6 +474,9 @@ export class ThreeRaceRenderer {
       brakeBalanceLoad: telemetry.brakeBalanceLoad,
       frontLockRisk: telemetry.frontLockRisk,
       rearBrakeStability: telemetry.rearBrakeStability,
+      driveTorqueLoad: telemetry.driveTorqueLoad,
+      differentialLock: telemetry.differentialLock,
+      insideRearSlip: telemetry.insideRearSlip,
       tireGroundContact: telemetry.tireGroundContact,
       splitSurfaceLoad: telemetry.splitSurfaceLoad,
       rearTractionRotation: telemetry.rearTractionRotation,
@@ -482,7 +491,9 @@ export class ThreeRaceRenderer {
           Math.abs(telemetry.splitSurfaceLoad) * 0.22 +
           Math.abs(telemetry.rearTractionRotation) * 0.2 +
           telemetry.frontLockRisk * 0.3 +
-          Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22,
+          Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22 +
+          telemetry.insideRearSlip * 0.28 +
+          telemetry.differentialLock * 0.12,
         0,
         1
       ),
@@ -846,6 +857,9 @@ export class ThreeRaceRenderer {
         brakeBalanceLoad: 0,
         frontLockRisk: 0,
         rearBrakeStability: 1,
+        driveTorqueLoad: 0,
+        differentialLock: 0,
+        insideRearSlip: 0,
         tireGroundContact: 1,
         splitSurfaceLoad: 0,
         rearTractionRotation: 0,
@@ -1391,6 +1405,9 @@ export class ThreeRaceRenderer {
       brakeBalanceLoad: number;
       frontLockRisk: number;
       rearBrakeStability: number;
+      driveTorqueLoad: number;
+      differentialLock: number;
+      insideRearSlip: number;
       tireGroundContact: number;
       splitSurfaceLoad: number;
       rearTractionRotation: number;
@@ -1437,6 +1454,9 @@ export class ThreeRaceRenderer {
     const brakeBalanceLoad = clamp(state.brakeBalanceLoad, 0, 1);
     const frontLockRisk = clamp(state.frontLockRisk, 0, 1);
     const rearBrakeLightness = clamp(1 - state.rearBrakeStability, 0, 1);
+    const driveTorqueLoad = clamp(state.driveTorqueLoad, 0, 1);
+    const differentialLock = clamp(state.differentialLock, 0, 1);
+    const insideRearSlip = clamp(state.insideRearSlip, 0, 1);
     const tireGroundContact = clamp(state.tireGroundContact, 0, 1.08);
     const splitSurfaceLoad = clamp(state.splitSurfaceLoad, -1, 1);
     const rearTractionRotation = clamp(state.rearTractionRotation, -1, 1);
@@ -1454,13 +1474,15 @@ export class ThreeRaceRenderer {
       if (!wheel) continue;
 
       const side = wheelName.includes("left") ? -1 : 1;
+      const rearInsideBias = wheelName.startsWith("rear") ? clamp(side * Math.sign(state.steering || rearTractionRotation || 1), -1, 1) : 0;
       const frontLoad = wheelName.startsWith("front")
         ? state.braking * 0.22 + brakeBalanceLoad * 0.16 + frontLockRisk * 0.1 + frontAeroLoad * 0.12
-        : state.throttle * 0.08 + rearAeroLoad * 0.1 - rearBrakeLightness * 0.08;
+        : state.throttle * 0.08 + driveTorqueLoad * 0.08 + rearAeroLoad * 0.1 - rearBrakeLightness * 0.08 - Math.max(0, rearInsideBias) * insideRearSlip * 0.16;
       const cornerLoad = clamp(
         tireLoad * 0.58 +
           combinedSlipLoad * 0.16 +
           brakeBalanceLoad * 0.12 +
+          driveTorqueLoad * 0.08 +
           suspensionCompression * 0.32 +
           frontLoad -
           side * lateralLoad * 0.55 +
@@ -1468,6 +1490,8 @@ export class ThreeRaceRenderer {
           side * rearTractionRotation * 0.22 +
           side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
+          Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
+          Math.max(0, -rearInsideBias) * differentialLock * 0.08 -
           Math.max(0, 1 - tireGroundContact) * 0.28,
         0,
         1
@@ -1478,12 +1502,14 @@ export class ThreeRaceRenderer {
         combinedSlipLoad * 0.008 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
         brakeBalanceLoad * 0.01 +
+        driveTorqueLoad * 0.006 +
+        (wheelName.startsWith("rear") ? differentialLock * 0.008 + insideRearSlip * 0.014 : 0) +
         (wheelName.startsWith("front") ? frontLockRisk * 0.014 : rearBrakeLightness * 0.008) +
         yawInertiaLoad * 0.01 +
         (wheelName.startsWith("front") ? steeringRackLoad * 0.012 + (1.2 - yawDamping) * 0.004 : 0);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
       loadedSideBias += side * cornerLoad;
-      wheel.rotation.x = spin;
+      wheel.rotation.x = spin - (wheelName.startsWith("rear") ? insideRearSlip * (0.55 + Math.max(0, rearInsideBias) * 0.65) : 0);
       wheel.rotation.y = wheelName.startsWith("front") ? steerAngle + selfAlignTorque * 0.045 : 0;
       wheel.rotation.z = -side * (0.015 + cornerLoad * 0.042);
       wheel.scale.set(1 + squash * 0.12, 1 - squash, 1 + squash * 0.08);
@@ -1512,6 +1538,9 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.brakeBalanceVisualLoad = brakeBalanceLoad.toFixed(3);
       this.renderer.domElement.dataset.frontLockRiskVisual = frontLockRisk.toFixed(3);
       this.renderer.domElement.dataset.rearBrakeLightnessVisual = rearBrakeLightness.toFixed(3);
+      this.renderer.domElement.dataset.driveTorqueVisualLoad = driveTorqueLoad.toFixed(3);
+      this.renderer.domElement.dataset.differentialLockVisual = differentialLock.toFixed(3);
+      this.renderer.domElement.dataset.insideRearSlipVisual = insideRearSlip.toFixed(3);
       this.renderer.domElement.dataset.frontAeroVisualLoad = frontAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.rearAeroVisualLoad = rearAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.steeringRackVisualLoad = steeringRackLoad.toFixed(3);

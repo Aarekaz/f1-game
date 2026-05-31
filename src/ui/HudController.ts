@@ -361,6 +361,9 @@ export class HudController {
     if (telemetry.brakeBalanceLoad > 0.24) return `Brake balance ${(telemetry.brakeBalanceLoad * 100).toFixed(0)}%`;
     if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;
+    if (telemetry.insideRearSlip > 0.16) return `Inside rear ${(telemetry.insideRearSlip * 100).toFixed(0)}%`;
+    if (telemetry.differentialLock > 0.18) return `Diff lock ${(telemetry.differentialLock * 100).toFixed(0)}%`;
+    if (telemetry.driveTorqueLoad > 0.3) return `Drive torque ${(telemetry.driveTorqueLoad * 100).toFixed(0)}%`;
     if (telemetry.yawInertiaLoad > 0.18) return `Yaw inertia ${(telemetry.yawInertiaLoad * 100).toFixed(0)}%`;
     if (telemetry.steeringRackLoad > 0.22) return `Rack load ${(telemetry.steeringRackLoad * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.selfAlignTorque) > 0.18) return "Self-aligning";

@@ -18,6 +18,9 @@ const baseTelemetry = {
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
+  driveTorqueLoad: 0,
+  differentialLock: 0,
+  insideRearSlip: 0,
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
   selfAlignTorque: 0,
@@ -123,6 +126,21 @@ describe("raceAudioMix", () => {
       frontLockRisk: 0.34,
       rearBrakeStability: 0.72,
       car: { ...baseTelemetry.car, braking: 0.72 }
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from differential corner-exit load", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 195,
+      driveTorqueLoad: 0.5,
+      differentialLock: 0.32,
+      insideRearSlip: 0.28,
+      car: { ...baseTelemetry.car, throttle: 1, wheelspin: 0.12 }
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

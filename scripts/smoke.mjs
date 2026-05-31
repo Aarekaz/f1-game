@@ -307,6 +307,9 @@ async function checkDesktop(browser) {
     shiftCut: Number(document.querySelector("#game canvas")?.dataset.shiftCut ?? 0),
     tractionBite: Number(document.querySelector("#game canvas")?.dataset.tractionBite ?? 0),
     rearTractionRotation: Number(document.querySelector("#game canvas")?.dataset.rearTractionRotation ?? 0),
+    driveTorqueLoad: Number(document.querySelector("#game canvas")?.dataset.driveTorqueLoad ?? 0),
+    differentialLock: Number(document.querySelector("#game canvas")?.dataset.differentialLock ?? 0),
+    insideRearSlip: Number(document.querySelector("#game canvas")?.dataset.insideRearSlip ?? 0),
     engineBraking: Number(document.querySelector("#game canvas")?.dataset.engineBraking ?? 0),
     trailBraking: Number(document.querySelector("#game canvas")?.dataset.trailBraking ?? 0),
     thresholdBraking: Number(document.querySelector("#game canvas")?.dataset.thresholdBraking ?? 0),
@@ -363,6 +366,9 @@ async function checkDesktop(browser) {
     brakeBalanceVisualLoad: Number(document.querySelector("#game canvas")?.dataset.brakeBalanceVisualLoad ?? 0),
     frontLockRiskVisual: Number(document.querySelector("#game canvas")?.dataset.frontLockRiskVisual ?? 0),
     rearBrakeLightnessVisual: Number(document.querySelector("#game canvas")?.dataset.rearBrakeLightnessVisual ?? 0),
+    driveTorqueVisualLoad: Number(document.querySelector("#game canvas")?.dataset.driveTorqueVisualLoad ?? 0),
+    differentialLockVisual: Number(document.querySelector("#game canvas")?.dataset.differentialLockVisual ?? 0),
+    insideRearSlipVisual: Number(document.querySelector("#game canvas")?.dataset.insideRearSlipVisual ?? 0),
     tireSaturation: Number(document.querySelector("#game canvas")?.dataset.tireSaturation ?? 0),
     tireRelaxation: Number(document.querySelector("#game canvas")?.dataset.tireRelaxation ?? 0),
     tireLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.tireLoadFeedback ?? 0),
@@ -718,13 +724,16 @@ async function checkDesktop(browser) {
   assert(state.shiftCut >= 0 && state.shiftCut <= 1, `desktop shift-cut telemetry was invalid: ${state.shiftCut}`);
   assert(state.tractionBite >= 0 && state.tractionBite <= 1, `desktop traction-bite telemetry was invalid: ${state.tractionBite}`);
   assert(Math.abs(state.rearTractionRotation) <= 0.5, `desktop rear-traction rotation telemetry was invalid: ${state.rearTractionRotation}`);
+  assert(state.driveTorqueLoad >= 0 && state.driveTorqueLoad <= 1, `desktop drive torque load was invalid: ${state.driveTorqueLoad}`);
+  assert(state.differentialLock >= 0 && state.differentialLock <= 1, `desktop differential lock was invalid: ${state.differentialLock}`);
+  assert(state.insideRearSlip >= 0 && state.insideRearSlip <= 1, `desktop inside rear slip was invalid: ${state.insideRearSlip}`);
   assert(state.engineBraking >= 0 && state.engineBraking <= 1, `desktop engine-braking telemetry was invalid: ${state.engineBraking}`);
   assert(state.trailBraking >= 0 && state.trailBraking <= 1, `desktop trail-braking telemetry was invalid: ${state.trailBraking}`);
   assert(state.thresholdBraking >= 0 && state.thresholdBraking <= 1, `desktop threshold-braking telemetry was invalid: ${state.thresholdBraking}`);
   assert(state.brakeBalanceLoad >= 0 && state.brakeBalanceLoad <= 1, `desktop brake balance load was invalid: ${state.brakeBalanceLoad}`);
   assert(state.frontLockRisk >= 0 && state.frontLockRisk <= 1, `desktop front lock risk was invalid: ${state.frontLockRisk}`);
   assert(state.rearBrakeStability >= 0.42 && state.rearBrakeStability <= 1.05, `desktop rear brake stability was invalid: ${state.rearBrakeStability}`);
-  assert(/Power|Shift|Traction|Rear|Engine|Trail|Threshold|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
+  assert(/Power|Shift|Traction|Rear|Engine|Trail|Threshold|Diff|Inside|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.playerWaterSpray === "active", `desktop player spray did not render in storm weather: ${state.playerWaterSpray}`);
@@ -778,6 +787,9 @@ async function checkDesktop(browser) {
   assert(state.brakeBalanceVisualLoad >= 0 && state.brakeBalanceVisualLoad <= 1, `desktop brake balance visual load was invalid: ${state.brakeBalanceVisualLoad}`);
   assert(state.frontLockRiskVisual >= 0 && state.frontLockRiskVisual <= 1, `desktop front lock risk visual load was invalid: ${state.frontLockRiskVisual}`);
   assert(state.rearBrakeLightnessVisual >= 0 && state.rearBrakeLightnessVisual <= 1, `desktop rear brake lightness visual load was invalid: ${state.rearBrakeLightnessVisual}`);
+  assert(state.driveTorqueVisualLoad >= 0 && state.driveTorqueVisualLoad <= 1, `desktop drive torque visual load was invalid: ${state.driveTorqueVisualLoad}`);
+  assert(state.differentialLockVisual >= 0 && state.differentialLockVisual <= 1, `desktop differential lock visual load was invalid: ${state.differentialLockVisual}`);
+  assert(state.insideRearSlipVisual >= 0 && state.insideRearSlipVisual <= 1, `desktop inside rear slip visual load was invalid: ${state.insideRearSlipVisual}`);
   assert(state.tireSaturation >= 0 && state.tireSaturation <= 1, `desktop tire saturation telemetry was invalid: ${state.tireSaturation}`);
   assert(state.tireRelaxation >= 0 && state.tireRelaxation <= 1, `desktop tire relaxation telemetry was invalid: ${state.tireRelaxation}`);
   assert(state.tireLoadFeedback >= 0 && state.tireLoadFeedback <= 1, `desktop tire load feedback telemetry was invalid: ${state.tireLoadFeedback}`);

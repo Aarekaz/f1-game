@@ -17,6 +17,9 @@ type HapticTelemetry = Pick<
   | "brakeBalanceLoad"
   | "frontLockRisk"
   | "rearBrakeStability"
+  | "driveTorqueLoad"
+  | "differentialLock"
+  | "insideRearSlip"
   | "steeringLoadFeedback"
   | "steeringRackLoad"
   | "selfAlignTorque"
@@ -82,6 +85,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.brakeBalanceLoad * 0.52,
       telemetry.frontLockRisk * 0.88,
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.68,
+      telemetry.driveTorqueLoad * 0.34,
+      telemetry.differentialLock * 0.46,
+      telemetry.insideRearSlip * 0.76,
       telemetry.steeringLoadFeedback * 0.58,
       telemetry.steeringRackLoad * 0.52,
       Math.abs(telemetry.selfAlignTorque) * 0.34,
@@ -107,6 +113,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.brakeBalanceLoad * 0.14 +
       telemetry.frontLockRisk * 0.22 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.2 +
+      telemetry.driveTorqueLoad * 0.1 +
+      telemetry.differentialLock * 0.14 +
+      telemetry.insideRearSlip * 0.24 +
       telemetry.aeroWashout * 0.24 +
       Math.abs(telemetry.aeroBalance) * 0.1 +
       surface * 0.34 +
@@ -123,6 +132,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.brakeBalanceLoad * 0.13 +
       telemetry.frontLockRisk * 0.18 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.14 +
+      telemetry.driveTorqueLoad * 0.08 +
+      telemetry.differentialLock * 0.1 +
+      telemetry.insideRearSlip * 0.16 +
       telemetry.steeringLoadFeedback * 0.18 +
       telemetry.steeringRackLoad * 0.18 +
       Math.abs(telemetry.selfAlignTorque) * 0.08 +
