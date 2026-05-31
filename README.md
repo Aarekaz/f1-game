@@ -114,6 +114,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Northstar Ring damper rebound](readme-assets/screenshots/29-northstar-damper-rebound.png) |
 
+| Aero balance in traffic |
+| --- |
+| ![Aurelia GP aero balance in traffic](readme-assets/screenshots/30-aurelia-aero-balance-washout.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -142,6 +146,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Split-surface contact now notices when the left and right side of the car are on different grip or height, then tugs yaw, lateral motion, tire scrub, sound, haptics, and camera feel together.
 - Vertical tire contact now drops over light crests and recovers under compression/downforce, feeding traction, braking, steering authority, tire noise, haptics, camera float, and chassis motion.
 - Suspension damper impulses now track compression and rebound speed, feeding tire contact, grip, road feel, haptics, tire audio, camera lift, and car body pitch.
+- Aero balance now splits downforce across front and rear load, with ride height, traffic wash, wing damage, and surface disruption changing high-speed steering, braking, camera motion, sound, and rumble.
 - Powered corner exits now add rear-traction rotation, so throttle plus steering can nudge yaw, wheelspin, scrub, tire chatter, camera drift, and car body load from one shared signal.
 - The formula car now visibly leans, pitches, steers, and squashes its loaded tires from the same physics signals, so grip loss reads through the car instead of only the HUD.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
