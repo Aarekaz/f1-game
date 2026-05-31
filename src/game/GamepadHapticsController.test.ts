@@ -12,6 +12,8 @@ const baseTelemetry = {
   dirtyAir: 0,
   contactRisk: 0,
   tireLoadFeedback: 0,
+  combinedSlipLoad: 0,
+  tireGripReserve: 1,
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
   selfAlignTorque: 0,
@@ -100,6 +102,19 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       steeringLoadFeedback: 0.68
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns combined slip reserve into tire texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      combinedSlipLoad: 0.54,
+      tireGripReserve: 0.68
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

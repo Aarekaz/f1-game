@@ -13,6 +13,8 @@ const baseTelemetry = {
   rainIntensity: 0,
   roadWetness: 0,
   tireLoadFeedback: 0,
+  combinedSlipLoad: 0,
+  tireGripReserve: 1,
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
   selfAlignTorque: 0,
@@ -90,6 +92,19 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       steeringLoadFeedback: 0.68
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from combined slip reserve", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 205,
+      combinedSlipLoad: 0.54,
+      tireGripReserve: 0.68
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

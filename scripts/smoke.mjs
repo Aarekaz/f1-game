@@ -355,6 +355,8 @@ async function checkDesktop(browser) {
     tireRunoffShare: Number(document.querySelector("#game canvas")?.dataset.tireRunoffShare ?? 0),
     tireGroundContact: Number(document.querySelector("#game canvas")?.dataset.tireGroundContact ?? 0),
     tireForceLoad: Number(document.querySelector("#game canvas")?.dataset.tireForceLoad ?? 0),
+    combinedSlipLoad: Number(document.querySelector("#game canvas")?.dataset.combinedSlipLoad ?? 0),
+    tireGripReserve: Number(document.querySelector("#game canvas")?.dataset.tireGripReserve ?? 0),
     tireSaturation: Number(document.querySelector("#game canvas")?.dataset.tireSaturation ?? 0),
     tireRelaxation: Number(document.querySelector("#game canvas")?.dataset.tireRelaxation ?? 0),
     tireLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.tireLoadFeedback ?? 0),
@@ -385,6 +387,8 @@ async function checkDesktop(browser) {
     tireVisualSquash: Number(document.querySelector("#game canvas")?.dataset.tireVisualSquash ?? 0),
     loadedWheelBias: Number(document.querySelector("#game canvas")?.dataset.loadedWheelBias ?? 0),
     chassisVisualLoad: Number(document.querySelector("#game canvas")?.dataset.chassisVisualLoad ?? 0),
+    combinedSlipVisualLoad: Number(document.querySelector("#game canvas")?.dataset.combinedSlipVisualLoad ?? 0),
+    tireGripReserveVisual: Number(document.querySelector("#game canvas")?.dataset.tireGripReserveVisual ?? 0),
     steeringRackVisualLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackVisualLoad ?? 0),
     yawInertiaVisualLoad: Number(document.querySelector("#game canvas")?.dataset.yawInertiaVisualLoad ?? 0),
     yawDampingVisual: Number(document.querySelector("#game canvas")?.dataset.yawDampingVisual ?? 0),
@@ -758,6 +762,10 @@ async function checkDesktop(browser) {
   assert(state.tireRunoffShare >= 0 && state.tireRunoffShare <= 1, `desktop tire runoff share telemetry was invalid: ${state.tireRunoffShare}`);
   assert(state.tireGroundContact > 0.55 && state.tireGroundContact <= 1.1, `desktop tire ground contact telemetry was invalid: ${state.tireGroundContact}`);
   assert(state.tireForceLoad >= 0 && state.tireForceLoad <= 1.85, `desktop tire force load telemetry was invalid: ${state.tireForceLoad}`);
+  assert(state.combinedSlipLoad >= 0 && state.combinedSlipLoad <= 1, `desktop combined slip telemetry was invalid: ${state.combinedSlipLoad}`);
+  assert(state.tireGripReserve >= 0.52 && state.tireGripReserve <= 1.05, `desktop tire grip reserve telemetry was invalid: ${state.tireGripReserve}`);
+  assert(Number.isFinite(state.combinedSlipVisualLoad) && state.combinedSlipVisualLoad >= 0, "desktop combined slip visual load was missing");
+  assert(state.tireGripReserveVisual >= 0.52 && state.tireGripReserveVisual <= 1.05, `desktop tire grip reserve visual load was invalid: ${state.tireGripReserveVisual}`);
   assert(state.tireSaturation >= 0 && state.tireSaturation <= 1, `desktop tire saturation telemetry was invalid: ${state.tireSaturation}`);
   assert(state.tireRelaxation >= 0 && state.tireRelaxation <= 1, `desktop tire relaxation telemetry was invalid: ${state.tireRelaxation}`);
   assert(state.tireLoadFeedback >= 0 && state.tireLoadFeedback <= 1, `desktop tire load feedback telemetry was invalid: ${state.tireLoadFeedback}`);
