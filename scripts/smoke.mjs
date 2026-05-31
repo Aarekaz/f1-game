@@ -363,6 +363,8 @@ async function checkDesktop(browser) {
     roadFeelFeedback: Number(document.querySelector("#game canvas")?.dataset.roadFeelFeedback ?? 0),
     suspensionLoad: Number(document.querySelector("#game canvas")?.dataset.suspensionLoad ?? 0),
     suspensionTravel: Number(document.querySelector("#game canvas")?.dataset.suspensionTravel ?? 0),
+    suspensionVelocity: Number(document.querySelector("#game canvas")?.dataset.suspensionVelocity ?? 0),
+    damperImpulse: Number(document.querySelector("#game canvas")?.dataset.damperImpulse ?? 0),
     frontAxleLoad: Number(document.querySelector("#game canvas")?.dataset.frontAxleLoad ?? 0),
     rearAxleLoad: Number(document.querySelector("#game canvas")?.dataset.rearAxleLoad ?? 0),
     longitudinalLoadTransfer: Number(document.querySelector("#game canvas")?.dataset.longitudinalLoadTransfer ?? 0),
@@ -655,6 +657,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.wheelSpin) && Math.abs(state.wheelSpin) > 10, "desktop animated wheel spin telemetry was missing");
   assert(Number.isFinite(state.carVisualPitch), "desktop car visual pitch telemetry was missing");
   assert(Number.isFinite(state.carVisualRoll), "desktop car visual roll telemetry was missing");
+  assert(Math.abs(state.suspensionVelocity) <= 1.1, `desktop suspension velocity telemetry was invalid: ${state.suspensionVelocity}`);
+  assert(state.damperImpulse >= 0 && state.damperImpulse <= 1, `desktop damper impulse telemetry was invalid: ${state.damperImpulse}`);
   assert(Number.isFinite(state.frontWheelSteer), "desktop front wheel steering visual telemetry was missing");
   assert(Math.abs(state.frontWheelSteer) <= 0.42, `desktop front wheel steering visual was invalid: ${state.frontWheelSteer}`);
   assert(state.tireVisualSquash > 0.02 && state.tireVisualSquash < 0.16, `desktop loaded tire squash was missing or extreme: ${state.tireVisualSquash}`);
