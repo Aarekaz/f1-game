@@ -923,6 +923,25 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(heaviest.car.pitch - lightest.car.pitch)).toBeGreaterThan(0.004);
   });
 
+  it("loads and sheds the aero platform through clean and disrupted contact", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+
+    const planted = run(model, 5.4, { throttle: 1, ers: true });
+    const disrupted = run(model, 1.35, { throttle: 0.65, steer: 1 });
+
+    expect(planted.speedKph).toBeGreaterThan(130);
+    expect(planted.aeroPlatformLoad).toBeGreaterThan(0.18);
+    expect(planted.suspensionLoad).toBeGreaterThan(1.02);
+    expect(disrupted.tireRunoffShare + disrupted.surfaceEdgeLoad).toBeGreaterThan(0.1);
+    expect(disrupted.aeroPlatformLoad).toBeLessThan(planted.aeroPlatformLoad);
+    expect(disrupted.roadAdhesion).toBeLessThan(planted.roadAdhesion);
+  });
+
   it("reduces forward bite when the car is not aligned with the road", () => {
     const misaligned = new SimcadeRaceModel();
     misaligned.update(1 / 60, { ...idle, launch: true });
@@ -1101,6 +1120,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadCompression).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);
+    expect(telemetry.aeroPlatformLoad).toBe(0);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.trackRubber).toBe(0);
