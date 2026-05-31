@@ -332,6 +332,42 @@ describe("SimcadeRaceModel", () => {
     expect(modulated.forwardBite).toBeGreaterThan(locked.forwardBite);
   });
 
+  it("separates front lock risk from rear brake stability", () => {
+    const panicModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    panicModel.update(1 / 60, { ...idle, launch: true });
+    run(panicModel, 4.8, { throttle: 1, ers: true });
+    const panic = run(panicModel, 0.82, { brake: 1 });
+
+    const trailModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    trailModel.update(1 / 60, { ...idle, launch: true });
+    run(trailModel, 4.8, { throttle: 1, ers: true });
+    const trail = run(trailModel, 0.82, { brake: 0.46, steer: 0.68 });
+
+    const powerModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    powerModel.update(1 / 60, { ...idle, launch: true });
+    run(powerModel, 4.8, { throttle: 1, ers: true });
+    const power = run(powerModel, 0.82, { throttle: 0.7, steer: 0.68 });
+
+    expect(panic.brakeBalanceLoad).toBeGreaterThan(0.18);
+    expect(panic.frontLockRisk).toBeGreaterThan(trail.frontLockRisk + 0.04);
+    expect(panic.car.lockup).toBeGreaterThan(trail.car.lockup);
+    expect(trail.rearBrakeStability).toBeLessThan(power.rearBrakeStability - 0.04);
+    expect(trail.brakeBalanceLoad).toBeGreaterThan(power.brakeBalanceLoad + 0.08);
+    expect(Math.abs(trail.car.yawRate)).toBeGreaterThan(Math.abs(panic.car.yawRate));
+  });
+
   it("lets easing brake pressure recover grip after an initial lockup", () => {
     const eased = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1586,6 +1622,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rearAxleLoad).toBe(1);
     expect(telemetry.longitudinalLoadTransfer).toBe(0);
     expect(telemetry.lateralLoadTransfer).toBe(0);
+    expect(telemetry.brakeBalanceLoad).toBe(0);
+    expect(telemetry.frontLockRisk).toBe(0);
+    expect(telemetry.rearBrakeStability).toBe(1);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
     expect(telemetry.trackRubber).toBe(0);
