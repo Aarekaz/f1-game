@@ -257,6 +257,11 @@ async function checkDesktop(browser) {
     cameraBoardObstructionsCulled: Number(document.querySelector("#game canvas")?.dataset.cameraBoardObstructionsCulled ?? 0),
     cameraBuffet: Number(document.querySelector("#game canvas")?.dataset.cameraBuffet ?? 0),
     cameraLookAhead: Number(document.querySelector("#game canvas")?.dataset.cameraLookAhead ?? 0),
+    cameraMotionRig: document.querySelector("#game canvas")?.dataset.cameraMotionRig ?? "",
+    cameraLongitudinalInertia: Number(document.querySelector("#game canvas")?.dataset.cameraLongitudinalInertia ?? 0),
+    cameraLateralInertia: Number(document.querySelector("#game canvas")?.dataset.cameraLateralInertia ?? 0),
+    cameraVerticalInertia: Number(document.querySelector("#game canvas")?.dataset.cameraVerticalInertia ?? 0),
+    cameraSpeedDeltaKphPerSecond: Number(document.querySelector("#game canvas")?.dataset.cameraSpeedDeltaKphPerSecond ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
     cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
     cameraRejoinLift: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinLift ?? 0),
@@ -551,6 +556,20 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.cameraGateObstructionsCulled), "desktop gate obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraBoardObstructionsCulled), "desktop board obstruction culling telemetry was missing");
   assert(Number.isFinite(state.cameraLookAhead) && state.cameraLookAhead > 10, `desktop camera look-ahead was missing: ${state.cameraLookAhead}`);
+  assert(state.cameraMotionRig === "inertial-chase-rig", `desktop inertial camera rig was missing: ${state.cameraMotionRig}`);
+  assert(Number.isFinite(state.cameraSpeedDeltaKphPerSecond), "desktop camera speed-delta telemetry was missing");
+  assert(Number.isFinite(state.cameraLongitudinalInertia), "desktop camera longitudinal inertia telemetry was missing");
+  assert(Number.isFinite(state.cameraLateralInertia), "desktop camera lateral inertia telemetry was missing");
+  assert(Number.isFinite(state.cameraVerticalInertia), "desktop camera vertical inertia telemetry was missing");
+  assert(
+    Math.abs(state.cameraLongitudinalInertia) + Math.abs(state.cameraLateralInertia) + Math.abs(state.cameraVerticalInertia) > 0.035,
+    `desktop camera inertia stayed static at speed: ${JSON.stringify({
+      longitudinal: state.cameraLongitudinalInertia,
+      lateral: state.cameraLateralInertia,
+      vertical: state.cameraVerticalInertia,
+      speedDelta: state.cameraSpeedDeltaKphPerSecond
+    })}`
+  );
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRejoinLift), "desktop camera rejoin-lift telemetry was missing");
