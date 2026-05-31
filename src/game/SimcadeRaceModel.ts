@@ -31,6 +31,7 @@ export type RaceTelemetry = {
   surfaceGripModifier: number;
   surfaceRumble: number;
   surfaceEdgeLoad: number;
+  splitSurfaceLoad: number;
   roadAdhesion: number;
   lateralScrub: number;
   slipAngle: number;
@@ -306,6 +307,7 @@ export class SimcadeRaceModel {
   private flowScore = 0.62;
   private surfaceRumble = 0;
   private surfaceEdgeLoad = 0;
+  private splitSurfaceLoad = 0;
   private grip = 1;
   private roadAdhesion = 1;
   private lateralScrub = 0;
@@ -456,6 +458,7 @@ export class SimcadeRaceModel {
       surfaceGripModifier: this.drivingSurface(track).grip,
       surfaceRumble: this.surfaceRumble,
       surfaceEdgeLoad: this.surfaceEdgeLoad,
+      splitSurfaceLoad: this.splitSurfaceLoad,
       roadAdhesion: this.roadAdhesion,
       lateralScrub: this.lateralScrub,
       slipAngle: this.slipAngle,
@@ -644,6 +647,7 @@ export class SimcadeRaceModel {
     this.flowScore = 0.62;
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
+    this.splitSurfaceLoad = 0;
     this.grip = 1;
     this.ers = 1;
     this.aeroBoostAvailable = false;
@@ -790,6 +794,20 @@ export class SimcadeRaceModel {
     const edgeTarget = clamp(this.trackEdgeLoad(track, surface, speedRatio) * 0.55 + tireContact.edgeLoad * 0.65 + tireContact.heightSpread * 0.18, 0, 1);
     this.surfaceEdgeLoad = approach(this.surfaceEdgeLoad, edgeTarget, dt * (edgeTarget > this.surfaceEdgeLoad ? 18 : 7));
     const contactRoughness = clamp(Math.max(surface.roughness, tireContact.roughness) + tireContact.heightSpread * 0.16, 0, 1);
+    const splitSurfaceGate = clamp(tireContact.edgeLoad * 1.25 + tireContact.runoffShare * 0.65 + contactRoughness * 0.82, 0, 1);
+    const splitSurfaceLoadTarget = clamp(
+      (tireContact.sideBias * (0.58 + speedRatio * 0.34 + contactRoughness * 0.24) +
+        tireContact.heightRollBias * (0.74 + speedRatio * 0.36)) *
+        clamp(0.28 + speedRatio * 0.72, 0, 1) *
+        splitSurfaceGate,
+      -1,
+      1
+    );
+    this.splitSurfaceLoad = approach(
+      this.splitSurfaceLoad,
+      splitSurfaceLoadTarget,
+      dt * (Math.abs(splitSurfaceLoadTarget) > Math.abs(this.splitSurfaceLoad) ? 14 : 6)
+    );
     this.updateTrackEvolution(dt, speedRatio, onTrack, contactRoughness);
     const roadWetness = this.dynamicRoadWetness();
     const standingWaterTarget = roadWetness * tireContact.standingWater * (1 - this.dryingLine * 0.28);
@@ -1139,7 +1157,18 @@ export class SimcadeRaceModel {
     const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 178 : 106) * crawlRecoveryWindow;
     const crawlDragCut = onTrack ? 0 : recoverySteerGrip * settledRecoveryInput * crawlRecoveryWindow * (surface.name === "Gravel" ? 0.42 : 0.28);
     const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief) * (1 - crawlDragCut));
-    this.surfaceRumble = approach(this.surfaceRumble, clamp(contactRoughness * clamp(0.25 + speedRatio, 0, 1) + this.surfaceEdgeLoad * 0.42 + this.standingWater * speedRatio * 0.08, 0, 1), dt * 12);
+    this.surfaceRumble = approach(
+      this.surfaceRumble,
+      clamp(
+        contactRoughness * clamp(0.25 + speedRatio, 0, 1) +
+          this.surfaceEdgeLoad * 0.42 +
+          Math.abs(this.splitSurfaceLoad) * 0.18 +
+          this.standingWater * speedRatio * 0.08,
+        0,
+        1
+      ),
+      dt * 12
+    );
 
     this.speed +=
       (acceleration +
@@ -1177,6 +1206,7 @@ export class SimcadeRaceModel {
         cornerLoad * 0.08 +
         contactRoughness * 0.1 +
         this.surfaceEdgeLoad * 0.16 +
+        Math.abs(this.splitSurfaceLoad) * 0.1 +
         tireContact.heightSpread * speedRatio * 0.12 +
         suspensionOscillation -
         roadWetness * 0.035,
@@ -1190,6 +1220,7 @@ export class SimcadeRaceModel {
         (this.suspensionLoad - 1) * 0.44 +
           contactRoughness * speedRatio * 0.12 +
           this.surfaceEdgeLoad * 0.08 +
+          Math.abs(this.splitSurfaceLoad) * 0.045 +
           this.aeroPlatformLoad * 0.025 +
           tireContact.heightSpread * speedRatio * 0.075 +
           Math.max(0, this.roadCompression) * 0.1 -
@@ -1207,6 +1238,7 @@ export class SimcadeRaceModel {
         Math.abs(this.suspensionTravel) * 0.86 +
         contactRoughness * speedRatio * 0.3 +
         this.surfaceEdgeLoad * 0.18 +
+        Math.abs(this.splitSurfaceLoad) * 0.18 +
         Math.abs(roadCamber) * speedRatio * 0.12,
       0,
       1
@@ -1265,6 +1297,7 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.18 +
         this.lockup * 0.18 +
         this.surfaceEdgeLoad * 0.2 +
+        Math.abs(this.splitSurfaceLoad) * 0.16 +
         this.standingWater * (0.18 + speedRatio * 0.22) +
         this.tireSaturation * 0.2 +
         this.tireRelaxation * 0.06 +
@@ -1288,13 +1321,19 @@ export class SimcadeRaceModel {
       (1 - this.understeer * 0.35) *
       (1 - this.tireSaturation * 0.24) *
       (1 - this.tireRelaxation * 0.08) *
+      (1 - Math.abs(this.splitSurfaceLoad) * 0.12) *
       (1 + trailBrakeSupport * 0.1) *
       (1 - clamp(brake * speedRatio * (0.44 + this.lockup * 0.82 + this.tireSaturation * 0.28), 0, 0.82)) *
       (1 - this.downforceLoss * 0.5) *
       (1 - this.fuelLoad * 0.035) *
       (1 - this.dirtyTirePickup * 0.08);
     const rollingSteerFactor = clamp((this.speed - 4) / 32, 0, 1) * (1 - lowSpeedSteerScrub * 0.28);
-    const targetYawRate = steer * steerAuthority * rollingSteerFactor + Math.sign(steer) * trailBrakeSupport * speedRatio * 0.035;
+    const splitSurfaceYawTug =
+      this.splitSurfaceLoad *
+      speedRatio *
+      (0.025 + contactRoughness * 0.055 + this.surfaceEdgeLoad * 0.035) *
+      clamp(1 - brake * 0.36, 0.45, 1);
+    const targetYawRate = steer * steerAuthority * rollingSteerFactor + Math.sign(steer) * trailBrakeSupport * speedRatio * 0.035 + splitSurfaceYawTug;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
     const steeringCommitment = clamp(Math.abs(steer) * 1.18 + this.slip * 0.42 + this.wheelspin * 0.2, 0, 1);
@@ -1333,6 +1372,7 @@ export class SimcadeRaceModel {
         this.lockup * 0.22 +
         this.wheelspin * 0.18 +
         this.surfaceEdgeLoad * 0.12 +
+        Math.abs(this.splitSurfaceLoad) * 0.16 +
         this.standingWater * (0.12 + speedRatio * 0.1) +
         this.brakeReleaseShock * 0.18 +
         this.engineBraking * (0.06 + Math.abs(rawSteer) * 0.05) +
@@ -1360,6 +1400,8 @@ export class SimcadeRaceModel {
     const roadRecoveryPull = -offTrackSide * roadRecoveryNeed * (0.78 + speedRatio * 1.84) * (1 - Math.abs(rawSteer) * 0.32) * rollingRoadForce;
     const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5) * rollingRoadForce;
     const splitGripPull = tireContact.sideBias * speedRatio * (0.42 + contactRoughness * 0.6) * (1 - Math.abs(rawSteer) * 0.35) * rollingRoadForce;
+    const splitSurfaceTug =
+      this.splitSurfaceLoad * speedRatio * (0.56 + contactRoughness * 1.05 + this.surfaceEdgeLoad * 0.46) * (1 - Math.abs(rawSteer) * 0.26) * rollingRoadForce;
     const brakeSteeringRelease = 1 - clamp(brake * speedRatio * (0.48 + this.lockup * 0.86 + this.tireSaturation * 0.32), 0, 0.84);
     const steeringSaturationPush =
       Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8) * rollingSteerFactor * brakeSteeringRelease;
@@ -1371,6 +1413,7 @@ export class SimcadeRaceModel {
       curveFollow +
       camberForce +
       splitGripPull +
+      splitSurfaceTug +
       roadCentering +
       roadRecoveryPull +
       steeringSaturationPush +
@@ -1387,7 +1430,8 @@ export class SimcadeRaceModel {
         trailBrakeInstability * 0.035 +
         lateralLoadStress * 0.028 +
         slipAngleLoad * 0.12 +
-        this.surfaceEdgeLoad * 0.12,
+        this.surfaceEdgeLoad * 0.12 +
+        Math.abs(this.splitSurfaceLoad) * 0.14,
       0,
       1
     );
@@ -1399,7 +1443,8 @@ export class SimcadeRaceModel {
         slipAngleLoad * 0.22 +
         lateralLoadStress * 0.16 +
         this.tireRelaxation * 0.14 +
-        this.surfaceEdgeLoad * 0.08,
+        this.surfaceEdgeLoad * 0.08 +
+        Math.abs(this.splitSurfaceLoad) * 0.12,
       0,
       1
     );
@@ -1459,6 +1504,7 @@ export class SimcadeRaceModel {
       this.forwardBite * (0.48 + this.roadAdhesion * 0.52) * this.tireContactGrip -
         (1 - this.tireContactGrip) * 0.18 -
         this.surfaceEdgeLoad * 0.16 -
+        Math.abs(this.splitSurfaceLoad) * 0.08 -
         Math.max(0, this.longitudinalLoadTransfer) * 0.08 +
         Math.max(0, -this.longitudinalLoadTransfer) * 0.05 -
         Math.max(0, 1 - this.roadLoad) * 0.16 +
@@ -1499,6 +1545,7 @@ export class SimcadeRaceModel {
         this.yawRate * 0.24 -
         Math.sign(this.lateralLoadTransfer || rawSteer) * lateralLoad * 0.11 -
         Math.sign(this.lateralVelocity || rawSteer) * this.lateralScrub * 0.08 +
+        this.splitSurfaceLoad * 0.06 +
         contactRoughness * speedRatio * 0.04 +
         tireContact.heightRollBias * speedRatio * 0.42,
       -0.16,
@@ -1594,6 +1641,7 @@ export class SimcadeRaceModel {
     this.speed = Math.max(0, this.speed - apronDrag * dt);
     this.lateralScrub = Math.max(this.lateralScrub, clamp(0.14 + apronImpact * 0.36 + lateralStrike * 0.18, 0, 0.72));
     this.surfaceRumble = Math.max(this.surfaceRumble, clamp(0.18 + apronImpact * 0.34 + speedRatio * 0.18, 0, 0.82));
+    this.splitSurfaceLoad = approach(this.splitSurfaceLoad, side * clamp(0.18 + apronImpact * 0.42 + lateralStrike * 0.12, 0, 0.72), dt * 12);
     this.tireSaturation = Math.max(this.tireSaturation, clamp(apronImpact * 0.2 + lateralStrike * 0.16, 0, 0.5));
     this.tireRelaxation = Math.max(this.tireRelaxation, clamp(apronImpact * 0.08 + lateralStrike * 0.08, 0, 0.28));
   }
@@ -1620,6 +1668,7 @@ export class SimcadeRaceModel {
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
+    this.splitSurfaceLoad = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
     this.slipAngle = 0;
