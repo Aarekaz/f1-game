@@ -48,6 +48,8 @@ export type RaceTelemetry = {
   steeringLoadFeedback: number;
   steeringRackLoad: number;
   selfAlignTorque: number;
+  yawInertiaLoad: number;
+  yawDamping: number;
   roadAlignment: number;
   roadCamber: number;
   roadGrade: number;
@@ -335,6 +337,8 @@ export class SimcadeRaceModel {
   private steeringLoadFeedback = 0;
   private steeringRackLoad = 0;
   private selfAlignTorque = 0;
+  private yawInertiaLoad = 0;
+  private yawDamping = 1;
   private roadAlignment = 1;
   private roadGrade = 0;
   private roadLoad = 1;
@@ -495,6 +499,8 @@ export class SimcadeRaceModel {
       steeringLoadFeedback: this.steeringLoadFeedback,
       steeringRackLoad: this.steeringRackLoad,
       selfAlignTorque: this.selfAlignTorque,
+      yawInertiaLoad: this.yawInertiaLoad,
+      yawDamping: this.yawDamping,
       roadAlignment: this.roadAlignment,
       roadCamber: surfaceBankAt(carLateral, track),
       roadGrade: this.roadGrade,
@@ -720,6 +726,8 @@ export class SimcadeRaceModel {
     this.steeringLoadFeedback = 0;
     this.steeringRackLoad = 0;
     this.selfAlignTorque = 0;
+    this.yawInertiaLoad = 0;
+    this.yawDamping = 1;
     this.roadAlignment = 1;
     this.roadGrade = 0;
     this.roadLoad = 1;
@@ -1560,13 +1568,60 @@ export class SimcadeRaceModel {
     const rackResistance = clamp(1 - this.steeringRackLoad * 0.06 - Math.abs(this.selfAlignTorque) * 0.035, 0.86, 1);
     const selfAlignYaw =
       this.selfAlignTorque * speedRatio * (0.035 + this.frontAeroLoad * 0.026) * clamp(1 - Math.abs(rawSteer) * 0.62, 0.25, 1);
+    const metersPerSecond = this.speed * (1000 / 3600);
+    const curveFollow = track.curve * metersPerSecond * 0.9;
     const targetYawRate =
       steer * steerAuthority * rollingSteerFactor * rackResistance +
       Math.sign(steer) * trailBrakeSupport * speedRatio * 0.035 +
       splitSurfaceYawTug +
       rearTractionYaw +
       selfAlignYaw;
-    this.yawRate = approach(this.yawRate, targetYawRate, dt * 6.5);
+    const yawMoment = targetYawRate - this.yawRate;
+    const yawInertiaFactor = clamp(
+      0.72 +
+        speedRatio * 0.42 +
+        Math.abs(this.lateralVelocity) * 0.012 +
+        this.fuelLoad * 0.035 +
+        this.tireRelaxation * 0.12 +
+        this.aeroWashout * 0.08 -
+        this.frontAeroLoad * 0.1,
+      0.58,
+      1.26
+    );
+    const yawResponseRate = clamp(
+      (5.7 + this.frontAeroLoad * 1.1 + trailBrakeSupport * 1.2 + Math.abs(this.selfAlignTorque) * 0.55) /
+        yawInertiaFactor -
+        this.tireSaturation * 0.9 -
+        this.lockup * 0.5,
+      2.7,
+      8.2
+    );
+    this.yawDamping = clamp(
+      0.52 +
+        this.roadAdhesion * 0.34 +
+        this.tireGroundContact * 0.16 +
+        this.frontAeroLoad * 0.18 +
+        Math.abs(this.selfAlignTorque) * 0.12 -
+        this.tireSaturation * 0.22 -
+        this.lockup * 0.14 -
+        this.aeroWashout * 0.08,
+      0.2,
+      1.2
+    );
+    this.yawRate += yawMoment * yawResponseRate * dt;
+    this.yawRate = approach(this.yawRate, targetYawRate, dt * (1.05 + this.yawDamping * 1.35));
+    this.yawRate = approach(this.yawRate, 0, dt * this.yawDamping * (0.14 + speedRatio * 0.18));
+    this.yawRate = clamp(this.yawRate, -0.74, 0.74);
+    const yawInertiaLoadTarget = clamp(
+      Math.abs(yawMoment) * (0.72 + speedRatio * 0.46) +
+        Math.abs(this.yawRate) * speedRatio * 0.22 +
+        Math.abs(this.lateralVelocity - curveFollow) * 0.016 +
+        this.tireSaturation * 0.16 -
+        this.yawDamping * 0.08,
+      0,
+      1
+    );
+    this.yawInertiaLoad = approach(this.yawInertiaLoad, yawInertiaLoadTarget, dt * (yawInertiaLoadTarget > this.yawInertiaLoad ? 10 : 5));
     this.heading += (this.yawRate + racecraft.squeeze * this.contactRisk * 0.045) * dt;
     const steeringCommitment = clamp(Math.abs(steer) * 1.18 + this.slip * 0.42 + this.wheelspin * 0.2, 0, 1);
     const selfAlignTarget = -track.curve * (0.14 + speedRatio * 0.1);
@@ -1590,8 +1645,6 @@ export class SimcadeRaceModel {
       1
     );
 
-    const metersPerSecond = this.speed * (1000 / 3600);
-    const curveFollow = track.curve * metersPerSecond * 0.9;
     const roadRelativeVelocityYaw = Math.atan2(this.lateralVelocity - curveFollow, Math.max(6, metersPerSecond));
     this.velocityYaw = approach(this.velocityYaw, roadRelativeVelocityYaw, dt * 10);
     const slipAngleTarget = clamp(this.heading - this.velocityYaw, -0.72, 0.72);
@@ -1945,6 +1998,8 @@ export class SimcadeRaceModel {
     this.steeringLoadFeedback = 0;
     this.steeringRackLoad = 0;
     this.selfAlignTorque = 0;
+    this.yawInertiaLoad = 0;
+    this.yawDamping = 1;
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;

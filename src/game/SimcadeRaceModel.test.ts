@@ -598,6 +598,26 @@ describe("SimcadeRaceModel", () => {
     expect(released.steeringLoadFeedback).toBeGreaterThan(0.02);
   });
 
+  it("carries yaw inertia through turn-in and damps it on release", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.8, { throttle: 1, ers: true });
+    const turnIn = run(model, 0.7, { throttle: 0.78, steer: 0.74 });
+    const released = run(model, 0.34, { throttle: 0.42 });
+    const settled = run(model, 1.2, { throttle: 0.35 });
+
+    expect(turnIn.yawInertiaLoad).toBeGreaterThan(0.05);
+    expect(turnIn.yawDamping).toBeGreaterThan(0.3);
+    expect(Math.abs(released.car.yawRate)).toBeGreaterThan(0.01);
+    expect(released.yawInertiaLoad).toBeGreaterThan(0.01);
+    expect(Math.abs(settled.car.yawRate)).toBeLessThan(Math.abs(released.car.yawRate));
+    expect(settled.yawInertiaLoad).toBeLessThan(turnIn.yawInertiaLoad);
+  });
+
   it("makes committed steering travel through chassis heading instead of a sideways lane shift", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1541,6 +1561,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.steeringLoadFeedback).toBe(0);
     expect(telemetry.steeringRackLoad).toBe(0);
     expect(telemetry.selfAlignTorque).toBe(0);
+    expect(telemetry.yawInertiaLoad).toBe(0);
+    expect(telemetry.yawDamping).toBe(1);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
