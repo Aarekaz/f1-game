@@ -886,6 +886,7 @@ describe("SimcadeRaceModel", () => {
     expect(loaded.tireSaturation).toBeGreaterThan(0.35);
     expect(loaded.lateralScrub).toBeGreaterThan(0.18);
     expect(loaded.tireLoadFeedback).toBeGreaterThan(straight.tireLoadFeedback + 0.2);
+    expect(loaded.steeringLoadFeedback).toBeGreaterThan(straight.steeringLoadFeedback + 0.18);
     expect(loaded.forwardBite).toBeLessThan(straight.forwardBite - 0.35);
     expect(loaded.speedKph).toBeLessThan(straight.speedKph);
   });
@@ -908,6 +909,7 @@ describe("SimcadeRaceModel", () => {
     expect(loaded.tireSaturation).toBeGreaterThan(0.85);
     expect(loaded.lateralScrub).toBeGreaterThan(0.22);
     expect(loaded.tireLoadFeedback).toBeGreaterThan(0.45);
+    expect(loaded.steeringLoadFeedback).toBeGreaterThan(0.32);
     expect(loaded.speedKph).toBeLessThan(fast.speedKph - 8);
   });
 
@@ -1357,6 +1359,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.tireLoadFeedback).toBe(0);
+    expect(telemetry.steeringLoadFeedback).toBe(0);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
