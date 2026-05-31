@@ -1293,6 +1293,8 @@ describe("SimcadeRaceModel", () => {
     const saturated = run(overloaded, 1.1, { throttle: 1, brake: 0.52, steer: 0.86 });
 
     expect(saturated.tireForceLoad).toBeGreaterThan(measured.tireForceLoad);
+    expect(saturated.combinedSlipLoad).toBeGreaterThan(measured.combinedSlipLoad + 0.08);
+    expect(saturated.tireGripReserve).toBeLessThan(measured.tireGripReserve - 0.04);
     expect(saturated.tireSaturation).toBeGreaterThan(measured.tireSaturation);
     expect(saturated.roadAdhesion).toBeLessThan(measured.roadAdhesion);
     expect(saturated.car.understeer + saturated.car.lockup).toBeGreaterThan(measured.car.understeer + measured.car.lockup);
@@ -1555,6 +1557,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireRunoffShare).toBe(0);
     expect(telemetry.tireGroundContact).toBe(1);
     expect(telemetry.tireForceLoad).toBe(0);
+    expect(telemetry.combinedSlipLoad).toBe(0);
+    expect(telemetry.tireGripReserve).toBe(1);
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.tireLoadFeedback).toBe(0);
