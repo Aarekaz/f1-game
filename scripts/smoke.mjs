@@ -361,6 +361,8 @@ async function checkDesktop(browser) {
     steeringLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.steeringLoadFeedback ?? 0),
     steeringRackLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackLoad ?? 0),
     selfAlignTorque: Number(document.querySelector("#game canvas")?.dataset.selfAlignTorque ?? 0),
+    yawInertiaLoad: Number(document.querySelector("#game canvas")?.dataset.yawInertiaLoad ?? 0),
+    yawDamping: Number(document.querySelector("#game canvas")?.dataset.yawDamping ?? 0),
     roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadCamber: Number(document.querySelector("#game canvas")?.dataset.roadCamber ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
@@ -384,6 +386,8 @@ async function checkDesktop(browser) {
     loadedWheelBias: Number(document.querySelector("#game canvas")?.dataset.loadedWheelBias ?? 0),
     chassisVisualLoad: Number(document.querySelector("#game canvas")?.dataset.chassisVisualLoad ?? 0),
     steeringRackVisualLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackVisualLoad ?? 0),
+    yawInertiaVisualLoad: Number(document.querySelector("#game canvas")?.dataset.yawInertiaVisualLoad ?? 0),
+    yawDampingVisual: Number(document.querySelector("#game canvas")?.dataset.yawDampingVisual ?? 0),
     trackRubber: Number(document.querySelector("#game canvas")?.dataset.trackRubber ?? 0),
     dryingLine: Number(document.querySelector("#game canvas")?.dataset.dryingLine ?? 0),
     trackEvolutionState: document.querySelector("#game canvas")?.dataset.trackEvolutionState ?? "",
@@ -762,6 +766,10 @@ async function checkDesktop(browser) {
   assert(state.steeringRackLoad >= 0 && state.steeringRackLoad <= 1, `desktop steering rack load telemetry was invalid: ${state.steeringRackLoad}`);
   assert(Number.isFinite(state.selfAlignTorque) && Math.abs(state.selfAlignTorque) <= 1, `desktop self-align torque telemetry was invalid: ${state.selfAlignTorque}`);
   assert(Number.isFinite(state.steeringRackVisualLoad) && state.steeringRackVisualLoad >= 0, "desktop steering rack visual load was missing");
+  assert(state.yawInertiaLoad >= 0 && state.yawInertiaLoad <= 1, `desktop yaw inertia load telemetry was invalid: ${state.yawInertiaLoad}`);
+  assert(state.yawDamping >= 0.2 && state.yawDamping <= 1.2, `desktop yaw damping telemetry was invalid: ${state.yawDamping}`);
+  assert(Number.isFinite(state.yawInertiaVisualLoad) && state.yawInertiaVisualLoad >= 0, "desktop yaw inertia visual load was missing");
+  assert(state.yawDampingVisual >= 0.2 && state.yawDampingVisual <= 1.2, `desktop yaw damping visual load was invalid: ${state.yawDampingVisual}`);
   assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadCamber), "desktop road camber telemetry was missing");
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");

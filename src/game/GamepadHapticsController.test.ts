@@ -15,6 +15,8 @@ const baseTelemetry = {
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
   selfAlignTorque: 0,
+  yawInertiaLoad: 0,
+  yawDamping: 1,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
@@ -110,6 +112,19 @@ describe("raceHapticEffect", () => {
       ...baseTelemetry,
       steeringRackLoad: 0.56,
       selfAlignTorque: -0.3
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns yaw inertia into rotation texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      yawInertiaLoad: 0.52,
+      yawDamping: 0.58
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
