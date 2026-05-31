@@ -294,6 +294,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.steeringLoadFeedback = telemetry.steeringLoadFeedback.toFixed(3);
     this.renderer.domElement.dataset.steeringRackLoad = telemetry.steeringRackLoad.toFixed(3);
     this.renderer.domElement.dataset.selfAlignTorque = telemetry.selfAlignTorque.toFixed(3);
+    this.renderer.domElement.dataset.yawInertiaLoad = telemetry.yawInertiaLoad.toFixed(3);
+    this.renderer.domElement.dataset.yawDamping = telemetry.yawDamping.toFixed(3);
     this.renderer.domElement.dataset.roadAlignment = telemetry.roadAlignment.toFixed(3);
     this.renderer.domElement.dataset.roadCamber = telemetry.roadCamber.toFixed(3);
     this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
@@ -418,6 +420,7 @@ export class ThreeRaceRenderer {
       telemetry.frontAeroLoad * 0.018 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.024 +
       rumblePulse * 0.018;
+    const yawInertiaDirection = Math.sign(telemetry.car.yawRate || telemetry.slipAngle || telemetry.car.steering || 1);
     const visualRoll =
       telemetry.car.roll -
       telemetry.car.yawRate * 0.3 +
@@ -433,6 +436,7 @@ export class ThreeRaceRenderer {
       telemetry.aeroWashout * Math.sign(telemetry.car.yawRate || telemetry.curve || 1) * 0.012 +
       telemetry.selfAlignTorque * 0.018 -
       telemetry.steeringRackLoad * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.01 +
+      telemetry.yawInertiaLoad * yawInertiaDirection * 0.014 +
       rumblePulse * 0.014;
     this.car.rotation.x = visualPitch;
     this.car.rotation.z = visualRoll;
@@ -475,6 +479,8 @@ export class ThreeRaceRenderer {
       aeroWashout: telemetry.aeroWashout,
       steeringRackLoad: telemetry.steeringRackLoad,
       selfAlignTorque: telemetry.selfAlignTorque,
+      yawInertiaLoad: telemetry.yawInertiaLoad,
+      yawDamping: telemetry.yawDamping,
       frontWingDamage: telemetry.frontWingDamage,
       instrument: true
     });
@@ -561,7 +567,8 @@ export class ThreeRaceRenderer {
               telemetry.splitSurfaceLoad * 0.38 -
               telemetry.rearTractionRotation * 0.42 +
               telemetry.aeroBalance * 0.22 +
-              telemetry.selfAlignTorque * 0.18,
+              telemetry.selfAlignTorque * 0.18 +
+              telemetry.yawInertiaLoad * yawInertiaDirection * 0.28,
             -1.35,
             1.35
           );
@@ -601,6 +608,7 @@ export class ThreeRaceRenderer {
               telemetry.aeroBalance * 0.5 -
               telemetry.aeroWashout * Math.sign(telemetry.car.yawRate || telemetry.curve || 1) * 0.35 -
               telemetry.selfAlignTorque * 0.38 -
+              telemetry.yawInertiaLoad * yawInertiaDirection * 0.62 -
               telemetry.curve * 0.48) *
               speedRatio *
               (1 - rejoinFocus * 0.8),
@@ -629,7 +637,8 @@ export class ThreeRaceRenderer {
       Math.max(0, this.cameraLongitudinalInertia) * (podMode ? 0 : 0.54) +
       Math.abs(this.cameraLateralInertia) * (podMode ? 0 : 0.24) +
       telemetry.aeroPlatformLoad * (podMode ? 0 : 0.82) +
-      telemetry.aeroWashout * (podMode ? 0.26 : 0.8);
+      telemetry.aeroWashout * (podMode ? 0.26 : 0.8) +
+      telemetry.yawInertiaLoad * (podMode ? 0.18 : 0.42);
     this.camera.fov = fovTarget;
 
     const lookAhead =
@@ -643,7 +652,8 @@ export class ThreeRaceRenderer {
     const powertrainLurch = telemetry.shiftCut * 0.9 + telemetry.tractionBite * 0.42 + Math.abs(telemetry.rearTractionRotation) * 0.24;
     const powertrainLateralKick =
       telemetry.tractionBite * clamp(telemetry.car.heading * 2.2 + telemetry.car.yawRate * 0.9, -1, 1) +
-      telemetry.rearTractionRotation * 0.56;
+      telemetry.rearTractionRotation * 0.56 +
+      telemetry.yawInertiaLoad * yawInertiaDirection * 0.22;
     const rejoinCameraLag = rejoinCameraLift * (1.8 + speedRatio * 0.8);
     const cameraLag = podMode
       ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
@@ -740,7 +750,10 @@ export class ThreeRaceRenderer {
     this.camera.position.copy(this.cameraPosition);
     this.camera.lookAt(this.cameraTarget);
     const cameraRoll = clamp(
-      -telemetry.car.yawRate * (podMode ? 0.018 : 0.035) - telemetry.car.bank * (podMode ? 0.04 : 0.055) + apexDirection * (podMode ? 0.008 : 0.016),
+      -telemetry.car.yawRate * (podMode ? 0.018 : 0.035) -
+        telemetry.yawInertiaLoad * yawInertiaDirection * (podMode ? 0.004 : 0.009) -
+        telemetry.car.bank * (podMode ? 0.04 : 0.055) +
+        apexDirection * (podMode ? 0.008 : 0.016),
       podMode ? -0.032 : -0.044,
       podMode ? 0.032 : 0.044
     );
@@ -828,6 +841,8 @@ export class ThreeRaceRenderer {
         aeroWashout: 0,
         steeringRackLoad: 0,
         selfAlignTorque: 0,
+        yawInertiaLoad: 0,
+        yawDamping: 1,
         frontWingDamage: 0,
         instrument: false
       });
@@ -1366,6 +1381,8 @@ export class ThreeRaceRenderer {
       aeroWashout: number;
       steeringRackLoad: number;
       selfAlignTorque: number;
+      yawInertiaLoad: number;
+      yawDamping: number;
       frontWingDamage: number;
       instrument: boolean;
     }
@@ -1385,6 +1402,8 @@ export class ThreeRaceRenderer {
     const aeroWashout = clamp(state.aeroWashout, 0, 1);
     const steeringRackLoad = clamp(state.steeringRackLoad, 0, 1);
     const selfAlignTorque = clamp(state.selfAlignTorque, -1, 1);
+    const yawInertiaLoad = clamp(state.yawInertiaLoad, 0, 1);
+    const yawDamping = clamp(state.yawDamping, 0.2, 1.2);
     const frontWingDamage = clamp(state.frontWingDamage, 0, 1);
     const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
     const tireGroundContact = clamp(state.tireGroundContact, 0, 1.08);
@@ -1414,12 +1433,17 @@ export class ThreeRaceRenderer {
           side * lateralLoad * 0.55 +
           side * splitSurfaceLoad * 0.34 -
           side * rearTractionRotation * 0.22 +
+          side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
           Math.max(0, 1 - tireGroundContact) * 0.28,
         0,
         1
       );
-      const squash = cornerLoad * 0.115 + surfaceKick * 0.018 + (wheelName.startsWith("front") ? steeringRackLoad * 0.012 : 0);
+      const squash =
+        cornerLoad * 0.115 +
+        surfaceKick * 0.018 +
+        yawInertiaLoad * 0.01 +
+        (wheelName.startsWith("front") ? steeringRackLoad * 0.012 + (1.2 - yawDamping) * 0.004 : 0);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
       loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin;
@@ -1449,6 +1473,8 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.frontAeroVisualLoad = frontAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.rearAeroVisualLoad = rearAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.steeringRackVisualLoad = steeringRackLoad.toFixed(3);
+      this.renderer.domElement.dataset.yawInertiaVisualLoad = yawInertiaLoad.toFixed(3);
+      this.renderer.domElement.dataset.yawDampingVisual = yawDamping.toFixed(3);
     }
 
     root.traverse((object) => {
