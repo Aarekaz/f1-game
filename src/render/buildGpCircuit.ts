@@ -3,6 +3,7 @@ import {
   getActiveTrackLayout,
   getTrackCheckpoints,
   getTrackSectorEnds,
+  STANDING_WATER_PATCHES,
   sampleTrack,
   terrainHeightAt,
   trackCurveAt,
@@ -616,15 +617,8 @@ export function buildGpCircuit() {
     circuit.add(makeGridSlot(distance, lateral, gridPaintMaterial));
   }
 
-  const puddlePlacements = [
-    { distance: 276, lateral: 6.0, scale: [1.6, 0.42] as [number, number] },
-    { distance: 526, lateral: -6.1, scale: [1.25, 0.34] as [number, number] },
-    { distance: 1034, lateral: 5.9, scale: [1.45, 0.38] as [number, number] },
-    { distance: 1418, lateral: -6.0, scale: [1.3, 0.36] as [number, number] },
-    { distance: 1814, lateral: 6.2, scale: [1.75, 0.44] as [number, number] }
-  ];
-  for (const puddle of puddlePlacements) {
-    circuit.add(makeWetPuddle(puddle.distance, puddle.lateral, puddle.scale, puddleMaterial));
+  for (const puddle of STANDING_WATER_PATCHES) {
+    circuit.add(makeWetPuddle(puddle.distance, puddle.lateral, [...puddle.visualScale], puddleMaterial));
   }
 
   const technicalZones = [
@@ -895,7 +889,7 @@ export function buildGpCircuit() {
     technicalZones: technicalZones.length,
     flowCues: flowCueCount,
     gridSlots: 10,
-    puddles: puddlePlacements.length
+    puddles: STANDING_WATER_PATCHES.length
   };
   positionTracksidePieces(circuit);
   return circuit;

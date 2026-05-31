@@ -3,6 +3,38 @@ import type { FictionalTrackId } from "../world/FictionalGpWorld";
 export const TRACK_NAME = "Aurelia GP";
 export const TRACK_LOOP_LENGTH = 2200;
 
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+export type StandingWaterPatch = {
+  distance: number;
+  lateral: number;
+  longitudinalRadius: number;
+  lateralRadius: number;
+  visualScale: readonly [number, number];
+};
+
+export const STANDING_WATER_PATCHES: StandingWaterPatch[] = [
+  { distance: 276, lateral: 6.0, longitudinalRadius: 34, lateralRadius: 1.35, visualScale: [1.6, 0.42] },
+  { distance: 526, lateral: -6.1, longitudinalRadius: 30, lateralRadius: 1.25, visualScale: [1.25, 0.34] },
+  { distance: 1034, lateral: 5.9, longitudinalRadius: 32, lateralRadius: 1.3, visualScale: [1.45, 0.38] },
+  { distance: 1418, lateral: -6.0, longitudinalRadius: 30, lateralRadius: 1.25, visualScale: [1.3, 0.36] },
+  { distance: 1814, lateral: 6.2, longitudinalRadius: 38, lateralRadius: 1.45, visualScale: [1.75, 0.44] }
+];
+
+export function standingWaterAt(distance: number, lateral: number) {
+  let depth = 0;
+  for (const patch of STANDING_WATER_PATCHES) {
+    const wrappedDelta = Math.abs(wrapDistance(distance - patch.distance));
+    const longitudinalDelta = Math.min(wrappedDelta, TRACK_LOOP_LENGTH - wrappedDelta);
+    const longitudinal = clamp01(1 - (longitudinalDelta / patch.longitudinalRadius) ** 2);
+    const lateralLoad = clamp01(1 - ((lateral - patch.lateral) / patch.lateralRadius) ** 2);
+    depth = Math.max(depth, longitudinal * lateralLoad);
+  }
+  return depth;
+}
+
 export type TrackSectionKind = "straight" | "hairpin" | "sweeper" | "chicane" | "esses";
 export type CornerPhase = "flat" | "brake" | "turn-in" | "apex" | "exit";
 
