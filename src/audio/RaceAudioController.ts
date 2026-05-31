@@ -17,6 +17,7 @@ type AudioTelemetry = Pick<
   | "steeringLoadFeedback"
   | "roadFeelFeedback"
   | "tireGroundContact"
+  | "rearTractionRotation"
 > & {
   car: Pick<RaceTelemetry["car"], "slip" | "braking" | "throttle" | "wheelspin" | "understeer" | "lockup">;
 };
@@ -64,6 +65,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.roadFeelFeedback * 0.54,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.56,
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
+      Math.abs(telemetry.rearTractionRotation) * 0.7,
       telemetry.surfaceRumble * 0.62
     )
   );
@@ -88,6 +90,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.roadFeelFeedback * 70 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 110 +
       Math.abs(telemetry.splitSurfaceLoad) * 95 +
+      Math.abs(telemetry.rearTractionRotation) * 120 +
       looseSurface * 90,
     tireGain: racing
       ? slip * 0.055 +
@@ -96,6 +99,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.roadFeelFeedback * 0.012 +
         Math.max(0, 1 - telemetry.tireGroundContact) * 0.016 +
         Math.abs(telemetry.splitSurfaceLoad) * 0.014 +
+        Math.abs(telemetry.rearTractionRotation) * 0.016 +
         telemetry.surfaceRumble * 0.018 +
         looseSurface * speed * 0.014
       : 0,

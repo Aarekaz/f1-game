@@ -15,6 +15,7 @@ type HapticTelemetry = Pick<
   | "steeringLoadFeedback"
   | "roadFeelFeedback"
   | "tireGroundContact"
+  | "rearTractionRotation"
 > & {
   car: Pick<RaceTelemetry["car"], "slip" | "braking" | "wheelspin" | "understeer" | "lockup">;
 };
@@ -67,6 +68,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadFeelFeedback * 0.46,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.52,
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
+      Math.abs(telemetry.rearTractionRotation) * 0.72,
       telemetry.car.braking * 0.16
     )
   );
@@ -75,6 +77,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadFeelFeedback * 0.48 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.44 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.38 +
+      Math.abs(telemetry.rearTractionRotation) * 0.18 +
       surface * 0.34 +
       telemetry.roadWetness * speed * 0.18
   );
@@ -88,6 +91,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadFeelFeedback * 0.16 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.16 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.14 +
+      Math.abs(telemetry.rearTractionRotation) * 0.14 +
       airBuffet
   );
 
