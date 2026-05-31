@@ -11,6 +11,7 @@ const baseTelemetry = {
   surfaceRumble: 0,
   rainIntensity: 0,
   roadWetness: 0,
+  tireLoadFeedback: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -56,6 +57,18 @@ describe("raceAudioMix", () => {
     expect(wetGravel.tireFrequency).toBeGreaterThan(dry.tireFrequency);
     expect(wetGravel.rainGain).toBeGreaterThan(dry.rainGain);
     expect(wetGravel.rainFrequency).toBeGreaterThan(dry.rainFrequency);
+  });
+
+  it("adds tire presence from shared tire load feedback", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      tireLoadFeedback: 0.72
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
   });
 
   it("exposes ERS whine only when deployment is plausible", () => {

@@ -10,6 +10,7 @@ const baseTelemetry = {
   draft: 0,
   dirtyAir: 0,
   contactRisk: 0,
+  tireLoadFeedback: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -68,5 +69,16 @@ describe("raceHapticEffect", () => {
 
     expect(lockup?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(wheelspin?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+  });
+
+  it("turns tire load feedback into subtle steering texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      tireLoadFeedback: 0.7
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 });
