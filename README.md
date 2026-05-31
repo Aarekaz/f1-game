@@ -98,6 +98,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Northstar Ring road-feel feedback](readme-assets/screenshots/25-northstar-road-feel-feedback.png) |
 
+| Split-surface contact |
+| --- |
+| ![Aurelia GP split-surface contact](readme-assets/screenshots/26-aurelia-split-surface-contact.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -123,6 +127,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
 - Steering-load feedback now rises from tire force, saturation, slip angle, front axle load, and driver steering, then feeds the HUD, tire audio, and gamepad haptics together.
 - Road-feel feedback now turns road compression, suspension load, travel, camber, and surface edge load into one shared signal for the HUD, tire audio, haptics, car body, and camera.
+- Split-surface contact now notices when the left and right side of the car are on different grip or height, then tugs yaw, lateral motion, tire scrub, sound, haptics, and camera feel together.
 - The formula car now visibly leans, pitches, steers, and squashes its loaded tires from the same physics signals, so grip loss reads through the car instead of only the HUD.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
