@@ -384,15 +384,29 @@ export class ThreeRaceRenderer {
       rumblePulse * 0.032 -
       telemetry.suspensionTravel * 0.045;
     this.car.rotation.y = trackYaw - telemetry.car.heading - telemetry.curve * 0.5;
-    this.car.rotation.x =
+    const tireLoadVisual = clamp(telemetry.tireLoadFeedback, 0, 1);
+    const visualPitch =
       telemetry.car.pitch +
       telemetry.car.braking * 0.035 -
       telemetry.car.throttle * speedRatio * 0.018 +
       telemetry.shiftCut * 0.018 +
       telemetry.tractionBite * 0.014 +
+      telemetry.longitudinalLoadTransfer * 0.075 -
+      telemetry.suspensionTravel * 0.028 +
       rumblePulse * 0.018;
-    this.car.rotation.z =
-      telemetry.car.roll - telemetry.car.yawRate * 0.3 + telemetry.car.understeer * 0.04 - telemetry.car.lockup * 0.024 - telemetry.car.bank * 0.16 + rumblePulse * 0.014;
+    const visualRoll =
+      telemetry.car.roll -
+      telemetry.car.yawRate * 0.3 +
+      telemetry.car.understeer * 0.04 -
+      telemetry.car.lockup * 0.024 -
+      telemetry.car.bank * 0.16 -
+      telemetry.lateralLoadTransfer * 0.15 -
+      tireLoadVisual * telemetry.car.yawRate * 0.08 +
+      rumblePulse * 0.014;
+    this.car.rotation.x = visualPitch;
+    this.car.rotation.z = visualRoll;
+    this.renderer.domElement.dataset.carVisualPitch = visualPitch.toFixed(3);
+    this.renderer.domElement.dataset.carVisualRoll = visualRoll.toFixed(3);
     this.animateFormulaCar(this.car, {
       distance: telemetry.car.z,
       speedKph: telemetry.speedKph,
@@ -400,10 +414,15 @@ export class ThreeRaceRenderer {
       braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12,
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
+      tireLoadFeedback: telemetry.tireLoadFeedback,
+      lateralLoadTransfer: telemetry.lateralLoadTransfer,
+      suspensionTravel: telemetry.suspensionTravel,
+      surfaceRumble: telemetry.surfaceRumble,
       rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
       ersDeploy: telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0,
       aeroOpen: telemetry.aeroBoostActive,
-      frontWingDamage: telemetry.frontWingDamage
+      frontWingDamage: telemetry.frontWingDamage,
+      instrument: true
     });
     this.renderer.domElement.dataset.wheelSpin = (telemetry.car.z * 3.2).toFixed(2);
     this.renderer.domElement.dataset.brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12, 0, 1).toFixed(2);
@@ -668,10 +687,15 @@ export class ThreeRaceRenderer {
         braking: 0,
         throttle: 0.72,
         wheelspin: 0,
+        tireLoadFeedback: clamp(rival.speedKph / 320, 0, 1) * 0.28,
+        lateralLoadTransfer: rival.heading * -0.12,
+        suspensionTravel: 0,
+        surfaceRumble: 0,
         rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.42 + telemetry.rainIntensity * 0.34) : 0,
         ersDeploy: 0,
         aeroOpen: 0,
-        frontWingDamage: 0
+        frontWingDamage: 0,
+        instrument: false
       });
       const sprayStrength = this.updateRivalSpray(
         rival.id,
@@ -1191,10 +1215,15 @@ export class ThreeRaceRenderer {
       braking: number;
       throttle: number;
       wheelspin: number;
+      tireLoadFeedback: number;
+      lateralLoadTransfer: number;
+      suspensionTravel: number;
+      surfaceRumble: number;
       rainLight: number;
       ersDeploy: number;
       aeroOpen: number;
       frontWingDamage: number;
+      instrument: boolean;
     }
   ) {
     const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
@@ -1207,16 +1236,31 @@ export class ThreeRaceRenderer {
     const ersPulse = ersDeploy * (0.72 + Math.sin(performance.now() * 0.018 + state.distance * 0.032) * 0.28);
     const aeroOpen = clamp(state.aeroOpen, 0, 1);
     const frontWingDamage = clamp(state.frontWingDamage, 0, 1);
+    const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
+    const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
+    const surfaceKick = clamp(state.surfaceRumble, 0, 1);
+    const suspensionCompression = clamp(state.suspensionTravel + tireLoad * 0.5, 0, 1);
     const rearFlap = root.getObjectByName("rear-wing-upper-plane");
     const frontWing = root.getObjectByName("front-wing");
+    let maxWheelSquash = 0;
+    let loadedSideBias = 0;
 
     for (const wheelName of ["front-left-wheel", "front-right-wheel", "rear-left-wheel", "rear-right-wheel"]) {
       const wheel = root.getObjectByName(wheelName);
       if (!wheel) continue;
 
+      const side = wheelName.includes("left") ? -1 : 1;
+      const frontLoad = wheelName.startsWith("front") ? state.braking * 0.22 : state.throttle * 0.08;
+      const cornerLoad = clamp(tireLoad * 0.58 + suspensionCompression * 0.32 + frontLoad - side * lateralLoad * 0.55, 0, 1);
+      const squash = cornerLoad * 0.115 + surfaceKick * 0.018;
+      maxWheelSquash = Math.max(maxWheelSquash, squash);
+      loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin;
       wheel.rotation.y = wheelName.startsWith("front") ? steerAngle : 0;
+      wheel.rotation.z = -side * (0.015 + cornerLoad * 0.042);
+      wheel.scale.set(1 + squash * 0.12, 1 - squash, 1 + squash * 0.08);
     }
+    loadedSideBias = clamp(loadedSideBias / 4, -1, 1);
 
     if (rearFlap) {
       rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13 + aeroOpen * 0.24;
@@ -1229,7 +1273,13 @@ export class ThreeRaceRenderer {
       frontWing.scale.x = 1 - frontWingDamage * 0.075;
     }
 
-    this.renderer.domElement.dataset.frontWingVisualDamage = frontWingDamage.toFixed(3);
+    if (state.instrument) {
+      this.renderer.domElement.dataset.frontWingVisualDamage = frontWingDamage.toFixed(3);
+      this.renderer.domElement.dataset.frontWheelSteer = steerAngle.toFixed(3);
+      this.renderer.domElement.dataset.tireVisualSquash = maxWheelSquash.toFixed(3);
+      this.renderer.domElement.dataset.loadedWheelBias = loadedSideBias.toFixed(3);
+      this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
+    }
 
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
