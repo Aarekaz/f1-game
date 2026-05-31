@@ -348,6 +348,7 @@ async function checkDesktop(browser) {
     longitudinalGrip: Number(document.querySelector("#game canvas")?.dataset.longitudinalGrip ?? 0),
     tireContactGrip: Number(document.querySelector("#game canvas")?.dataset.tireContactGrip ?? 0),
     tireRunoffShare: Number(document.querySelector("#game canvas")?.dataset.tireRunoffShare ?? 0),
+    tireGroundContact: Number(document.querySelector("#game canvas")?.dataset.tireGroundContact ?? 0),
     tireForceLoad: Number(document.querySelector("#game canvas")?.dataset.tireForceLoad ?? 0),
     tireSaturation: Number(document.querySelector("#game canvas")?.dataset.tireSaturation ?? 0),
     tireRelaxation: Number(document.querySelector("#game canvas")?.dataset.tireRelaxation ?? 0),
@@ -736,6 +737,7 @@ async function checkDesktop(browser) {
   assert(state.longitudinalGrip > 0.18 && state.longitudinalGrip <= 1.1, `desktop longitudinal grip telemetry was invalid: ${state.longitudinalGrip}`);
   assert(state.tireContactGrip > 0.2 && state.tireContactGrip <= 1.1, `desktop tire contact grip telemetry was invalid: ${state.tireContactGrip}`);
   assert(state.tireRunoffShare >= 0 && state.tireRunoffShare <= 1, `desktop tire runoff share telemetry was invalid: ${state.tireRunoffShare}`);
+  assert(state.tireGroundContact > 0.55 && state.tireGroundContact <= 1.1, `desktop tire ground contact telemetry was invalid: ${state.tireGroundContact}`);
   assert(state.tireForceLoad >= 0 && state.tireForceLoad <= 1.85, `desktop tire force load telemetry was invalid: ${state.tireForceLoad}`);
   assert(state.tireSaturation >= 0 && state.tireSaturation <= 1, `desktop tire saturation telemetry was invalid: ${state.tireSaturation}`);
   assert(state.tireRelaxation >= 0 && state.tireRelaxation <= 1, `desktop tire relaxation telemetry was invalid: ${state.tireRelaxation}`);

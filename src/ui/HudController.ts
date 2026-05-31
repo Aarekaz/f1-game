@@ -358,6 +358,7 @@ export class HudController {
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
     if (telemetry.steeringLoadFeedback > 0.2) return `Steering load ${(telemetry.steeringLoadFeedback * 100).toFixed(0)}%`;
     if (telemetry.tireLoadFeedback > 0.58) return `Tire load ${(telemetry.tireLoadFeedback * 100).toFixed(0)}%`;
+    if (telemetry.tireGroundContact < 0.94) return `Light contact ${((1 - telemetry.tireGroundContact) * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.splitSurfaceLoad) > 0.2) return `Split grip ${(Math.abs(telemetry.splitSurfaceLoad) * 100).toFixed(0)}%`;
     if (telemetry.roadFeelFeedback > 0.18) return `Road load ${(telemetry.roadFeelFeedback * 100).toFixed(0)}%`;
     if (telemetry.dirtyTirePickup > 0.18 || telemetry.marbles > 0.12) return telemetry.gripState;
