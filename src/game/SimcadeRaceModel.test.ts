@@ -1352,6 +1352,31 @@ describe("SimcadeRaceModel", () => {
     expect(loadedFront.car.lockup).toBeGreaterThanOrEqual(loadedRear.car.lockup);
   });
 
+  it("rotates the rear only when throttle is applied through corner exit", () => {
+    const coasting = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    coasting.update(1 / 60, { ...idle, launch: true });
+    run(coasting, 4.8, { throttle: 1, ers: true });
+    const tidyTurn = run(coasting, 0.9, { throttle: 0.12, steer: 0.72 });
+
+    const powered = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    powered.update(1 / 60, { ...idle, launch: true });
+    run(powered, 4.8, { throttle: 1, ers: true });
+    const exitTurn = run(powered, 0.9, { throttle: 1, steer: 0.72 });
+
+    expect(Math.abs(exitTurn.rearTractionRotation)).toBeGreaterThan(Math.abs(tidyTurn.rearTractionRotation) + 0.012);
+    expect(exitTurn.car.wheelspin).toBeGreaterThan(tidyTurn.car.wheelspin);
+    expect(exitTurn.tireLoadFeedback).toBeGreaterThan(tidyTurn.tireLoadFeedback);
+    expect(exitTurn.longitudinalGrip).toBeLessThan(tidyTurn.longitudinalGrip);
+  });
+
   it("loads the outside tires during sustained cornering", () => {
     const right = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1498,6 +1523,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.aeroDragReduction).toBe(0);
     expect(telemetry.shiftCut).toBe(0);
     expect(telemetry.tractionBite).toBe(0);
+    expect(telemetry.rearTractionRotation).toBe(0);
     expect(telemetry.engineBraking).toBe(0);
     expect(telemetry.trailBraking).toBe(0);
     expect(telemetry.thresholdBraking).toBe(0);
