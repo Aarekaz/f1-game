@@ -306,6 +306,59 @@ describe("SimcadeRaceModel", () => {
     expect(locked.forwardBite).toBeLessThan(controlled.forwardBite);
   });
 
+  it("rewards threshold braking before the tires lock", () => {
+    const threshold = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    threshold.update(1 / 60, { ...idle, launch: true });
+    run(threshold, 4.6, { throttle: 1, ers: true });
+    const modulated = run(threshold, 0.95, { brake: 0.72 });
+
+    const panic = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    panic.update(1 / 60, { ...idle, launch: true });
+    run(panic, 4.6, { throttle: 1, ers: true });
+    const locked = run(panic, 0.95, { brake: 1 });
+
+    expect(modulated.thresholdBraking).toBeGreaterThan(0.18);
+    expect(locked.thresholdBraking).toBeLessThan(modulated.thresholdBraking);
+    expect(locked.car.lockup).toBeGreaterThan(modulated.car.lockup);
+    expect(modulated.longitudinalGrip).toBeGreaterThan(locked.longitudinalGrip);
+    expect(modulated.forwardBite).toBeGreaterThan(locked.forwardBite);
+  });
+
+  it("lets easing brake pressure recover grip after an initial lockup", () => {
+    const eased = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    eased.update(1 / 60, { ...idle, launch: true });
+    run(eased, 4.6, { throttle: 1, ers: true });
+    run(eased, 0.42, { brake: 1 });
+    const recovered = run(eased, 0.75, { brake: 0.52 });
+
+    const held = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    held.update(1 / 60, { ...idle, launch: true });
+    run(held, 4.6, { throttle: 1, ers: true });
+    run(held, 0.42, { brake: 1 });
+    const dragged = run(held, 0.75, { brake: 1 });
+
+    expect(recovered.thresholdBraking).toBeGreaterThan(dragged.thresholdBraking);
+    expect(recovered.car.lockup).toBeLessThan(dragged.car.lockup);
+    expect(recovered.longitudinalGrip).toBeGreaterThan(dragged.longitudinalGrip);
+    expect(recovered.tireRelaxation).toBeLessThan(dragged.tireRelaxation);
+  });
+
   it("lets full braking bring the car to a real stop", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -490,7 +543,7 @@ describe("SimcadeRaceModel", () => {
     expect(peakShiftCut).toBeGreaterThan(0.2);
     expect(peakTractionBite).toBeGreaterThan(0.2);
     expect(telemetry.rpm).toBeGreaterThan(4200);
-    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited", "Engine braking", "Trail braking"]).toContain(telemetry.powerState);
+    expect(["Power hooked", "Near redline", "Shift cut", "Traction limited", "Engine braking", "Trail braking", "Threshold braking"]).toContain(telemetry.powerState);
   });
 
   it("steers with grip limits and loses grip off track", () => {
@@ -1365,6 +1418,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tractionBite).toBe(0);
     expect(telemetry.engineBraking).toBe(0);
     expect(telemetry.trailBraking).toBe(0);
+    expect(telemetry.thresholdBraking).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);
