@@ -151,6 +151,7 @@ export type RaceTelemetry = {
     pitch: number;
     roll: number;
     slip: number;
+    steering: number;
     braking: number;
     throttle: number;
     wheelspin: number;
@@ -328,6 +329,10 @@ export class SimcadeRaceModel {
   private brakeTemp = 0.34;
   private brakeFade = 0;
   private brakeReleaseShock = 0;
+  private controlSteer = 0;
+  private controlThrottle = 0;
+  private controlBrake = 0;
+  private lastSteering = 0;
   private trackRubber = 0;
   private dryingLine = 0;
   private dirtyTirePickup = 0;
@@ -549,6 +554,7 @@ export class SimcadeRaceModel {
         pitch: this.chassisPitch,
         roll: this.chassisRoll,
         slip: this.slip,
+        steering: this.phase === "racing" ? this.lastSteering : 0,
         braking: this.phase === "racing" ? this.lastBrake : 0,
         throttle: this.phase === "racing" ? this.lastThrottle : 0,
         wheelspin: this.wheelspin,
@@ -619,6 +625,10 @@ export class SimcadeRaceModel {
     this.brakeTemp = 0.34;
     this.brakeFade = 0;
     this.brakeReleaseShock = 0;
+    this.controlSteer = 0;
+    this.controlThrottle = 0;
+    this.controlBrake = 0;
+    this.lastSteering = 0;
     this.trackRubber = 0;
     this.dryingLine = 0;
     this.standingWater = 0;
@@ -687,6 +697,9 @@ export class SimcadeRaceModel {
     this.slip = Math.max(this.slip, wetSpin * 0.58);
     this.grip = clamp(this.grip - wetSpin * 0.18, 0.52, 1);
     this.speed = Math.max(0, 26 + quality * 34 - wetSpin * 10);
+    this.controlThrottle = Math.max(this.controlThrottle, this.launchCharge);
+    this.controlBrake = 0;
+    this.controlSteer = 0;
     this.cameraSnapTimer = 0.35;
 
     if (quality > 0.86) {
@@ -705,17 +718,14 @@ export class SimcadeRaceModel {
   }
 
   private updateDriving(dt: number, actions: RaceActions) {
-    const rawThrottle = clamp(actions.throttle, 0, 1);
-    const rawBrake = clamp(actions.brake, 0, 1);
-    const rawSteer = clamp(actions.steer, -1, 1);
+    const rawThrottleInput = clamp(actions.throttle, 0, 1);
+    const rawBrakeInput = clamp(actions.brake, 0, 1);
+    const rawSteerInput = clamp(actions.steer, -1, 1);
     const track = sampleTrack(this.z);
-    const assist = this.drivingAssist(track, rawThrottle, rawBrake, rawSteer);
-    const throttle = clamp(rawThrottle * (1 - assist.throttleTrim), 0, 1);
-    const brake = clamp(Math.max(rawBrake, assist.brake), 0, 1);
-    const steer = clamp(rawSteer + assist.steer, -1, 1);
-    const previousBrake = this.lastBrake;
-    this.lastBrake = brake;
-    this.lastThrottle = throttle;
+    const assist = this.drivingAssist(track, rawThrottleInput, rawBrakeInput, rawSteerInput);
+    const throttleTarget = clamp(rawThrottleInput * (1 - assist.throttleTrim), 0, 1);
+    const brakeTarget = clamp(Math.max(rawBrakeInput, assist.brake), 0, 1);
+    const steerTarget = rawSteerInput;
 
     const surface = this.drivingSurface(track);
     const onTrack = surface.trackLegal;
@@ -742,6 +752,24 @@ export class SimcadeRaceModel {
     this.standingWater = approach(this.standingWater, standingWaterTarget, dt * (standingWaterTarget > this.standingWater ? 18 : 7));
     const gripContext = this.trackGripContext(track);
     this.updateDirtyTirePickup(dt, gripContext, speedRatio, onTrack, contactRoughness, roadWetness);
+    const previousBrake = this.lastBrake;
+    const controls = this.updateControlResponse(
+      dt,
+      throttleTarget,
+      brakeTarget,
+      steerTarget,
+      speedRatio,
+      roadWetness,
+      contactRoughness,
+      Math.abs(assist.steer) + assist.brake + assist.throttleTrim
+    );
+    const throttle = controls.throttle;
+    const brake = controls.brake;
+    const steer = clamp(controls.steer + assist.steer, -1, 1);
+    const rawSteer = steer;
+    this.lastSteering = steer;
+    this.lastBrake = brake;
+    this.lastThrottle = throttle;
     const boost = actions.ers && throttle > 0.1 && brake < 0.1 && this.ers > 0.03 ? 1 : 0;
     this.updateFuelLoad(dt, throttle, boost, speedRatio);
     this.updatePowertrainState(dt, throttle, brake, roadWetness, onTrack, contactRoughness);
@@ -1228,6 +1256,48 @@ export class SimcadeRaceModel {
     this.updateTrackLimits(dt, onTrack);
   }
 
+  private updateControlResponse(
+    dt: number,
+    throttleTarget: number,
+    brakeTarget: number,
+    steerTarget: number,
+    speedRatio: number,
+    roadWetness: number,
+    contactRoughness: number,
+    assistActivity: number
+  ) {
+    const gripConfidence = clamp(0.58 + this.roadAdhesion * 0.32 - this.tireSaturation * 0.18 - this.standingWater * 0.1, 0.42, 1);
+    const throttleRise = 14 * gripConfidence * (1 - roadWetness * 0.1);
+    const throttleFall = 10.5;
+    this.controlThrottle = approach(
+      this.controlThrottle,
+      throttleTarget,
+      dt * (throttleTarget > this.controlThrottle ? throttleRise : throttleFall)
+    );
+
+    const brakeRise = 19 - roadWetness * 1.4 + this.brakeTemp;
+    const brakeFall = 7.4 + this.brakeReleaseShock * 1.6;
+    this.controlBrake = approach(this.controlBrake, brakeTarget, dt * (brakeTarget > this.controlBrake ? brakeRise : brakeFall));
+
+    const oppositeLock = this.controlSteer !== 0 && steerTarget !== 0 && Math.sign(this.controlSteer) !== Math.sign(steerTarget);
+    const steeringReturn = steerTarget === 0;
+    const speedDamping = clamp(1 - speedRatio * 0.42, 0.5, 1);
+    const surfaceDamping = clamp(gripConfidence - contactRoughness * 0.08, 0.38, 1);
+    const assistResponseBoost = clamp(assistActivity * 2.8, 0, 3.2);
+    const steeringRate = steeringReturn
+      ? 9.8 + speedRatio * 2.2
+      : oppositeLock
+        ? 9.4 + speedRatio * 2.8
+        : 12.4 * speedDamping * surfaceDamping + 1.55 + assistResponseBoost;
+    this.controlSteer = approach(this.controlSteer, steerTarget, dt * steeringRate);
+
+    return {
+      throttle: this.controlThrottle,
+      brake: this.controlBrake,
+      steer: this.controlSteer
+    };
+  }
+
   private keepCarInsideRecoveryApron(track: ReturnType<typeof sampleTrack>, dt: number, speedRatio: number) {
     const lateral = this.x - track.center;
     const apronReach = track.halfWidth + (this.session.assist.steeringHelp > 0 ? 0.72 : 2.65);
@@ -1265,6 +1335,10 @@ export class SimcadeRaceModel {
     this.understeer = 0;
     this.lockup = 0;
     this.brakeReleaseShock = 0;
+    this.controlSteer = 0;
+    this.controlThrottle = 0;
+    this.controlBrake = 0;
+    this.lastSteering = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;

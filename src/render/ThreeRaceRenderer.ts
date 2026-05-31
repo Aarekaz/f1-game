@@ -267,6 +267,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.carWheelspin = telemetry.car.wheelspin.toFixed(3);
     this.renderer.domElement.dataset.carUndersteer = telemetry.car.understeer.toFixed(3);
     this.renderer.domElement.dataset.carLockup = telemetry.car.lockup.toFixed(3);
+    this.renderer.domElement.dataset.carSteering = telemetry.car.steering.toFixed(3);
     this.renderer.domElement.dataset.carHeading = telemetry.car.heading.toFixed(3);
     this.renderer.domElement.dataset.carYawRate = telemetry.car.yawRate.toFixed(3);
     this.renderer.domElement.dataset.flowScore = telemetry.flowScore.toFixed(3);
@@ -385,7 +386,7 @@ export class ThreeRaceRenderer {
     this.animateFormulaCar(this.car, {
       distance: telemetry.car.z,
       speedKph: telemetry.speedKph,
-      steering: telemetry.car.yawRate * 0.9,
+      steering: telemetry.car.steering * 0.42 + telemetry.car.yawRate * 0.58,
       braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12,
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
@@ -1768,7 +1769,7 @@ export class ThreeRaceRenderer {
     dirtyAir: number
   ) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
-    const speedCue = clamp(Math.max(0, speedRatio - 0.42) * 0.48 + slip * 0.1 + braking * 0.045 + draft * 0.18 + dirtyAir * 0.1, 0, 0.42);
+    const speedCue = clamp(Math.max(0, speedRatio - 0.4) * 0.54 + slip * 0.1 + braking * 0.045 + draft * 0.18 + dirtyAir * 0.1, 0, 0.42);
     if (material) {
       material.opacity = speedCue;
       material.color.set(dirtyAir > 0.2 ? "#d8e0df" : draft > 0.03 ? "#c5fff4" : braking > 0.25 ? "#ffd7c8" : "#f6fff1");
