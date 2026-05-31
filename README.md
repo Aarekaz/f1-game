@@ -82,6 +82,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP tire-load feedback](readme-assets/screenshots/21-aurelia-tire-load-feedback.png) |
 
+| Loaded car visuals |
+| --- |
+| ![Aurelia GP loaded car visuals](readme-assets/screenshots/22-aurelia-loaded-car-visuals.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -105,6 +109,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Trail braking now has its own handling state: partial brake plus steering loads the nose, helps the car rotate, and still carries lockup risk if you overdo it.
 - Threshold braking now rewards measured brake pressure before lockup, so easing off after a panic stop can recover longitudinal grip instead of dragging flat tires forever.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
+- The formula car now visibly leans, pitches, steers, and squashes its loaded tires from the same physics signals, so grip loss reads through the car instead of only the HUD.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
