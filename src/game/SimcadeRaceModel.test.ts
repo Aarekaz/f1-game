@@ -1066,6 +1066,39 @@ describe("SimcadeRaceModel", () => {
     expect(saturated.longitudinalGrip).toBeLessThan(measured.longitudinalGrip);
   });
 
+  it("keeps tire relaxation after an abrupt overdriven steering release", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const settled = run(model, 5, { throttle: 1, ers: true });
+    const overloaded = run(model, 0.9, { throttle: 1, steer: 1 });
+    const released = run(model, 0.28, { throttle: 0.55 });
+
+    expect(overloaded.tireRelaxation).toBeGreaterThan(0.08);
+    expect(released.tireRelaxation).toBeGreaterThan(settled.tireRelaxation + 0.04);
+    expect(released.roadAdhesion).toBeLessThan(settled.roadAdhesion);
+    expect(released.forwardBite).toBeLessThan(settled.forwardBite);
+  });
+
+  it("lets tire relaxation decay instead of staying permanently damaged", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 5, { throttle: 1, ers: true });
+    const overloaded = run(model, 0.95, { throttle: 1, steer: 1 });
+    const recovering = run(model, 1.6, { throttle: 0.35, steer: -0.25 });
+
+    expect(overloaded.tireRelaxation).toBeGreaterThan(0.08);
+    expect(recovering.tireRelaxation).toBeLessThan(overloaded.tireRelaxation);
+    expect(recovering.car.slip).toBeLessThanOrEqual(overloaded.car.slip);
+  });
+
   it("keeps the car unsettled for a moment after hard brake release", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1180,6 +1213,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireRunoffShare).toBe(0);
     expect(telemetry.tireForceLoad).toBe(0);
     expect(telemetry.tireSaturation).toBe(0);
+    expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
