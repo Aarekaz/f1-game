@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   getTrackCheckpoints,
+  STANDING_WATER_PATCHES,
   sampleTrack,
   setActiveTrackLayout,
+  standingWaterAt,
   trackBankAt,
   trackCenterAt,
   trackElevationAt,
@@ -72,5 +74,13 @@ describe("trackPath layouts", () => {
     expect(Math.hypot(rightEdge.x - leftEdge.x, rightEdge.z - leftEdge.z)).toBeGreaterThan(9);
     expect(Number.isFinite(trackWorldHeadingAt(760))).toBe(true);
     setActiveTrackLayout("aurelia");
+  });
+
+  it("defines localized standing-water patches for wet road physics", () => {
+    const firstPatch = STANDING_WATER_PATCHES[0];
+
+    expect(standingWaterAt(firstPatch.distance, firstPatch.lateral)).toBeGreaterThan(0.95);
+    expect(standingWaterAt(firstPatch.distance + firstPatch.longitudinalRadius * 1.4, firstPatch.lateral)).toBe(0);
+    expect(standingWaterAt(firstPatch.distance, firstPatch.lateral + firstPatch.lateralRadius * 1.4)).toBe(0);
   });
 });

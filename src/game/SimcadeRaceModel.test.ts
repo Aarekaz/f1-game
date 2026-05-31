@@ -361,6 +361,41 @@ describe("SimcadeRaceModel", () => {
     expect(wetRestart.car.wheelspin).toBeGreaterThan(dryRestart.car.wheelspin);
   });
 
+  it("turns visible standing water into local wet grip loss", () => {
+    const driveThroughFirstPuddle = (weatherId: "clear" | "storm") => {
+      const model = new SimcadeRaceModel({
+        track: findTrack("aurelia"),
+        weather: findWeather(weatherId),
+        assist: findAssist("manual")
+      });
+      model.update(1 / 60, { ...idle, launch: true });
+      run(model, 3.7, { throttle: 1, ers: true });
+
+      let peakWater = model.telemetry();
+      for (let elapsed = 0; elapsed < 8; elapsed += 1 / 60) {
+        const telemetry = model.telemetry();
+        const steer = telemetry.trackOffset > 215 ? (telemetry.carX < 5.8 ? 0.7 : 0.2) : 0;
+        const brake = telemetry.trackOffset > 250 && telemetry.trackOffset < 315 ? 0.55 : 0;
+        const throttle = brake > 0 ? 0.4 : 1;
+        const next = model.update(1 / 60, { ...idle, throttle, brake, steer, ers: true });
+        if (next.standingWater > peakWater.standingWater) peakWater = next;
+        if (next.trackOffset > 318) break;
+      }
+
+      return peakWater;
+    };
+
+    const dry = driveThroughFirstPuddle("clear");
+    const wet = driveThroughFirstPuddle("storm");
+
+    expect(dry.standingWater).toBe(0);
+    expect(wet.standingWater).toBeGreaterThan(0.24);
+    expect(wet.roadAdhesion).toBeLessThan(0.24);
+    expect(wet.car.lockup).toBeGreaterThan(0.35);
+    expect(wet.car.understeer).toBeGreaterThan(0.35);
+    expect(wet.longitudinalGrip).toBeLessThan(0.45);
+  });
+
   it("does not rotate or sidestep the car from steering input at a standstill", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
