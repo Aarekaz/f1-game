@@ -49,6 +49,9 @@ export type RaceTelemetry = {
   suspensionLoad: number;
   suspensionTravel: number;
   aeroPlatformLoad: number;
+  frontAxleLoad: number;
+  rearAxleLoad: number;
+  longitudinalLoadTransfer: number;
   roadWetness: number;
   standingWater: number;
   rainIntensity: number;
@@ -313,6 +316,9 @@ export class SimcadeRaceModel {
   private suspensionLoad = 1;
   private suspensionTravel = 0;
   private aeroPlatformLoad = 0;
+  private frontAxleLoad = 1;
+  private rearAxleLoad = 1;
+  private longitudinalLoadTransfer = 0;
   private standingWater = 0;
   private chassisPitch = 0;
   private chassisRoll = 0;
@@ -452,6 +458,9 @@ export class SimcadeRaceModel {
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
       aeroPlatformLoad: this.aeroPlatformLoad,
+      frontAxleLoad: this.frontAxleLoad,
+      rearAxleLoad: this.rearAxleLoad,
+      longitudinalLoadTransfer: this.longitudinalLoadTransfer,
       roadWetness: this.dynamicRoadWetness(),
       standingWater: this.standingWater,
       rainIntensity: this.session.weather.rainIntensity,
@@ -650,6 +659,9 @@ export class SimcadeRaceModel {
     this.suspensionLoad = 1;
     this.suspensionTravel = 0;
     this.aeroPlatformLoad = 0;
+    this.frontAxleLoad = 1;
+    this.rearAxleLoad = 1;
+    this.longitudinalLoadTransfer = 0;
     this.chassisPitch = 0;
     this.chassisRoll = 0;
     this.frontWingDamage = 0;
@@ -753,6 +765,7 @@ export class SimcadeRaceModel {
     const gripContext = this.trackGripContext(track);
     this.updateDirtyTirePickup(dt, gripContext, speedRatio, onTrack, contactRoughness, roadWetness);
     const previousBrake = this.lastBrake;
+    const previousThrottle = this.lastThrottle;
     const controls = this.updateControlResponse(
       dt,
       throttleTarget,
@@ -836,11 +849,38 @@ export class SimcadeRaceModel {
       aeroPlatformTarget,
       dt * (aeroPlatformTarget > this.aeroPlatformLoad ? 5.5 : 10)
     );
+    const throttleRelease = clamp((previousThrottle - throttle) * (0.72 + speedRatio * 0.52), 0, 1);
+    const transferTarget = clamp(
+      brake * (0.32 + speedRatio * 0.64) +
+        throttleRelease * (0.22 + speedRatio * 0.28) -
+        throttle * (0.14 + speedRatio * 0.16) * (1 - brake * 0.72) -
+        this.aeroPlatformLoad * 0.035,
+      -0.28,
+      0.42
+    );
+    this.longitudinalLoadTransfer = approach(
+      this.longitudinalLoadTransfer,
+      transferTarget,
+      dt * (transferTarget > this.longitudinalLoadTransfer ? 8.5 : 6.2)
+    );
+    this.frontAxleLoad = approach(
+      this.frontAxleLoad,
+      clamp(1 + this.longitudinalLoadTransfer * 0.58 + this.aeroPlatformLoad * 0.08 - this.downforceLoss * 0.12, 0.72, 1.34),
+      dt * 8
+    );
+    this.rearAxleLoad = approach(
+      this.rearAxleLoad,
+      clamp(1 - this.longitudinalLoadTransfer * 0.5 + throttle * 0.08 + this.aeroPlatformLoad * 0.06, 0.74, 1.3),
+      dt * 8
+    );
 
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const cornerDemand = track.section.kind === "straight" ? 0.18 : track.section.difficulty;
     const longitudinalForceDemand = throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52);
+    const frontLoadGrip = clamp(0.9 + this.frontAxleLoad * 0.1 - Math.max(0, this.frontAxleLoad - 1.18) * 0.22, 0.82, 1.06);
+    const rearLoadGrip = clamp(0.88 + this.rearAxleLoad * 0.12 - Math.max(0, this.rearAxleLoad - 1.16) * 0.18, 0.82, 1.07);
+    const rearTractionSupport = clamp(0.86 + this.rearAxleLoad * 0.14 - Math.max(0, this.longitudinalLoadTransfer) * 0.12, 0.78, 1.08);
     const steeringLoadDemand =
       Math.pow(Math.abs(rawSteer), 1.25) *
       speedRatio *
@@ -864,6 +904,7 @@ export class SimcadeRaceModel {
         (1 - this.surfaceEdgeLoad * 0.12) *
         (1 - this.tireRunoffShare * 0.18) *
         (1 + this.aeroPlatformLoad * 0.22) *
+        clamp(frontLoadGrip * 0.56 + rearLoadGrip * 0.44, 0.82, 1.08) *
         (1 - this.downforceLoss * 0.45),
       0.24,
       1.18
@@ -876,6 +917,7 @@ export class SimcadeRaceModel {
       ? clamp(
           throttle * (1 - this.grip) * (0.9 + track.section.difficulty * 0.55) +
             tractionStress * overspeed * 0.35 +
+            Math.max(0, this.longitudinalLoadTransfer) * throttle * 0.18 +
             contactRoughness * throttle * 0.18 +
             (1 - this.tireContactGrip) * throttle * 0.22 +
             this.surfaceEdgeLoad * throttle * 0.12 +
@@ -893,6 +935,7 @@ export class SimcadeRaceModel {
             (0.18 +
               overspeed * 0.9 +
               (1 - this.grip) * 0.75 +
+              Math.max(0, 1.04 - this.frontAxleLoad) * 0.32 +
               contactRoughness * 0.2 +
               (1 - this.tireContactGrip) * 0.26 +
               this.standingWater * (0.44 + speedRatio * 0.28) +
@@ -927,6 +970,7 @@ export class SimcadeRaceModel {
     const tractionDelivery =
       (1 - this.tractionBite * 0.2) *
       clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08, 0.52, 1.06) *
+      rearTractionSupport *
       (1 - steeringPowerTrim) *
       standingStartTraction;
     const acceleration =
@@ -936,6 +980,7 @@ export class SimcadeRaceModel {
       0.58 +
         this.longitudinalGrip * 0.5 +
         this.aeroPlatformLoad * 0.08 -
+        Math.max(0, 1.02 - this.frontAxleLoad) * 0.16 -
         this.surfaceEdgeLoad * 0.08 -
         this.standingWater * 0.12 -
         this.tireSaturation * 0.12,
@@ -1007,6 +1052,7 @@ export class SimcadeRaceModel {
         speedRatio * speedRatio * 0.2 +
         brake * (0.16 + speedRatio * 0.08) -
         throttle * 0.035 +
+        Math.abs(this.longitudinalLoadTransfer) * 0.08 +
         camberLoad +
         Math.max(0, this.roadCompression) * (0.5 + speedRatio * 0.45) -
         Math.max(0, -this.roadCompression) * (0.44 + speedRatio * 0.32) +
@@ -1069,6 +1115,7 @@ export class SimcadeRaceModel {
             damageGripFactor *
             fuelGripFactor *
             loadGripFactor *
+            clamp(frontLoadGrip * 0.62 + rearLoadGrip * 0.38, 0.86, 1.06) *
             bankingSupport -
             wetPenalty -
             dirtyAirPenalty,
@@ -1100,6 +1147,7 @@ export class SimcadeRaceModel {
       (0.78 - speedRatio * 0.44) *
       this.roadAdhesion *
       (1 + this.aeroPlatformLoad * 0.12) *
+      frontLoadGrip *
       (1 - this.understeer * 0.35) *
       (1 - this.tireSaturation * 0.24) *
       (1 - clamp(brake * speedRatio * (0.44 + this.lockup * 0.82 + this.tireSaturation * 0.28), 0, 0.82)) *
@@ -1203,6 +1251,8 @@ export class SimcadeRaceModel {
       this.forwardBite * (0.48 + this.roadAdhesion * 0.52) * this.tireContactGrip -
         (1 - this.tireContactGrip) * 0.18 -
         this.surfaceEdgeLoad * 0.16 -
+        Math.max(0, this.longitudinalLoadTransfer) * 0.08 +
+        Math.max(0, -this.longitudinalLoadTransfer) * 0.05 -
         Math.max(0, 1 - this.roadLoad) * 0.16 +
         Math.max(0, this.roadLoad - 1) * 0.04 -
         this.tireSaturation * 0.12 -
@@ -1221,7 +1271,13 @@ export class SimcadeRaceModel {
       dt * (longitudinalGripTarget < this.longitudinalGrip ? 10 : 5)
     );
     const pitchTarget = clamp(
-      -this.roadGrade * 2.6 + this.roadCompression * 0.2 + brake * 0.062 - throttle * speedRatio * 0.032 + this.suspensionTravel * 0.08 + this.brakeReleaseShock * 0.03,
+      -this.roadGrade * 2.6 +
+        this.roadCompression * 0.2 +
+        brake * 0.04 -
+        throttle * speedRatio * 0.028 +
+        this.longitudinalLoadTransfer * 0.075 +
+        this.suspensionTravel * 0.08 +
+        this.brakeReleaseShock * 0.03,
       -0.15,
       0.15
     );
@@ -1355,6 +1411,9 @@ export class SimcadeRaceModel {
     this.roadCompression = 0;
     this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
     this.suspensionTravel = 0;
+    this.frontAxleLoad = Math.max(this.frontAxleLoad, 0.92);
+    this.rearAxleLoad = Math.max(this.rearAxleLoad, 0.92);
+    this.longitudinalLoadTransfer = 0;
     this.chassisPitch = 0;
     this.chassisRoll = 0;
     this.cleanLap = false;
