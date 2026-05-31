@@ -1175,13 +1175,13 @@ export class SimcadeRaceModel {
     );
     const forceLoadTarget = clamp(Math.hypot(longitudinalForceDemand, lateralForceDemand) / Math.max(0.24, forceCapacity), 0, 1.8);
     this.tireForceLoad = approach(this.tireForceLoad, forceLoadTarget, dt * (forceLoadTarget > this.tireForceLoad ? 12 : 7));
-    const combinedSlipTarget = clamp((forceLoadTarget - 0.84) / 0.76, 0, 1);
+    const combinedSlipTarget = clamp((forceLoadTarget - 0.72) / 0.88, 0, 1);
     this.combinedSlipLoad = approach(this.combinedSlipLoad, combinedSlipTarget, dt * (combinedSlipTarget > this.combinedSlipLoad ? 13 : 5.5));
     const reservePressure = clamp((forceLoadTarget - 1.18) / 0.5, 0, 1);
     const tireGripReserveTarget = clamp(
       1 -
-        this.combinedSlipLoad * 0.28 -
-        reservePressure * 0.16,
+        this.combinedSlipLoad * 0.22 -
+        reservePressure * 0.14,
       0.52,
       1.04
     );
