@@ -9,6 +9,7 @@ const baseTelemetry = {
   ers: 1,
   surfaceName: "Asphalt" as const,
   surfaceRumble: 0,
+  splitSurfaceLoad: 0,
   rainIntensity: 0,
   roadWetness: 0,
   tireLoadFeedback: 0,
@@ -91,6 +92,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       roadFeelFeedback: 0.62
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from split surface contact", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      splitSurfaceLoad: 0.58
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

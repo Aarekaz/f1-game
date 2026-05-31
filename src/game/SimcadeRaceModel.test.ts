@@ -675,6 +675,48 @@ describe("SimcadeRaceModel", () => {
     expect(edgeContact.surfaceEdgeLoad).toBeGreaterThan(cruise.surfaceEdgeLoad);
   });
 
+  it("keeps split surface contact quiet on clean cambered asphalt", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.8, { throttle: 1 });
+
+    let cleanCamber = model.telemetry();
+    for (let elapsed = 0; elapsed < 1.2; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1 });
+      if (Math.abs(telemetry.roadCamber) > Math.abs(cleanCamber.roadCamber)) cleanCamber = telemetry;
+    }
+
+    expect(Math.abs(cleanCamber.roadCamber)).toBeGreaterThan(0.02);
+    expect(Math.abs(cleanCamber.splitSurfaceLoad)).toBeLessThan(0.08);
+  });
+
+  it("tugs the chassis when one side crosses a kerb or runoff edge", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const cruise = run(model, 4.6, { throttle: 1 });
+
+    let splitContact = cruise;
+    for (let elapsed = 0; elapsed < 2.4; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 0.92 });
+      if (Math.abs(telemetry.splitSurfaceLoad) > Math.abs(splitContact.splitSurfaceLoad)) splitContact = telemetry;
+    }
+
+    expect(Math.abs(splitContact.splitSurfaceLoad)).toBeGreaterThan(0.12);
+    expect(splitContact.surfaceEdgeLoad).toBeGreaterThan(cruise.surfaceEdgeLoad);
+    expect(splitContact.roadFeelFeedback).toBeGreaterThan(cruise.roadFeelFeedback);
+    expect(splitContact.lateralScrub).toBeGreaterThan(cruise.lateralScrub);
+    expect(splitContact.roadAdhesion).toBeLessThan(cruise.roadAdhesion);
+    expect(Math.abs(splitContact.car.yawRate)).toBeGreaterThan(Math.abs(cruise.car.yawRate) + 0.035);
+  });
+
   it("smooths keyboard steering into a recoverable tire response", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -1348,6 +1390,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.surfaceGripModifier).toBe(1);
     expect(telemetry.surfaceRumble).toBe(0);
     expect(telemetry.surfaceEdgeLoad).toBe(0);
+    expect(telemetry.splitSurfaceLoad).toBe(0);
     expect(telemetry.roadAdhesion).toBe(1);
     expect(telemetry.lateralScrub).toBe(0);
     expect(telemetry.slipAngle).toBe(0);

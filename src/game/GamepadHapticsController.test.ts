@@ -6,6 +6,7 @@ const baseTelemetry = {
   speedKph: 140,
   surfaceName: "Asphalt" as const,
   surfaceRumble: 0,
+  splitSurfaceLoad: 0,
   roadWetness: 0,
   draft: 0,
   dirtyAir: 0,
@@ -100,6 +101,17 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       roadFeelFeedback: 0.62
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns split surface contact into edge texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      splitSurfaceLoad: -0.56
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
