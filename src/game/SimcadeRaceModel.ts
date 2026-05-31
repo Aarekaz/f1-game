@@ -85,6 +85,7 @@ export type RaceTelemetry = {
   tractionBite: number;
   engineBraking: number;
   trailBraking: number;
+  thresholdBraking: number;
   powerState: string;
   tireTemp: number;
   tireWear: number;
@@ -337,6 +338,7 @@ export class SimcadeRaceModel {
   private tractionBite = 0;
   private engineBraking = 0;
   private trailBraking = 0;
+  private thresholdBraking = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
   private fuelLoad = 1;
@@ -502,6 +504,7 @@ export class SimcadeRaceModel {
       tractionBite: this.tractionBite,
       engineBraking: this.engineBraking,
       trailBraking: this.trailBraking,
+      thresholdBraking: this.thresholdBraking,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
       tireWear: this.tireWear,
@@ -642,6 +645,7 @@ export class SimcadeRaceModel {
     this.tractionBite = 0;
     this.engineBraking = 0;
     this.trailBraking = 0;
+    this.thresholdBraking = 0;
     this.tireTemp = 0.52;
     this.tireWear = 0;
     this.fuelLoad = 1;
@@ -937,6 +941,24 @@ export class SimcadeRaceModel {
       0.78,
       1.08
     );
+    const brakeDiscipline = clamp((brake - 0.28) / 0.5, 0, 1) * clamp(1 - Math.max(0, brake - 0.82) * 4.9, 0.08, 1);
+    const thresholdBrakeTarget = clamp(
+      brake *
+        speedRatio *
+        brakeDiscipline *
+        clamp(0.72 + this.frontAxleLoad * 0.2 - this.rearAxleLoad * 0.04, 0.72, 1.05) *
+        clamp(1 - this.lockup * 0.95 - this.brakeFade * 0.18, 0, 1) *
+        (1 - roadWetness * 0.28) *
+        (onTrack ? 1 : 0.35 + this.tireContactGrip * 0.4),
+      0,
+      1
+    );
+    this.thresholdBraking = approach(
+      this.thresholdBraking,
+      thresholdBrakeTarget,
+      dt * (thresholdBrakeTarget > this.thresholdBraking ? 9.5 : 4.8)
+    );
+    const thresholdBrakeSupport = this.thresholdBraking * clamp(1 - this.lockup * 0.75 - this.brakeFade * 0.22, 0.28, 1);
     const steeringLoadDemand =
       Math.pow(Math.abs(rawSteer), 1.25) *
       speedRatio *
@@ -1000,7 +1022,8 @@ export class SimcadeRaceModel {
               this.standingWater * (0.44 + speedRatio * 0.28) +
               this.tireSaturation * 0.42 +
               this.tireRelaxation * 0.08 +
-              this.dirtyTirePickup * 0.18),
+              this.dirtyTirePickup * 0.18) -
+            thresholdBrakeSupport * (0.14 + this.frontAxleLoad * 0.04),
           0,
           1
         )
@@ -1055,11 +1078,12 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.08 -
         this.standingWater * 0.12 -
         this.tireSaturation * 0.12 -
-        this.tireRelaxation * 0.035,
+        this.tireRelaxation * 0.035 +
+        thresholdBrakeSupport * 0.16,
       0.38,
       1.08
     );
-    const braking = brake * 248 * brakingGrip * (1 - this.lockup * 0.22) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth;
+    const braking = brake * 248 * brakingGrip * (1 - this.lockup * 0.3) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth * (1 + thresholdBrakeSupport * 0.08);
     const boostPower = boost * 86;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
@@ -1384,7 +1408,8 @@ export class SimcadeRaceModel {
         this.brakeReleaseShock * 0.22 -
         this.engineBraking * (0.035 + Math.abs(rawSteer) * 0.03) -
         trailBrakeInstability * 0.04 -
-        this.standingWater * 0.14 -
+        this.standingWater * 0.14 +
+        thresholdBrakeSupport * 0.05 -
         roadWetness * (onTrack ? 0.025 : 0.075),
       onTrack ? 0.42 : 0.2,
       1.08
@@ -1524,6 +1549,7 @@ export class SimcadeRaceModel {
     this.lastSteering = 0;
     this.engineBraking = 0;
     this.trailBraking = 0;
+    this.thresholdBraking = 0;
     this.grip = Math.max(this.grip, 0.62);
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
@@ -2124,6 +2150,7 @@ export class SimcadeRaceModel {
     if (this.shiftCut > 0.32) return "Shift cut";
     if (this.engineBraking > 0.11) return "Engine braking";
     if (this.trailBraking > 0.08) return "Trail braking";
+    if (this.thresholdBraking > 0.16) return "Threshold braking";
     if (this.tractionBite > 0.42) return "Traction limited";
     if (this.rpm() > 9200) return "Near redline";
     return "Power hooked";
