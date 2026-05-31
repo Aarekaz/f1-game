@@ -126,6 +126,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP yaw inertia](readme-assets/screenshots/32-aurelia-yaw-inertia.png) |
 
+| Combined grip reserve |
+| --- |
+| ![Aurelia GP combined grip reserve](readme-assets/screenshots/33-aurelia-combined-grip-reserve.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -149,6 +153,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Trail braking now has its own handling state: partial brake plus steering loads the nose, helps the car rotate, and still carries lockup risk if you overdo it.
 - Threshold braking now rewards measured brake pressure before lockup, so easing off after a panic stop can recover longitudinal grip instead of dragging flat tires forever.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
+- Combined grip reserve now exposes how much of the tire envelope is left when steering, throttle, and brake overlap, then trims drive, steering, visual tire load, audio, haptics, and HUD feedback from that shared signal.
 - Steering-load feedback now rises from tire force, saturation, slip angle, front axle load, and driver steering, then feeds the HUD, tire audio, and gamepad haptics together.
 - Steering rack load now models self-aligning torque from front tire slip, so hard turn-in pushes back through steering, chassis motion, audio, haptics, and the HUD instead of feeling like a loose digital input.
 - Yaw inertia now gives the chassis angular momentum and damping, so turn-in, release, and recovery carry through a short physical arc instead of snapping straight to a target rotation.
