@@ -66,6 +66,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP lift-off engine braking](readme-assets/screenshots/17-aurelia-lift-off-engine-braking.png) |
 
+| Trail-braking turn-in |
+| --- |
+| ![Aurelia GP trail-braking turn-in](readme-assets/screenshots/18-aurelia-trail-braking-turn-in.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -86,6 +90,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Rival plates now shrink and fade around close traffic, keeping race information present without covering the braking reference.
 - Racing-style gear, RPM, shift-cut, traction-bite, and shift-light feedback in the HUD and handling model.
 - Lift-off engine braking now loads the nose and slows the car through the powertrain instead of making throttle release feel like a neutral coast.
+- Trail braking now has its own handling state: partial brake plus steering loads the nose, helps the car rotate, and still carries lockup risk if you overdo it.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
 - The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
