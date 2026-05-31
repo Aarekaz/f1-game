@@ -349,6 +349,7 @@ async function checkDesktop(browser) {
     tireForceLoad: Number(document.querySelector("#game canvas")?.dataset.tireForceLoad ?? 0),
     tireSaturation: Number(document.querySelector("#game canvas")?.dataset.tireSaturation ?? 0),
     tireRelaxation: Number(document.querySelector("#game canvas")?.dataset.tireRelaxation ?? 0),
+    tireLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.tireLoadFeedback ?? 0),
     roadAlignment: Number(document.querySelector("#game canvas")?.dataset.roadAlignment ?? 0),
     roadCamber: Number(document.querySelector("#game canvas")?.dataset.roadCamber ?? 0),
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
@@ -719,6 +720,7 @@ async function checkDesktop(browser) {
   assert(state.tireForceLoad >= 0 && state.tireForceLoad <= 1.85, `desktop tire force load telemetry was invalid: ${state.tireForceLoad}`);
   assert(state.tireSaturation >= 0 && state.tireSaturation <= 1, `desktop tire saturation telemetry was invalid: ${state.tireSaturation}`);
   assert(state.tireRelaxation >= 0 && state.tireRelaxation <= 1, `desktop tire relaxation telemetry was invalid: ${state.tireRelaxation}`);
+  assert(state.tireLoadFeedback >= 0 && state.tireLoadFeedback <= 1, `desktop tire load feedback telemetry was invalid: ${state.tireLoadFeedback}`);
   assert(state.roadAlignment > 0.25 && state.roadAlignment <= 1.05, `desktop road alignment telemetry was invalid: ${state.roadAlignment}`);
   assert(Number.isFinite(state.roadCamber), "desktop road camber telemetry was missing");
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
