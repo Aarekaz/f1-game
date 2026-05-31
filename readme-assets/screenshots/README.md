@@ -19,3 +19,4 @@ The current set was refreshed on 2026-05-30 from live gameplay rather than stage
 - `14-aurelia-load-transfer-braking.png`: braking and turn-in moment with forward axle load, brake glow, and the car still framed.
 - `15-aurelia-tire-relaxation-recovery.png`: high-speed oversteer recovery after the tire load relaxes back toward grip instead of snapping clean.
 - `16-aurelia-lateral-load-cornering.png`: sustained cornering load with visible chassis roll, lateral scrub, and the car still on the racing surface.
+- `17-aurelia-lift-off-engine-braking.png`: lift-off moment with the car loaded on the nose while engine braking slows the chassis.
