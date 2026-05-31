@@ -49,6 +49,7 @@ export type RaceTelemetry = {
   roadGrade: number;
   roadLoad: number;
   roadCompression: number;
+  roadFeelFeedback: number;
   suspensionLoad: number;
   suspensionTravel: number;
   aeroPlatformLoad: number;
@@ -323,6 +324,7 @@ export class SimcadeRaceModel {
   private roadGrade = 0;
   private roadLoad = 1;
   private roadCompression = 0;
+  private roadFeelFeedback = 0;
   private suspensionLoad = 1;
   private suspensionTravel = 0;
   private aeroPlatformLoad = 0;
@@ -472,6 +474,7 @@ export class SimcadeRaceModel {
       roadGrade: this.roadGrade,
       roadLoad: this.roadLoad,
       roadCompression: this.roadCompression,
+      roadFeelFeedback: this.roadFeelFeedback,
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
       aeroPlatformLoad: this.aeroPlatformLoad,
@@ -683,6 +686,7 @@ export class SimcadeRaceModel {
     this.roadGrade = 0;
     this.roadLoad = 1;
     this.roadCompression = 0;
+    this.roadFeelFeedback = 0;
     this.suspensionLoad = 1;
     this.suspensionTravel = 0;
     this.aeroPlatformLoad = 0;
@@ -1197,6 +1201,21 @@ export class SimcadeRaceModel {
       ),
       dt * 9
     );
+    const roadFeelFeedbackTarget = clamp(
+      Math.abs(this.roadCompression) * 2.1 +
+        Math.max(0, this.suspensionLoad - 1) * 0.62 +
+        Math.abs(this.suspensionTravel) * 0.86 +
+        contactRoughness * speedRatio * 0.3 +
+        this.surfaceEdgeLoad * 0.18 +
+        Math.abs(roadCamber) * speedRatio * 0.12,
+      0,
+      1
+    );
+    this.roadFeelFeedback = approach(
+      this.roadFeelFeedback,
+      roadFeelFeedbackTarget,
+      dt * (roadFeelFeedbackTarget > this.roadFeelFeedback ? 11.5 : 5.4)
+    );
     const weatherGrip = this.evolvedWeatherGrip() * this.tireContactGrip;
     const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
     const tireGripFactor = clamp(
@@ -1615,6 +1634,7 @@ export class SimcadeRaceModel {
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;
+    this.roadFeelFeedback = 0;
     this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
     this.suspensionTravel = 0;
     this.frontAxleLoad = Math.max(this.frontAxleLoad, 0.92);

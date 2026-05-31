@@ -295,6 +295,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
     this.renderer.domElement.dataset.roadLoad = telemetry.roadLoad.toFixed(3);
     this.renderer.domElement.dataset.roadCompression = telemetry.roadCompression.toFixed(3);
+    this.renderer.domElement.dataset.roadFeelFeedback = telemetry.roadFeelFeedback.toFixed(3);
     this.renderer.domElement.dataset.suspensionLoad = telemetry.suspensionLoad.toFixed(3);
     this.renderer.domElement.dataset.suspensionTravel = telemetry.suspensionTravel.toFixed(3);
     this.renderer.domElement.dataset.aeroPlatformLoad = telemetry.aeroPlatformLoad.toFixed(3);
@@ -383,7 +384,8 @@ export class ThreeRaceRenderer {
       Math.sin(performance.now() * 0.016) * speedRatio * 0.018 +
       telemetry.car.slip * 0.026 +
       rumblePulse * 0.032 -
-      telemetry.suspensionTravel * 0.045;
+      telemetry.suspensionTravel * 0.045 +
+      telemetry.roadFeelFeedback * 0.018;
     this.car.rotation.y = trackYaw - telemetry.car.heading - telemetry.curve * 0.5;
     const tireLoadVisual = clamp(telemetry.tireLoadFeedback, 0, 1);
     const visualPitch =
@@ -394,6 +396,7 @@ export class ThreeRaceRenderer {
       telemetry.tractionBite * 0.014 +
       telemetry.longitudinalLoadTransfer * 0.075 -
       telemetry.suspensionTravel * 0.028 +
+      telemetry.roadFeelFeedback * 0.018 +
       rumblePulse * 0.018;
     const visualRoll =
       telemetry.car.roll -
@@ -403,6 +406,7 @@ export class ThreeRaceRenderer {
       telemetry.car.bank * 0.16 -
       telemetry.lateralLoadTransfer * 0.15 -
       tireLoadVisual * telemetry.car.yawRate * 0.08 +
+      telemetry.roadFeelFeedback * Math.sign(telemetry.car.roll || telemetry.roadCamber || 1) * 0.018 +
       rumblePulse * 0.014;
     this.car.rotation.x = visualPitch;
     this.car.rotation.z = visualRoll;
@@ -418,7 +422,7 @@ export class ThreeRaceRenderer {
       tireLoadFeedback: telemetry.tireLoadFeedback,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       suspensionTravel: telemetry.suspensionTravel,
-      surfaceRumble: telemetry.surfaceRumble,
+      surfaceRumble: clamp(telemetry.surfaceRumble + telemetry.roadFeelFeedback * 0.34, 0, 1),
       rainLight: telemetry.phase === "racing" ? telemetry.roadWetness * (0.46 + telemetry.rainIntensity * 0.34 + speedRatio * 0.2) : 0,
       ersDeploy: telemetry.phase === "racing" && telemetry.speedKph > 130 && telemetry.ers < 0.92 && telemetry.car.throttle > 0.35 ? 1 : 0,
       aeroOpen: telemetry.aeroBoostActive,
@@ -486,7 +490,8 @@ export class ThreeRaceRenderer {
               telemetry.suspensionTravel * 0.68 -
               telemetry.car.braking * 0.18 +
               telemetry.car.slip * 0.12 +
-              telemetry.surfaceRumble * 0.2,
+              telemetry.surfaceRumble * 0.2 +
+              telemetry.roadFeelFeedback * 0.16,
             -0.34,
             0.44
           );
