@@ -38,6 +38,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP raised kerb contact](readme-assets/screenshots/10-aurelia-raised-kerb-contact.png) |
 
+| Standing water grip loss |
+| --- |
+| ![Aurelia GP standing water grip loss](readme-assets/screenshots/11-aurelia-standing-water-grip-loss.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -51,6 +55,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Layered GP-style safety barriers add rails, joints, and accent panels so track edges stop looking like plain repeated blocks.
 - A full-bleed sky dome plus camera-safe runoff and terrain bands keep the circuit broad without turning elevated side scenery into a foreground wall.
 - The racing surface now evolves during a run: clean laps build rubber, damp sessions form a drying line, and both feed grip and wet-surface visuals.
+- Visible standing-water patches now share data with the physics model, so wet puddles locally reduce adhesion, add wheelspin/lockup risk, and strengthen spray.
 - Running the rubbered line now gives a small grip reward, while wandering offline can pick up marbles and make the tires feel dirty for the next few corners.
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
 - Nearby rival cars carry compact in-world driver/team/gap plates, so traffic is readable without staring at the timing tower.
