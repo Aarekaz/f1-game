@@ -363,6 +363,8 @@ export class HudController {
     if (Math.abs(telemetry.splitSurfaceLoad) > 0.2) return `Split grip ${(Math.abs(telemetry.splitSurfaceLoad) * 100).toFixed(0)}%`;
     if (telemetry.damperImpulse > 0.2) return `Damper hit ${(telemetry.damperImpulse * 100).toFixed(0)}%`;
     if (telemetry.roadFeelFeedback > 0.18) return `Road load ${(telemetry.roadFeelFeedback * 100).toFixed(0)}%`;
+    if (telemetry.aeroWashout > 0.18) return `Aero wash ${(telemetry.aeroWashout * 100).toFixed(0)}%`;
+    if (Math.abs(telemetry.aeroBalance) > 0.16) return telemetry.aeroBalance > 0 ? "Front aero loaded" : "Rear aero bias";
     if (telemetry.dirtyTirePickup > 0.18 || telemetry.marbles > 0.12) return telemetry.gripState;
     if (telemetry.brakeFade > 0.2 || telemetry.brakeState === "Cold brakes") return telemetry.brakeState;
     if (telemetry.shiftCut > 0.2 || telemetry.tractionBite > 0.38) return telemetry.powerState;
