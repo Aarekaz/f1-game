@@ -14,6 +14,7 @@ const baseTelemetry = {
   tireLoadFeedback: 0,
   steeringLoadFeedback: 0,
   roadFeelFeedback: 0,
+  tireGroundContact: 1,
   car: {
     slip: 0,
     braking: 0,
@@ -116,5 +117,16 @@ describe("raceHapticEffect", () => {
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns light crest contact into fine texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const light = raceHapticEffect({
+      ...baseTelemetry,
+      tireGroundContact: 0.78
+    });
+
+    expect(light?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(light?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 });

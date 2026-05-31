@@ -15,6 +15,7 @@ const baseTelemetry = {
   tireLoadFeedback: 0,
   steeringLoadFeedback: 0,
   roadFeelFeedback: 0,
+  tireGroundContact: 1,
   car: {
     slip: 0,
     braking: 0,
@@ -108,6 +109,18 @@ describe("raceAudioMix", () => {
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture when crest contact gets light", () => {
+    const planted = raceAudioMix(baseTelemetry);
+    const light = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      tireGroundContact: 0.78
+    });
+
+    expect(light.tireGain).toBeGreaterThan(planted.tireGain);
+    expect(light.tireFrequency).toBeGreaterThan(planted.tireFrequency);
   });
 
   it("exposes ERS whine only when deployment is plausible", () => {
