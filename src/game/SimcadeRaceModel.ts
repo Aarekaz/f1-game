@@ -2089,7 +2089,7 @@ export class SimcadeRaceModel {
 
   private powerState() {
     if (this.shiftCut > 0.32) return "Shift cut";
-    if (this.engineBraking > 0.18) return "Engine braking";
+    if (this.engineBraking > 0.11) return "Engine braking";
     if (this.tractionBite > 0.42) return "Traction limited";
     if (this.rpm() > 9200) return "Near redline";
     return "Power hooked";
