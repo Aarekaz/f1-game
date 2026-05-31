@@ -43,6 +43,7 @@ export type RaceTelemetry = {
   tireSaturation: number;
   tireRelaxation: number;
   tireLoadFeedback: number;
+  steeringLoadFeedback: number;
   roadAlignment: number;
   roadCamber: number;
   roadGrade: number;
@@ -317,6 +318,7 @@ export class SimcadeRaceModel {
   private tireSaturation = 0;
   private tireRelaxation = 0;
   private tireLoadFeedback = 0;
+  private steeringLoadFeedback = 0;
   private roadAlignment = 1;
   private roadGrade = 0;
   private roadLoad = 1;
@@ -464,6 +466,7 @@ export class SimcadeRaceModel {
       tireSaturation: this.tireSaturation,
       tireRelaxation: this.tireRelaxation,
       tireLoadFeedback: this.tireLoadFeedback,
+      steeringLoadFeedback: this.steeringLoadFeedback,
       roadAlignment: this.roadAlignment,
       roadCamber: surfaceBankAt(carLateral, track),
       roadGrade: this.roadGrade,
@@ -675,6 +678,7 @@ export class SimcadeRaceModel {
     this.tireSaturation = 0;
     this.tireRelaxation = 0;
     this.tireLoadFeedback = 0;
+    this.steeringLoadFeedback = 0;
     this.roadAlignment = 1;
     this.roadGrade = 0;
     this.roadLoad = 1;
@@ -1385,6 +1389,26 @@ export class SimcadeRaceModel {
       tireLoadFeedbackTarget,
       dt * (tireLoadFeedbackTarget > this.tireLoadFeedback ? 12 : 4.8)
     );
+    const steeringLoadFeedbackTarget = clamp(
+      Math.pow(Math.abs(rawSteer), 0.82) *
+        speedRatio *
+        (0.18 +
+          this.tireForceLoad * 0.28 +
+          this.tireSaturation * 0.22 +
+          this.tireLoadFeedback * 0.2 +
+          slipAngleLoad * 0.16 +
+          lateralLoadStress * 0.12 +
+          this.frontAxleLoad * 0.08) *
+        (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.35) *
+        clamp(1.08 - this.wheelspin * 0.18 - this.lockup * 0.24, 0.54, 1.08),
+      0,
+      1
+    );
+    this.steeringLoadFeedback = approach(
+      this.steeringLoadFeedback,
+      steeringLoadFeedbackTarget,
+      dt * (steeringLoadFeedbackTarget > this.steeringLoadFeedback ? 10.5 : 5.2)
+    );
     const scrubPenalty = Math.max(0, this.lateralScrub - 0.06);
     this.dirtyTirePickup = clamp(
       this.dirtyTirePickup + (scrubPenalty * Math.abs(rawSteer) * 0.46 + (onTrack ? 0 : surface.roughness * 0.16)) * speedRatio * dt,
@@ -1493,7 +1517,11 @@ export class SimcadeRaceModel {
     contactRoughness: number,
     assistActivity: number
   ) {
-    const gripConfidence = clamp(0.58 + this.roadAdhesion * 0.32 - this.tireSaturation * 0.18 - this.standingWater * 0.1, 0.42, 1);
+    const gripConfidence = clamp(
+      0.58 + this.roadAdhesion * 0.32 - this.tireSaturation * 0.18 - this.standingWater * 0.1,
+      0.42,
+      1
+    );
     const throttleRise = 14 * gripConfidence * (1 - roadWetness * 0.1);
     const throttleFall = 10.5;
     this.controlThrottle = approach(
@@ -1512,7 +1540,7 @@ export class SimcadeRaceModel {
     const surfaceDamping = clamp(gripConfidence - contactRoughness * 0.08, 0.38, 1);
     const assistResponseBoost = clamp(assistActivity * 2.8, 0, 3.2);
     const steeringRate = steeringReturn
-      ? 9.8 + speedRatio * 2.2
+      ? 9.8 + speedRatio * 2.2 + this.steeringLoadFeedback * 3.4
       : oppositeLock
         ? 9.4 + speedRatio * 2.8
         : 12.4 * speedDamping * surfaceDamping + 1.55 + assistResponseBoost;
@@ -1583,6 +1611,7 @@ export class SimcadeRaceModel {
     this.tireRunoffShare = 0;
     this.tireRelaxation = 0;
     this.tireLoadFeedback = 0;
+    this.steeringLoadFeedback = 0;
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;
