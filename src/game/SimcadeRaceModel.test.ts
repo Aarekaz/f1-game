@@ -1003,6 +1003,7 @@ describe("SimcadeRaceModel", () => {
     expect(heaviest.suspensionLoad).toBeGreaterThan(lightest.suspensionLoad);
     expect(Math.abs(lightest.roadCompression)).toBeGreaterThan(0.002);
     expect(Math.abs(heaviest.car.pitch - lightest.car.pitch)).toBeGreaterThan(0.004);
+    expect(Math.max(lightest.roadFeelFeedback, heaviest.roadFeelFeedback)).toBeGreaterThan(0.04);
   });
 
   it("loads and sheds the aero platform through clean and disrupted contact", () => {
@@ -1365,6 +1366,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadGrade).toBe(0);
     expect(telemetry.roadLoad).toBe(1);
     expect(telemetry.roadCompression).toBe(0);
+    expect(telemetry.roadFeelFeedback).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);

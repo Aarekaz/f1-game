@@ -12,6 +12,7 @@ const baseTelemetry = {
   contactRisk: 0,
   tireLoadFeedback: 0,
   steeringLoadFeedback: 0,
+  roadFeelFeedback: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -88,6 +89,17 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       steeringLoadFeedback: 0.68
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns road feel feedback into surface texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      roadFeelFeedback: 0.62
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

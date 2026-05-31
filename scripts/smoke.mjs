@@ -357,6 +357,7 @@ async function checkDesktop(browser) {
     roadGrade: Number(document.querySelector("#game canvas")?.dataset.roadGrade ?? 0),
     roadLoad: Number(document.querySelector("#game canvas")?.dataset.roadLoad ?? 0),
     roadCompression: Number(document.querySelector("#game canvas")?.dataset.roadCompression ?? 0),
+    roadFeelFeedback: Number(document.querySelector("#game canvas")?.dataset.roadFeelFeedback ?? 0),
     suspensionLoad: Number(document.querySelector("#game canvas")?.dataset.suspensionLoad ?? 0),
     suspensionTravel: Number(document.querySelector("#game canvas")?.dataset.suspensionTravel ?? 0),
     frontAxleLoad: Number(document.querySelector("#game canvas")?.dataset.frontAxleLoad ?? 0),
@@ -744,6 +745,8 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.roadGrade), "desktop road grade telemetry was missing");
   assert(state.roadLoad > 0.65 && state.roadLoad < 1.35, `desktop road load telemetry was invalid: ${state.roadLoad}`);
   assert(state.roadCompression >= -0.3 && state.roadCompression <= 0.3, `desktop road compression telemetry was invalid: ${state.roadCompression}`);
+  assert(state.roadFeelFeedback >= 0 && state.roadFeelFeedback <= 1, `desktop road feel feedback telemetry was invalid: ${state.roadFeelFeedback}`);
+  assert(state.roadFeelFeedback > 0.025, `desktop road feel feedback stayed too quiet: ${state.roadFeelFeedback}`);
   assert(state.suspensionLoad > 0.45 && state.suspensionLoad < 1.7, `desktop suspension load telemetry was invalid: ${state.suspensionLoad}`);
   assert(state.suspensionTravel > -0.35 && state.suspensionTravel < 0.45, `desktop suspension travel telemetry was invalid: ${state.suspensionTravel}`);
   assert(Number.isFinite(state.chassisPitch), "desktop chassis pitch telemetry was missing");

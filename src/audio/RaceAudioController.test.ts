@@ -13,6 +13,7 @@ const baseTelemetry = {
   roadWetness: 0,
   tireLoadFeedback: 0,
   steeringLoadFeedback: 0,
+  roadFeelFeedback: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -78,6 +79,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       steeringLoadFeedback: 0.68
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from road feel feedback", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      roadFeelFeedback: 0.62
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
