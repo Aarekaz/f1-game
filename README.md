@@ -58,6 +58,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP tire relaxation recovery](readme-assets/screenshots/15-aurelia-tire-relaxation-recovery.png) |
 
+| Lateral load cornering |
+| --- |
+| ![Aurelia GP lateral load cornering](readme-assets/screenshots/16-aurelia-lateral-load-cornering.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -138,6 +142,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Heavy braking builds brake temperature, fade risk, pressure trails, and heat feedback so slowing the car has the same tactile weight as accelerating it.
 - Clean high-speed running now builds aero platform load, adding planted grip and suspension compression while water, kerbs, runoff, dirty air, and wing damage take it away.
 - Braking, lift-off, throttle, and aero now move load between the front and rear axles, changing turn-in, lockup, traction, and chassis pitch.
+- Sustained cornering now moves load across the car, changing chassis roll, tire relaxation, and scrub instead of treating left/right grip as perfectly flat.
 - Overdriven tires now recover over a short relaxation window, so grip comes back through the contact patch instead of snapping instantly clean.
 - Panic braking now bleeds steering authority through lockup and tire saturation, so full brake plus full lock scrubs forward instead of rotating like an arcade handbrake.
 - Hard brake release now leaves a short unsettled load-transfer window, so grip recovers through suspension movement instead of snapping instantly clean.
