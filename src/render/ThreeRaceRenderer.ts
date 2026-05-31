@@ -292,6 +292,8 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.tireRelaxation = telemetry.tireRelaxation.toFixed(3);
     this.renderer.domElement.dataset.tireLoadFeedback = telemetry.tireLoadFeedback.toFixed(3);
     this.renderer.domElement.dataset.steeringLoadFeedback = telemetry.steeringLoadFeedback.toFixed(3);
+    this.renderer.domElement.dataset.steeringRackLoad = telemetry.steeringRackLoad.toFixed(3);
+    this.renderer.domElement.dataset.selfAlignTorque = telemetry.selfAlignTorque.toFixed(3);
     this.renderer.domElement.dataset.roadAlignment = telemetry.roadAlignment.toFixed(3);
     this.renderer.domElement.dataset.roadCamber = telemetry.roadCamber.toFixed(3);
     this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
@@ -429,6 +431,8 @@ export class ThreeRaceRenderer {
       telemetry.rearTractionRotation * 0.055 +
       telemetry.aeroBalance * 0.025 -
       telemetry.aeroWashout * Math.sign(telemetry.car.yawRate || telemetry.curve || 1) * 0.012 +
+      telemetry.selfAlignTorque * 0.018 -
+      telemetry.steeringRackLoad * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.01 +
       rumblePulse * 0.014;
     this.car.rotation.x = visualPitch;
     this.car.rotation.z = visualRoll;
@@ -437,7 +441,11 @@ export class ThreeRaceRenderer {
     this.animateFormulaCar(this.car, {
       distance: telemetry.car.z,
       speedKph: telemetry.speedKph,
-      steering: telemetry.car.steering * 0.42 + telemetry.car.yawRate * 0.58 + telemetry.rearTractionRotation * 0.2,
+      steering:
+        telemetry.car.steering * 0.42 +
+        telemetry.car.yawRate * 0.58 +
+        telemetry.rearTractionRotation * 0.2 +
+        telemetry.selfAlignTorque * 0.08,
       braking: telemetry.car.braking + telemetry.car.lockup * 0.65 + telemetry.brakeTemp * 0.12,
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
@@ -465,6 +473,8 @@ export class ThreeRaceRenderer {
       rearAeroLoad: telemetry.rearAeroLoad,
       aeroBalance: telemetry.aeroBalance,
       aeroWashout: telemetry.aeroWashout,
+      steeringRackLoad: telemetry.steeringRackLoad,
+      selfAlignTorque: telemetry.selfAlignTorque,
       frontWingDamage: telemetry.frontWingDamage,
       instrument: true
     });
@@ -550,7 +560,8 @@ export class ThreeRaceRenderer {
               telemetry.car.understeer * 0.18 +
               telemetry.splitSurfaceLoad * 0.38 -
               telemetry.rearTractionRotation * 0.42 +
-              telemetry.aeroBalance * 0.22,
+              telemetry.aeroBalance * 0.22 +
+              telemetry.selfAlignTorque * 0.18,
             -1.35,
             1.35
           );
@@ -589,6 +600,7 @@ export class ThreeRaceRenderer {
               telemetry.rearTractionRotation * 1.1 -
               telemetry.aeroBalance * 0.5 -
               telemetry.aeroWashout * Math.sign(telemetry.car.yawRate || telemetry.curve || 1) * 0.35 -
+              telemetry.selfAlignTorque * 0.38 -
               telemetry.curve * 0.48) *
               speedRatio *
               (1 - rejoinFocus * 0.8),
@@ -814,6 +826,8 @@ export class ThreeRaceRenderer {
         rearAeroLoad: clamp(rival.speedKph / 320, 0, 1) * 0.2,
         aeroBalance: 0,
         aeroWashout: 0,
+        steeringRackLoad: 0,
+        selfAlignTorque: 0,
         frontWingDamage: 0,
         instrument: false
       });
@@ -1302,7 +1316,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cockpitFrameParts = String(this.cockpitFrame.userData.parts ?? 0);
 
     const wheel = this.cockpitFrame.userData.wheel as THREE.Group | undefined;
-    const steerAngle = clamp(telemetry.car.yawRate * 0.95 - telemetry.car.heading * 0.28, -0.62, 0.62);
+    const steerAngle = clamp(telemetry.car.yawRate * 0.95 - telemetry.car.heading * 0.28 + telemetry.selfAlignTorque * 0.18, -0.62, 0.62);
     if (wheel) wheel.rotation.z = -steerAngle;
 
     const brakeGlow = clamp(telemetry.car.braking + telemetry.car.lockup * 0.7, 0, 1);
@@ -1350,6 +1364,8 @@ export class ThreeRaceRenderer {
       rearAeroLoad: number;
       aeroBalance: number;
       aeroWashout: number;
+      steeringRackLoad: number;
+      selfAlignTorque: number;
       frontWingDamage: number;
       instrument: boolean;
     }
@@ -1367,6 +1383,8 @@ export class ThreeRaceRenderer {
     const rearAeroLoad = clamp(state.rearAeroLoad, 0, 1.2);
     const aeroBalance = clamp(state.aeroBalance, -0.6, 0.6);
     const aeroWashout = clamp(state.aeroWashout, 0, 1);
+    const steeringRackLoad = clamp(state.steeringRackLoad, 0, 1);
+    const selfAlignTorque = clamp(state.selfAlignTorque, -1, 1);
     const frontWingDamage = clamp(state.frontWingDamage, 0, 1);
     const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
     const tireGroundContact = clamp(state.tireGroundContact, 0, 1.08);
@@ -1401,11 +1419,11 @@ export class ThreeRaceRenderer {
         0,
         1
       );
-      const squash = cornerLoad * 0.115 + surfaceKick * 0.018;
+      const squash = cornerLoad * 0.115 + surfaceKick * 0.018 + (wheelName.startsWith("front") ? steeringRackLoad * 0.012 : 0);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
       loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin;
-      wheel.rotation.y = wheelName.startsWith("front") ? steerAngle : 0;
+      wheel.rotation.y = wheelName.startsWith("front") ? steerAngle + selfAlignTorque * 0.045 : 0;
       wheel.rotation.z = -side * (0.015 + cornerLoad * 0.042);
       wheel.scale.set(1 + squash * 0.12, 1 - squash, 1 + squash * 0.08);
     }
@@ -1430,6 +1448,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.frontAeroVisualLoad = frontAeroLoad.toFixed(3);
       this.renderer.domElement.dataset.rearAeroVisualLoad = rearAeroLoad.toFixed(3);
+      this.renderer.domElement.dataset.steeringRackVisualLoad = steeringRackLoad.toFixed(3);
     }
 
     root.traverse((object) => {

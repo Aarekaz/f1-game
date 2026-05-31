@@ -13,6 +13,8 @@ type HapticTelemetry = Pick<
   | "contactRisk"
   | "tireLoadFeedback"
   | "steeringLoadFeedback"
+  | "steeringRackLoad"
+  | "selfAlignTorque"
   | "roadFeelFeedback"
   | "tireGroundContact"
   | "rearTractionRotation"
@@ -69,6 +71,8 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.car.understeer * 0.48,
       telemetry.tireLoadFeedback * 0.72,
       telemetry.steeringLoadFeedback * 0.58,
+      telemetry.steeringRackLoad * 0.52,
+      Math.abs(telemetry.selfAlignTorque) * 0.34,
       telemetry.roadFeelFeedback * 0.46,
       telemetry.damperImpulse * 0.7,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.52,
@@ -99,6 +103,8 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       roadTexture * 0.58 +
       telemetry.tireLoadFeedback * 0.16 +
       telemetry.steeringLoadFeedback * 0.18 +
+      telemetry.steeringRackLoad * 0.18 +
+      Math.abs(telemetry.selfAlignTorque) * 0.08 +
       telemetry.roadFeelFeedback * 0.16 +
       telemetry.damperImpulse * 0.18 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.16 +
