@@ -264,6 +264,7 @@ async function checkDesktop(browser) {
     cameraRoadFrameDrift: Number(document.querySelector("#game canvas")?.dataset.cameraRoadFrameDrift ?? 0),
     cameraSpeedDeltaKphPerSecond: Number(document.querySelector("#game canvas")?.dataset.cameraSpeedDeltaKphPerSecond ?? 0),
     cameraApexBias: Number(document.querySelector("#game canvas")?.dataset.cameraApexBias ?? 0),
+    cameraRoadSpeedFraming: Number(document.querySelector("#game canvas")?.dataset.cameraRoadSpeedFraming ?? 0),
     cameraStructureLift: Number(document.querySelector("#game canvas")?.dataset.cameraStructureLift ?? 0),
     cameraRejoinLift: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinLift ?? 0),
     cameraRejoinFocus: Number(document.querySelector("#game canvas")?.dataset.cameraRejoinFocus ?? 0),
@@ -589,6 +590,7 @@ async function checkDesktop(browser) {
     })}`
   );
   assert(Number.isFinite(state.cameraApexBias), "desktop camera apex bias telemetry was missing");
+  assert(state.cameraRoadSpeedFraming > 0.2 && state.cameraRoadSpeedFraming <= 1, `desktop road-speed camera framing was missing: ${state.cameraRoadSpeedFraming}`);
   assert(Number.isFinite(state.cameraStructureLift), "desktop camera structure-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRejoinLift), "desktop camera rejoin-lift telemetry was missing");
   assert(Number.isFinite(state.cameraRejoinFocus), "desktop camera rejoin-focus telemetry was missing");
