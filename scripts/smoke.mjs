@@ -299,6 +299,10 @@ async function checkDesktop(browser) {
     aeroBoostAvailable: document.querySelector("#game canvas")?.dataset.aeroBoostAvailable ?? "",
     aeroBoostActive: Number(document.querySelector("#game canvas")?.dataset.aeroBoostActive ?? 0),
     aeroDragReduction: Number(document.querySelector("#game canvas")?.dataset.aeroDragReduction ?? 0),
+    frontAeroLoad: Number(document.querySelector("#game canvas")?.dataset.frontAeroLoad ?? 0),
+    rearAeroLoad: Number(document.querySelector("#game canvas")?.dataset.rearAeroLoad ?? 0),
+    aeroBalance: Number(document.querySelector("#game canvas")?.dataset.aeroBalance ?? 0),
+    aeroWashout: Number(document.querySelector("#game canvas")?.dataset.aeroWashout ?? 0),
     rearAeroFlap: Number(document.querySelector("#game canvas")?.dataset.rearAeroFlap ?? 0),
     shiftCut: Number(document.querySelector("#game canvas")?.dataset.shiftCut ?? 0),
     tractionBite: Number(document.querySelector("#game canvas")?.dataset.tractionBite ?? 0),
@@ -393,6 +397,8 @@ async function checkDesktop(browser) {
     contactRisk: Number(document.querySelector("#game canvas")?.dataset.contactRisk ?? 0),
     frontWingDamage: Number(document.querySelector("#game canvas")?.dataset.frontWingDamage ?? 0),
     frontWingVisualDamage: Number(document.querySelector("#game canvas")?.dataset.frontWingVisualDamage ?? 0),
+    frontAeroVisualLoad: Number(document.querySelector("#game canvas")?.dataset.frontAeroVisualLoad ?? 0),
+    rearAeroVisualLoad: Number(document.querySelector("#game canvas")?.dataset.rearAeroVisualLoad ?? 0),
     downforceLoss: Number(document.querySelector("#game canvas")?.dataset.downforceLoss ?? 0),
     damageState: document.querySelector("#game canvas")?.dataset.damageState ?? "",
     defensiveRivals: Number(document.querySelector("#game canvas")?.dataset.defensiveRivals ?? 0),
@@ -778,12 +784,18 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.contactRisk), "desktop contact-risk telemetry was missing");
   assert(Number.isFinite(state.frontWingDamage) && state.frontWingDamage >= 0, "desktop front-wing damage telemetry was missing");
   assert(Number.isFinite(state.frontWingVisualDamage) && state.frontWingVisualDamage >= 0, "desktop front-wing visual damage was missing");
+  assert(state.frontAeroLoad >= 0 && state.frontAeroLoad <= 1.2, `desktop front aero load telemetry was invalid: ${state.frontAeroLoad}`);
+  assert(state.rearAeroLoad >= 0 && state.rearAeroLoad <= 1.2, `desktop rear aero load telemetry was invalid: ${state.rearAeroLoad}`);
+  assert(Math.abs(state.aeroBalance) <= 0.65, `desktop aero balance telemetry was invalid: ${state.aeroBalance}`);
+  assert(state.aeroWashout >= 0 && state.aeroWashout <= 1, `desktop aero washout telemetry was invalid: ${state.aeroWashout}`);
+  assert(Number.isFinite(state.frontAeroVisualLoad) && state.frontAeroVisualLoad >= 0, "desktop front aero visual load was missing");
+  assert(Number.isFinite(state.rearAeroVisualLoad) && state.rearAeroVisualLoad >= 0, "desktop rear aero visual load was missing");
   assert(Number.isFinite(state.downforceLoss) && state.downforceLoss >= 0, "desktop downforce loss telemetry was missing");
   assert(/Wing/.test(state.damageState), `desktop damage state was missing: ${state.damageState}`);
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|aero|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);

@@ -16,6 +16,8 @@ const baseTelemetry = {
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
+  aeroBalance: 0,
+  aeroWashout: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
   car: {
@@ -154,5 +156,18 @@ describe("raceHapticEffect", () => {
 
     expect(light?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(light?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns aero washout into high-speed wheel texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const washed = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 245,
+      aeroBalance: -0.34,
+      aeroWashout: 0.44
+    });
+
+    expect(washed?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(washed?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 });

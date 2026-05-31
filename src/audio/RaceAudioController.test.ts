@@ -17,6 +17,8 @@ const baseTelemetry = {
   roadFeelFeedback: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
+  aeroBalance: 0,
+  aeroWashout: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
   car: {
@@ -149,6 +151,19 @@ describe("raceAudioMix", () => {
 
     expect(light.tireGain).toBeGreaterThan(planted.tireGain);
     expect(light.tireFrequency).toBeGreaterThan(planted.tireFrequency);
+  });
+
+  it("adds tire texture from aero washout and balance", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const washed = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 220,
+      aeroBalance: -0.32,
+      aeroWashout: 0.42
+    });
+
+    expect(washed.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(washed.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("exposes ERS whine only when deployment is plausible", () => {
