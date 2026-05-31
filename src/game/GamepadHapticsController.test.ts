@@ -15,6 +15,7 @@ const baseTelemetry = {
   steeringLoadFeedback: 0,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
+  rearTractionRotation: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -117,6 +118,17 @@ describe("raceHapticEffect", () => {
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns rear traction rotation into tire chatter", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const rotating = raceHapticEffect({
+      ...baseTelemetry,
+      rearTractionRotation: -0.34
+    });
+
+    expect(rotating?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(rotating?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns light crest contact into fine texture", () => {

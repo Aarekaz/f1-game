@@ -16,6 +16,7 @@ const baseTelemetry = {
   steeringLoadFeedback: 0,
   roadFeelFeedback: 0,
   tireGroundContact: 1,
+  rearTractionRotation: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -109,6 +110,18 @@ describe("raceAudioMix", () => {
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from rear traction rotation", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const rotating = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      rearTractionRotation: 0.32
+    });
+
+    expect(rotating.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(rotating.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture when crest contact gets light", () => {
