@@ -579,6 +579,25 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(settled.car.yawRate)).toBeLessThan(Math.abs(loaded.car.yawRate));
   });
 
+  it("builds steering rack load and self-aligning torque from front tire slip", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.8, { throttle: 1, ers: true });
+    const loaded = run(model, 0.85, { throttle: 0.82, steer: 0.72 });
+    const released = run(model, 0.42, { throttle: 0.5 });
+
+    expect(loaded.steeringRackLoad).toBeGreaterThan(0.08);
+    expect(Math.abs(loaded.selfAlignTorque)).toBeGreaterThan(0.01);
+    expect(released.steeringRackLoad).toBeGreaterThan(0.02);
+    expect(Math.abs(released.car.steering)).toBeLessThan(Math.abs(loaded.car.steering));
+    expect(Math.abs(released.car.yawRate)).toBeLessThan(Math.abs(loaded.car.yawRate));
+    expect(released.steeringLoadFeedback).toBeGreaterThan(0.02);
+  });
+
   it("makes committed steering travel through chassis heading instead of a sideways lane shift", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1520,6 +1539,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.tireLoadFeedback).toBe(0);
     expect(telemetry.steeringLoadFeedback).toBe(0);
+    expect(telemetry.steeringRackLoad).toBe(0);
+    expect(telemetry.selfAlignTorque).toBe(0);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
