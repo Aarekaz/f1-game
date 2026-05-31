@@ -1078,6 +1078,36 @@ describe("SimcadeRaceModel", () => {
     expect(compressed.longitudinalGrip).toBeGreaterThan(lightest.longitudinalGrip);
   });
 
+  it("turns road profile changes into damper impulse and rebound", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("northstar"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.5, { throttle: 1 });
+
+    let maxImpulse = 0;
+    let reboundVelocity = 0;
+    let compressionVelocity = 0;
+    let impulseSample = model.telemetry();
+    for (let elapsed = 0; elapsed < 18; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true });
+      if (telemetry.damperImpulse > maxImpulse) {
+        maxImpulse = telemetry.damperImpulse;
+        impulseSample = telemetry;
+      }
+      reboundVelocity = Math.min(reboundVelocity, telemetry.suspensionVelocity);
+      compressionVelocity = Math.max(compressionVelocity, telemetry.suspensionVelocity);
+    }
+
+    expect(maxImpulse).toBeGreaterThan(0.035);
+    expect(reboundVelocity).toBeLessThan(-0.01);
+    expect(compressionVelocity).toBeGreaterThan(0.01);
+    expect(impulseSample.roadFeelFeedback).toBeGreaterThan(0.05);
+    expect(impulseSample.tireLoadFeedback).toBeGreaterThan(0.015);
+  });
+
   it("loads and sheds the aero platform through clean and disrupted contact", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1468,6 +1498,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadFeelFeedback).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);
+    expect(telemetry.suspensionVelocity).toBe(0);
+    expect(telemetry.damperImpulse).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);
     expect(telemetry.frontAxleLoad).toBe(1);
     expect(telemetry.rearAxleLoad).toBe(1);

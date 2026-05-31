@@ -54,6 +54,8 @@ export type RaceTelemetry = {
   roadFeelFeedback: number;
   suspensionLoad: number;
   suspensionTravel: number;
+  suspensionVelocity: number;
+  damperImpulse: number;
   aeroPlatformLoad: number;
   frontAxleLoad: number;
   rearAxleLoad: number;
@@ -332,6 +334,8 @@ export class SimcadeRaceModel {
   private roadFeelFeedback = 0;
   private suspensionLoad = 1;
   private suspensionTravel = 0;
+  private suspensionVelocity = 0;
+  private damperImpulse = 0;
   private aeroPlatformLoad = 0;
   private frontAxleLoad = 1;
   private rearAxleLoad = 1;
@@ -485,6 +489,8 @@ export class SimcadeRaceModel {
       roadFeelFeedback: this.roadFeelFeedback,
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
+      suspensionVelocity: this.suspensionVelocity,
+      damperImpulse: this.damperImpulse,
       aeroPlatformLoad: this.aeroPlatformLoad,
       frontAxleLoad: this.frontAxleLoad,
       rearAxleLoad: this.rearAxleLoad,
@@ -701,6 +707,8 @@ export class SimcadeRaceModel {
     this.roadFeelFeedback = 0;
     this.suspensionLoad = 1;
     this.suspensionTravel = 0;
+    this.suspensionVelocity = 0;
+    this.damperImpulse = 0;
     this.aeroPlatformLoad = 0;
     this.frontAxleLoad = 1;
     this.rearAxleLoad = 1;
@@ -852,6 +860,7 @@ export class SimcadeRaceModel {
     const frontGrade = (sampleTrack(this.z + 38).elevation - sampleTrack(this.z + 8).elevation) / 30;
     const profileBend = clamp((frontGrade - rearGrade) * 12, -0.34, 0.34);
     const profileLoadTarget = clamp(1 + profileBend * speedRatio * speedRatio - this.surfaceEdgeLoad * 0.035, 0.72, 1.28);
+    const previousRoadCompression = this.roadCompression;
     this.roadLoad = approach(this.roadLoad, profileLoadTarget, dt * (profileLoadTarget < this.roadLoad ? 9 : 7));
     this.roadCompression = approach(this.roadCompression, clamp(this.roadLoad - 1, -0.28, 0.28), dt * 8);
     this.roadGrade = approach(this.roadGrade, grade, dt * 7);
@@ -915,8 +924,11 @@ export class SimcadeRaceModel {
           1 -
             crestUnload * (0.82 + speedRatio * 0.26) -
             Math.max(0, -this.roadCompression) * (0.28 + speedRatio * 0.22) -
+            Math.max(0, -this.suspensionVelocity) * (0.045 + speedRatio * 0.04) -
+            this.damperImpulse * (0.025 + speedRatio * 0.035) -
             this.surfaceEdgeLoad * 0.025 +
             compressionLoad * 0.06 +
+            Math.max(0, this.suspensionVelocity) * 0.018 +
             this.aeroPlatformLoad * 0.11,
           0.68,
           1.08
@@ -1069,6 +1081,7 @@ export class SimcadeRaceModel {
         (1 - this.tireRelaxation * 0.03) *
         (1 + this.aeroPlatformLoad * 0.22) *
         clamp(frontLoadGrip * 0.56 + rearLoadGrip * 0.44, 0.82, 1.08) *
+        (1 - this.damperImpulse * 0.08) *
         (1 - this.downforceLoss * 0.45),
       0.24,
       1.18
@@ -1282,6 +1295,7 @@ export class SimcadeRaceModel {
       1.42
     );
     this.suspensionLoad = approach(this.suspensionLoad, loadTarget, dt * (contactRoughness > 0.2 ? 11 : 7));
+    const previousSuspensionTravel = this.suspensionTravel;
     this.suspensionTravel = approach(
       this.suspensionTravel,
       clamp(
@@ -1300,10 +1314,36 @@ export class SimcadeRaceModel {
       ),
       dt * 9
     );
+    const rawSuspensionVelocity = clamp((this.suspensionTravel - previousSuspensionTravel) / Math.max(dt, 1 / 120), -1.4, 1.4);
+    const roadCompressionVelocity = clamp((this.roadCompression - previousRoadCompression) / Math.max(dt, 1 / 120), -1.2, 1.2);
+    const suspensionVelocityTarget = clamp(
+      rawSuspensionVelocity * 0.78 + roadCompressionVelocity * 0.22 + suspensionOscillation * 0.4,
+      -1,
+      1
+    );
+    this.suspensionVelocity = approach(
+      this.suspensionVelocity,
+      suspensionVelocityTarget,
+      dt * (Math.abs(suspensionVelocityTarget) > Math.abs(this.suspensionVelocity) ? 14 : 5.5)
+    );
+    const damperImpulseTarget = clamp(
+      Math.abs(this.suspensionVelocity) * (0.55 + speedRatio * 0.45) +
+        contactRoughness * speedRatio * 0.12 +
+        this.surfaceEdgeLoad * 0.08 +
+        Math.abs(this.splitSurfaceLoad) * 0.08,
+      0,
+      1
+    );
+    this.damperImpulse = approach(
+      this.damperImpulse,
+      damperImpulseTarget,
+      dt * (damperImpulseTarget > this.damperImpulse ? 15 : 4.5)
+    );
     const roadFeelFeedbackTarget = clamp(
       Math.abs(this.roadCompression) * 2.1 +
         Math.max(0, this.suspensionLoad - 1) * 0.62 +
         Math.abs(this.suspensionTravel) * 0.86 +
+        this.damperImpulse * 0.65 +
         Math.max(0, 1 - this.tireGroundContact) * 0.26 +
         contactRoughness * speedRatio * 0.3 +
         this.surfaceEdgeLoad * 0.18 +
@@ -1448,6 +1488,7 @@ export class SimcadeRaceModel {
         this.lockup * 0.22 +
         this.wheelspin * 0.18 +
         Math.abs(this.rearTractionRotation) * 0.14 +
+        this.damperImpulse * 0.16 +
         this.surfaceEdgeLoad * 0.12 +
         Math.abs(this.splitSurfaceLoad) * 0.16 +
         Math.max(0, 1 - this.tireGroundContact) * 0.14 +
@@ -1526,6 +1567,7 @@ export class SimcadeRaceModel {
         slipAngleLoad * 0.22 +
         lateralLoadStress * 0.16 +
         this.tireRelaxation * 0.14 +
+        this.damperImpulse * 0.12 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
         Math.abs(this.rearTractionRotation) * 0.12 +
@@ -1597,6 +1639,7 @@ export class SimcadeRaceModel {
         Math.max(0, -this.longitudinalLoadTransfer) * 0.05 -
         Math.max(0, 1 - this.roadLoad) * 0.16 +
         Math.max(0, this.roadLoad - 1) * 0.04 -
+        this.damperImpulse * 0.045 -
         this.tireSaturation * 0.12 -
         this.tireRelaxation * 0.04 -
         slipAngleLoad * 0.1 -
@@ -1624,6 +1667,7 @@ export class SimcadeRaceModel {
         this.longitudinalLoadTransfer * 0.075 +
         this.engineBraking * 0.035 +
         this.suspensionTravel * 0.08 +
+        this.suspensionVelocity * 0.03 +
         this.brakeReleaseShock * 0.03,
       -0.15,
       0.15
@@ -1776,6 +1820,8 @@ export class SimcadeRaceModel {
     this.roadFeelFeedback = 0;
     this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
     this.suspensionTravel = 0;
+    this.suspensionVelocity = 0;
+    this.damperImpulse = 0;
     this.frontAxleLoad = Math.max(this.frontAxleLoad, 0.92);
     this.rearAxleLoad = Math.max(this.rearAxleLoad, 0.92);
     this.longitudinalLoadTransfer = 0;
