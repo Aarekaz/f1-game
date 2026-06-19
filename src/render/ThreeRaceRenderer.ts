@@ -302,6 +302,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.steeringVelocity = telemetry.steeringVelocity.toFixed(3);
     this.renderer.domElement.dataset.steeringImpulse = telemetry.steeringImpulse.toFixed(3);
     this.renderer.domElement.dataset.controlActuationLoad = telemetry.controlActuationLoad.toFixed(3);
+    this.renderer.domElement.dataset.steeringRatio = telemetry.steeringRatio.toFixed(3);
     this.renderer.domElement.dataset.selfAlignTorque = telemetry.selfAlignTorque.toFixed(3);
     this.renderer.domElement.dataset.yawInertiaLoad = telemetry.yawInertiaLoad.toFixed(3);
     this.renderer.domElement.dataset.yawDamping = telemetry.yawDamping.toFixed(3);
@@ -587,6 +588,7 @@ export class ThreeRaceRenderer {
       steeringVelocity: telemetry.steeringVelocity,
       steeringImpulse: telemetry.steeringImpulse,
       controlActuationLoad: telemetry.controlActuationLoad,
+      steeringRatio: telemetry.steeringRatio,
       selfAlignTorque: telemetry.selfAlignTorque,
       yawInertiaLoad: telemetry.yawInertiaLoad,
       yawDamping: telemetry.yawDamping,
@@ -1003,6 +1005,7 @@ export class ThreeRaceRenderer {
         steeringVelocity: 0,
         steeringImpulse: 0,
         controlActuationLoad: 0,
+        steeringRatio: 1,
         selfAlignTorque: 0,
         yawInertiaLoad: 0,
         yawDamping: 1,
@@ -1576,6 +1579,7 @@ export class ThreeRaceRenderer {
       steeringVelocity: number;
       steeringImpulse: number;
       controlActuationLoad: number;
+      steeringRatio: number;
       selfAlignTorque: number;
       yawInertiaLoad: number;
       yawDamping: number;
@@ -1600,6 +1604,7 @@ export class ThreeRaceRenderer {
     const steeringVelocity = clamp(state.steeringVelocity, -1, 1);
     const steeringImpulse = clamp(state.steeringImpulse, 0, 1);
     const controlActuationLoad = clamp(state.controlActuationLoad, 0, 1);
+    const steeringRatio = clamp(state.steeringRatio, 0.72, 1.08);
     const selfAlignTorque = clamp(state.selfAlignTorque, -1, 1);
     const yawInertiaLoad = clamp(state.yawInertiaLoad, 0, 1);
     const yawDamping = clamp(state.yawDamping, 0.2, 1.2);
@@ -1749,7 +1754,7 @@ export class ThreeRaceRenderer {
       maxWheelSquash = Math.max(maxWheelSquash, squash);
       loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin - (wheelName.startsWith("rear") ? insideRearSlip * (0.55 + Math.max(0, rearInsideBias) * 0.65) : 0);
-      wheel.rotation.y = wheelName.startsWith("front") ? steerAngle + selfAlignTorque * 0.045 + steeringVelocity * 0.025 : 0;
+      wheel.rotation.y = wheelName.startsWith("front") ? steerAngle * steeringRatio + selfAlignTorque * 0.045 + steeringVelocity * 0.025 : 0;
       wheel.rotation.z = -side * (0.015 + cornerLoad * 0.042);
       wheel.scale.set(1 + squash * 0.12, 1 - squash, 1 + squash * 0.08);
     }
@@ -1785,6 +1790,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.steeringVelocityVisual = steeringVelocity.toFixed(3);
       this.renderer.domElement.dataset.steeringImpulseVisual = steeringImpulse.toFixed(3);
       this.renderer.domElement.dataset.controlActuationVisualLoad = controlActuationLoad.toFixed(3);
+      this.renderer.domElement.dataset.steeringRatioVisual = steeringRatio.toFixed(3);
       this.renderer.domElement.dataset.counterSteerVisualLoad = counterSteerLoad.toFixed(3);
       this.renderer.domElement.dataset.slipRecoveryVisual = slipRecovery.toFixed(3);
       this.renderer.domElement.dataset.chassisStabilityVisual = chassisStability.toFixed(3);

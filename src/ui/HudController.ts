@@ -380,6 +380,7 @@ export class HudController {
     if (telemetry.steeringImpulse > 0.18) return `Rack impulse ${(telemetry.steeringImpulse * 100).toFixed(0)}%`;
     if (telemetry.steeringRackLoad > 0.22) return `Rack load ${(telemetry.steeringRackLoad * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.selfAlignTorque) > 0.18) return "Self-aligning";
+    if (telemetry.steeringRatio < 0.9) return `Steering ratio ${(telemetry.steeringRatio * 100).toFixed(0)}%`;
     if (telemetry.steeringLoadFeedback > 0.2) return `Steering load ${(telemetry.steeringLoadFeedback * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.rearTractionRotation) > 0.16) return `Rear rotation ${(Math.abs(telemetry.rearTractionRotation) * 100).toFixed(0)}%`;
     if (telemetry.tireLoadFeedback > 0.58) return `Tire load ${(telemetry.tireLoadFeedback * 100).toFixed(0)}%`;

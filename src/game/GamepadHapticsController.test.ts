@@ -30,6 +30,7 @@ const baseTelemetry = {
   steeringVelocity: 0,
   steeringImpulse: 0,
   controlActuationLoad: 0,
+  steeringRatio: 1,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
@@ -242,6 +243,18 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       controlActuationLoad: 0.42
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns speed-sensitive steering ratio into high-speed wheel texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 225,
+      steeringRatio: 0.82
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

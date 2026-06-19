@@ -31,6 +31,7 @@ const baseTelemetry = {
   steeringVelocity: 0,
   steeringImpulse: 0,
   controlActuationLoad: 0,
+  steeringRatio: 1,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
@@ -236,6 +237,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 195,
       controlActuationLoad: 0.42
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from speed-sensitive steering ratio", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 225,
+      steeringRatio: 0.82
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
