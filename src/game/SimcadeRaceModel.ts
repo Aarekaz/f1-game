@@ -55,6 +55,7 @@ export type RaceTelemetry = {
   steeringVelocity: number;
   steeringImpulse: number;
   controlActuationLoad: number;
+  steeringRatio: number;
   selfAlignTorque: number;
   yawInertiaLoad: number;
   yawDamping: number;
@@ -370,6 +371,7 @@ export class SimcadeRaceModel {
   private steeringVelocity = 0;
   private steeringImpulse = 0;
   private controlActuationLoad = 0;
+  private steeringRatio = 1;
   private selfAlignTorque = 0;
   private yawInertiaLoad = 0;
   private yawDamping = 1;
@@ -559,6 +561,7 @@ export class SimcadeRaceModel {
       steeringVelocity: this.steeringVelocity,
       steeringImpulse: this.steeringImpulse,
       controlActuationLoad: this.controlActuationLoad,
+      steeringRatio: this.steeringRatio,
       selfAlignTorque: this.selfAlignTorque,
       yawInertiaLoad: this.yawInertiaLoad,
       yawDamping: this.yawDamping,
@@ -819,6 +822,7 @@ export class SimcadeRaceModel {
     this.steeringVelocity = 0;
     this.steeringImpulse = 0;
     this.controlActuationLoad = 0;
+    this.steeringRatio = 1;
     this.selfAlignTorque = 0;
     this.yawInertiaLoad = 0;
     this.yawDamping = 1;
@@ -982,6 +986,30 @@ export class SimcadeRaceModel {
     );
     const throttle = controls.throttle;
     const brake = controls.brake;
+    const counterSteerIntent =
+      controls.steer !== 0 && Math.abs(this.slipAngle) > 0.045 && Math.sign(controls.steer) !== Math.sign(this.slipAngle);
+    const highSpeedSteeringRatioWindow =
+      onTrack && roadRecoveryNeed < 0.08 && brake < 0.18 && this.liftOffRotationLoad < 0.08 && !counterSteerIntent
+        ? clamp((speedRatio - 0.58) / 0.28, 0, 1)
+        : 0;
+    const steeringRatioTarget = clamp(
+      1 -
+        highSpeedSteeringRatioWindow *
+          (0.18 +
+            this.steeringRackLoad * 0.04 +
+            this.tireSaturation * 0.035 +
+            this.frontLockRisk * 0.025) +
+        roadRecoveryNeed * 0.12 +
+        (onTrack ? 0 : 0.05),
+      0.76,
+      1.04
+    );
+    this.steeringRatio = approach(
+      this.steeringRatio,
+      steeringRatioTarget,
+      dt * (steeringRatioTarget < this.steeringRatio ? 14 : counterSteerIntent ? 18 : 5.2)
+    );
+    const steeringRatioLoad = 1 - this.steeringRatio;
     const steer = clamp(controls.steer + assist.steer, -1, 1);
     const rawSteer = steer;
     this.lastSteering = steer;
@@ -2367,6 +2395,7 @@ export class SimcadeRaceModel {
         this.tireRelaxation * 0.14 +
         this.axleLoadSaturation * 0.16 +
         this.controlActuationLoad * 0.12 +
+        steeringRatioLoad * 0.08 +
         this.tirePressureLoad * 0.12 +
         Math.max(0, 1 - this.tireContactPatch) * 0.08 +
         Math.max(0, 1 - this.chassisStability) * 0.12 -
@@ -2398,6 +2427,7 @@ export class SimcadeRaceModel {
           slipAngleLoad * 0.16 +
           lateralLoadStress * 0.12 +
           this.axleLoadSaturation * 0.12 +
+          steeringRatioLoad * 0.18 +
           this.frontAxleLoad * 0.08) *
         (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.35) *
         clamp(1.08 - this.wheelspin * 0.18 - this.lockup * 0.24, 0.54, 1.08) +
@@ -2701,6 +2731,7 @@ export class SimcadeRaceModel {
     this.steeringVelocity = 0;
     this.steeringImpulse = 0;
     this.controlActuationLoad = 0;
+    this.steeringRatio = 1;
     this.selfAlignTorque = 0;
     this.yawInertiaLoad = 0;
     this.yawDamping = 1;

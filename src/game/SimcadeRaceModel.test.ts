@@ -920,6 +920,30 @@ describe("SimcadeRaceModel", () => {
     expect(panic.telemetry.car.steering).toBeGreaterThan(-0.86);
   });
 
+  it("uses speed-sensitive steering ratio instead of full lock at high speed", () => {
+    const lowSpeed = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    lowSpeed.update(1 / 60, { ...idle, launch: true });
+    run(lowSpeed, 3.2, { throttle: 0.72 });
+    const slowTurn = run(lowSpeed, 0.5, { throttle: 0.35, steer: 1 });
+
+    const highSpeed = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    highSpeed.update(1 / 60, { ...idle, launch: true });
+    run(highSpeed, 8.2, { throttle: 1, ers: true });
+    const fastTurn = run(highSpeed, 0.5, { throttle: 1, steer: 1 });
+
+    expect(fastTurn.steeringRatio).toBeLessThan(slowTurn.steeringRatio - 0.08);
+    expect(fastTurn.steeringLoadFeedback).toBeGreaterThan(slowTurn.steeringLoadFeedback);
+    expect(fastTurn.car.understeer).toBeGreaterThanOrEqual(slowTurn.car.understeer);
+  });
+
   it("loads the steering rack when the driver throws abrupt opposite lock", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -2099,6 +2123,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.steeringVelocity).toBe(0);
     expect(telemetry.steeringImpulse).toBe(0);
     expect(telemetry.controlActuationLoad).toBe(0);
+    expect(telemetry.steeringRatio).toBe(1);
     expect(telemetry.selfAlignTorque).toBe(0);
     expect(telemetry.yawInertiaLoad).toBe(0);
     expect(telemetry.yawDamping).toBe(1);
