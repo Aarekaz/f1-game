@@ -122,6 +122,7 @@ export type RaceTelemetry = {
   engineBraking: number;
   trailBraking: number;
   thresholdBraking: number;
+  liftOffRotationLoad: number;
   pedalOverlapLoad: number;
   powerState: string;
   tireTemp: number;
@@ -413,6 +414,7 @@ export class SimcadeRaceModel {
   private engineBraking = 0;
   private trailBraking = 0;
   private thresholdBraking = 0;
+  private liftOffRotationLoad = 0;
   private pedalOverlapLoad = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
@@ -616,6 +618,7 @@ export class SimcadeRaceModel {
       engineBraking: this.engineBraking,
       trailBraking: this.trailBraking,
       thresholdBraking: this.thresholdBraking,
+      liftOffRotationLoad: this.liftOffRotationLoad,
       pedalOverlapLoad: this.pedalOverlapLoad,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
@@ -759,6 +762,7 @@ export class SimcadeRaceModel {
     this.engineBraking = 0;
     this.trailBraking = 0;
     this.thresholdBraking = 0;
+    this.liftOffRotationLoad = 0;
     this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
@@ -1169,6 +1173,24 @@ export class SimcadeRaceModel {
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const cornerDemand = track.section.kind === "straight" ? 0.18 : track.section.difficulty;
+    const liftOffRotationTarget = clamp(
+      throttleRelease *
+        Math.abs(steer) *
+        speedRatio *
+        (0.42 + speedRatio * 0.44 + cornerDemand * 0.34) *
+        (0.78 + Math.max(0, this.longitudinalLoadTransfer) * 0.92 + this.engineBraking * 0.58) *
+        3.8 *
+        (1 - brake * 0.72) *
+        (1 - this.pedalOverlapLoad * 0.28) *
+        (onTrack ? 1 : 0.52 + this.tireContactGrip * 0.32),
+      0,
+      1
+    );
+    this.liftOffRotationLoad = approach(
+      this.liftOffRotationLoad,
+      liftOffRotationTarget,
+      dt * (liftOffRotationTarget > this.liftOffRotationLoad ? 18 : 2.15)
+    );
     const longitudinalForceDemand =
       throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52) + this.pedalOverlapLoad * (0.22 + speedRatio * 0.3);
     const signedLateralLoadTarget = clamp(
@@ -1276,6 +1298,7 @@ export class SimcadeRaceModel {
         this.driveTorqueLoad * 0.08 +
         this.insideRearSlip * 0.5 +
         this.differentialLock * 0.12 +
+        this.liftOffRotationLoad * 0.18 +
         Math.max(0, 1.02 - rearTractionSupport) * 0.75 +
         Math.max(0, 1 - this.tireGroundContact) * 0.26 -
         this.aeroPlatformLoad * 0.12,
@@ -1284,7 +1307,7 @@ export class SimcadeRaceModel {
     );
     const rearTractionRotationTarget = clamp(
       steer *
-        rearRotationDemand *
+        (rearRotationDemand + this.liftOffRotationLoad * speedRatio * 0.22) *
         rearTractionSlipWindow *
         (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.28) *
         clamp(0.72 + this.rearAxleLoad * 0.22, 0.72, 1.05) *
@@ -1899,6 +1922,7 @@ export class SimcadeRaceModel {
         this.pedalOverlapLoad * 0.18 +
         Math.abs(this.rearTractionRotation) * 0.08 +
         this.engineBraking * (0.045 + Math.abs(rawSteer) * 0.045) +
+        this.liftOffRotationLoad * 0.085 +
         trailBrakeInstability * 0.07 +
         lateralLoadStress * 0.045,
       0,
@@ -1946,6 +1970,13 @@ export class SimcadeRaceModel {
       speedRatio *
       (0.045 + this.trailBraking * 0.055) *
       rollingSteerFactor;
+    const liftOffYaw =
+      Math.sign(steer) *
+      this.liftOffRotationLoad *
+      speedRatio *
+      (0.34 + this.engineBraking * 0.14 + Math.max(0, this.longitudinalLoadTransfer) * 0.09) *
+      clamp(1 - this.lockup * 0.36, 0.42, 1) *
+      rollingSteerFactor;
     const metersPerSecond = this.speed * (1000 / 3600);
     const curveFollow = track.curve * metersPerSecond * 0.9;
     const targetYawRate =
@@ -1953,6 +1984,7 @@ export class SimcadeRaceModel {
       Math.sign(steer) * trailBrakeSupport * speedRatio * 0.095 +
       splitSurfaceYawTug +
       rearTractionYaw +
+      liftOffYaw +
       brakeStabilityYaw +
       selfAlignYaw;
     const yawMoment = targetYawRate - this.yawRate;
@@ -2000,7 +2032,8 @@ export class SimcadeRaceModel {
         this.tireSaturation * 0.16 -
         this.tireGripReserve * 0.04 -
         this.yawDamping * 0.08 +
-        this.steeringImpulse * 0.12,
+        this.steeringImpulse * 0.12 +
+        this.liftOffRotationLoad * 0.16,
       0,
       1
     );
@@ -2022,6 +2055,7 @@ export class SimcadeRaceModel {
         this.understeer * 0.62,
         this.tireSaturation * 0.42,
         Math.abs(this.rearTractionRotation) * 0.48,
+        this.liftOffRotationLoad * 0.34,
         Math.abs(this.slipAngle) * 0.78
       ),
       0,
@@ -2072,6 +2106,7 @@ export class SimcadeRaceModel {
         this.yawInertiaLoad * 0.14 -
         this.tireSaturation * 0.18 -
         Math.abs(this.rearTractionRotation) * 0.16 -
+        this.liftOffRotationLoad * 0.24 -
         this.insideRearSlip * 0.14 -
         Math.max(0, 1 - this.rearBrakeStability) * 0.12 -
         crossedInput * rotationRecoveryWindow * 0.12 +
@@ -2102,6 +2137,7 @@ export class SimcadeRaceModel {
         this.tirePressureLoad * 0.14 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
         Math.abs(this.rearTractionRotation) * 0.14 +
+        this.liftOffRotationLoad * 0.34 +
         Math.max(0, 1 - this.rearBrakeStability) * 0.16 +
         Math.max(0, 1 - this.chassisStability) * 0.12 -
         this.slipRecovery * 0.18 -
@@ -2151,6 +2187,12 @@ export class SimcadeRaceModel {
       (0.82 + cornerDemand * 0.52 + this.differentialLock * 0.14 + this.insideRearSlip * 0.18) *
       (1 - brake * 0.64) *
       rollingRoadForce;
+    const liftOffSideSlip =
+      Math.sign(steer) *
+      this.liftOffRotationLoad *
+      speedRatio *
+      (0.64 + this.engineBraking * 0.42 + Math.max(0, this.longitudinalLoadTransfer) * 0.32) *
+      rollingRoadForce;
     const rearBrakeSideSlip =
       Math.sign(steer) *
       Math.max(0, 1 - this.rearBrakeStability) *
@@ -2180,6 +2222,7 @@ export class SimcadeRaceModel {
       splitGripPull +
       splitSurfaceTug +
       rearTractionSideSlip +
+      liftOffSideSlip +
       rearBrakeSideSlip +
       roadCentering +
       roadRecoveryPull +
@@ -2208,6 +2251,7 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.12 +
         Math.abs(this.splitSurfaceLoad) * 0.14 +
         Math.abs(this.rearTractionRotation) * 0.12 +
+        this.liftOffRotationLoad * 0.09 +
         Math.max(0, 1 - this.chassisStability) * 0.12 -
         this.slipRecovery * 0.16 +
         Math.max(0, 1 - this.tireGroundContact) * 0.1,
@@ -2231,6 +2275,7 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
         Math.abs(this.rearTractionRotation) * 0.12 +
+        this.liftOffRotationLoad * 0.11 +
         Math.max(0, 1 - this.tireGroundContact) * 0.08,
       0,
       1
@@ -2501,6 +2546,7 @@ export class SimcadeRaceModel {
     this.engineBraking = 0;
     this.trailBraking = 0;
     this.thresholdBraking = 0;
+    this.liftOffRotationLoad = 0;
     this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;

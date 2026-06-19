@@ -1570,6 +1570,55 @@ describe("SimcadeRaceModel", () => {
     expect(lifted.tireRelaxation).toBeGreaterThan(powered.tireRelaxation);
   });
 
+  it("rotates the chassis on lift-off without snapping into an unrecoverable slide", () => {
+    const sampleRotationWindow = (model: SimcadeRaceModel, input: Partial<RaceActions>) => {
+      let telemetry = model.telemetry();
+      let peakYaw = 0;
+      let peakLiftLoad = 0;
+      let peakRelaxation = 0;
+      let peakSlip = 0;
+      let minStability = 1;
+
+      for (let elapsed = 0; elapsed < 0.62; elapsed += 1 / 60) {
+        telemetry = model.update(1 / 60, { ...idle, ...input });
+        peakYaw = Math.max(peakYaw, Math.abs(telemetry.car.yawRate));
+        peakLiftLoad = Math.max(peakLiftLoad, telemetry.liftOffRotationLoad);
+        peakRelaxation = Math.max(peakRelaxation, telemetry.tireRelaxation);
+        peakSlip = Math.max(peakSlip, telemetry.car.slip);
+        minStability = Math.min(minStability, telemetry.chassisStability);
+      }
+
+      return { telemetry, peakYaw, peakLiftLoad, peakRelaxation, peakSlip, minStability };
+    };
+
+    const partialModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    partialModel.update(1 / 60, { ...idle, launch: true });
+    run(partialModel, 4.8, { throttle: 1, ers: true });
+    run(partialModel, 0.38, { throttle: 0.9, steer: 0.62 });
+    const partial = sampleRotationWindow(partialModel, { throttle: 0.42, steer: 0.62 });
+
+    const liftModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    liftModel.update(1 / 60, { ...idle, launch: true });
+    run(liftModel, 4.8, { throttle: 1, ers: true });
+    run(liftModel, 0.38, { throttle: 0.9, steer: 0.62 });
+    const lifted = sampleRotationWindow(liftModel, { throttle: 0, steer: 0.62 });
+
+    expect(lifted.peakLiftLoad).toBeGreaterThan(0.05);
+    expect(partial.peakLiftLoad).toBeLessThan(lifted.peakLiftLoad * 0.55);
+    expect(lifted.peakYaw).toBeGreaterThan(partial.peakYaw + 0.015);
+    expect(lifted.minStability).toBeLessThan(partial.minStability);
+    expect(lifted.peakRelaxation).toBeGreaterThan(0.72);
+    expect(lifted.peakSlip).toBeLessThan(0.72);
+  });
+
   it("uses trail braking to rotate the car without turning it into a lockup", () => {
     const trailModel = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1928,6 +1977,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.engineBraking).toBe(0);
     expect(telemetry.trailBraking).toBe(0);
     expect(telemetry.thresholdBraking).toBe(0);
+    expect(telemetry.liftOffRotationLoad).toBe(0);
     expect(telemetry.pedalOverlapLoad).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
