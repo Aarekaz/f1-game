@@ -375,6 +375,7 @@ export class HudController {
     if (telemetry.counterSteerLoad > 0.14) return `Countersteer ${(telemetry.counterSteerLoad * 100).toFixed(0)}%`;
     if (telemetry.slipRecovery > 0.1) return `Slip recovery ${(telemetry.slipRecovery * 100).toFixed(0)}%`;
     if (telemetry.controlActuationLoad > 0.16) return `Control load ${(telemetry.controlActuationLoad * 100).toFixed(0)}%`;
+    if (telemetry.pedalPressureLoad > 0.18) return `Pedal pressure ${(telemetry.pedalPressureLoad * 100).toFixed(0)}%`;
     if (telemetry.chassisStability < 0.82) return `Chassis ${(telemetry.chassisStability * 100).toFixed(0)}%`;
     if (telemetry.yawInertiaLoad > 0.18) return `Yaw inertia ${(telemetry.yawInertiaLoad * 100).toFixed(0)}%`;
     if (telemetry.steeringImpulse > 0.18) return `Rack impulse ${(telemetry.steeringImpulse * 100).toFixed(0)}%`;

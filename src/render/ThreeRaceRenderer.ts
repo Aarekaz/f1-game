@@ -303,6 +303,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.steeringVelocity = telemetry.steeringVelocity.toFixed(3);
     this.renderer.domElement.dataset.steeringImpulse = telemetry.steeringImpulse.toFixed(3);
     this.renderer.domElement.dataset.controlActuationLoad = telemetry.controlActuationLoad.toFixed(3);
+    this.renderer.domElement.dataset.pedalPressureLoad = telemetry.pedalPressureLoad.toFixed(3);
     this.renderer.domElement.dataset.steeringRatio = telemetry.steeringRatio.toFixed(3);
     this.renderer.domElement.dataset.selfAlignTorque = telemetry.selfAlignTorque.toFixed(3);
     this.renderer.domElement.dataset.yawInertiaLoad = telemetry.yawInertiaLoad.toFixed(3);
@@ -574,6 +575,7 @@ export class ThreeRaceRenderer {
           Math.max(0, 1 - telemetry.chassisStability) * 0.22 +
           telemetry.steeringImpulse * 0.24 +
           telemetry.controlActuationLoad * 0.12 +
+          telemetry.pedalPressureLoad * 0.18 +
           Math.abs(telemetry.steeringVelocity) * 0.12 +
           telemetry.tirePressureLoad * 0.2 +
           telemetry.pedalOverlapLoad * 0.18 +
@@ -595,6 +597,7 @@ export class ThreeRaceRenderer {
       steeringVelocity: telemetry.steeringVelocity,
       steeringImpulse: telemetry.steeringImpulse,
       controlActuationLoad: telemetry.controlActuationLoad,
+      pedalPressureLoad: telemetry.pedalPressureLoad,
       steeringRatio: telemetry.steeringRatio,
       selfAlignTorque: telemetry.selfAlignTorque,
       yawInertiaLoad: telemetry.yawInertiaLoad,
@@ -1014,6 +1017,7 @@ export class ThreeRaceRenderer {
         steeringVelocity: 0,
         steeringImpulse: 0,
         controlActuationLoad: 0,
+        pedalPressureLoad: 0,
         steeringRatio: 1,
         selfAlignTorque: 0,
         yawInertiaLoad: 0,
@@ -1590,6 +1594,7 @@ export class ThreeRaceRenderer {
       steeringVelocity: number;
       steeringImpulse: number;
       controlActuationLoad: number;
+      pedalPressureLoad: number;
       steeringRatio: number;
       selfAlignTorque: number;
       yawInertiaLoad: number;
@@ -1615,6 +1620,7 @@ export class ThreeRaceRenderer {
     const steeringVelocity = clamp(state.steeringVelocity, -1, 1);
     const steeringImpulse = clamp(state.steeringImpulse, 0, 1);
     const controlActuationLoad = clamp(state.controlActuationLoad, 0, 1);
+    const pedalPressureLoad = clamp(state.pedalPressureLoad, 0, 1);
     const steeringRatio = clamp(state.steeringRatio, 0.72, 1.08);
     const selfAlignTorque = clamp(state.selfAlignTorque, -1, 1);
     const yawInertiaLoad = clamp(state.yawInertiaLoad, 0, 1);
@@ -1658,6 +1664,7 @@ export class ThreeRaceRenderer {
         powerUndersteerLoad * 0.09 +
         tireResponseLoad * 0.08 +
         controlActuationLoad * 0.05 +
+        pedalPressureLoad * 0.06 +
         roadCamberLoad * 0.04 +
         axleLoadSaturation * 0.07,
       0,
@@ -1709,6 +1716,7 @@ export class ThreeRaceRenderer {
           tireLoad * 0.58 +
           axleLoadSaturation * 0.08 +
           controlActuationLoad * 0.05 +
+          pedalPressureLoad * 0.05 +
           combinedSlipLoad * 0.16 +
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
@@ -1750,6 +1758,7 @@ export class ThreeRaceRenderer {
         combinedSlipLoad * 0.008 +
         axleLoadSaturation * 0.01 +
         controlActuationLoad * 0.006 +
+        pedalPressureLoad * 0.007 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
         tirePressureLoad * 0.012 +
         Math.max(0, 1 - tireContactPatch) * 0.018 +
@@ -1811,6 +1820,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.steeringVelocityVisual = steeringVelocity.toFixed(3);
       this.renderer.domElement.dataset.steeringImpulseVisual = steeringImpulse.toFixed(3);
       this.renderer.domElement.dataset.controlActuationVisualLoad = controlActuationLoad.toFixed(3);
+      this.renderer.domElement.dataset.pedalPressureVisualLoad = pedalPressureLoad.toFixed(3);
       this.renderer.domElement.dataset.steeringRatioVisual = steeringRatio.toFixed(3);
       this.renderer.domElement.dataset.counterSteerVisualLoad = counterSteerLoad.toFixed(3);
       this.renderer.domElement.dataset.slipRecoveryVisual = slipRecovery.toFixed(3);

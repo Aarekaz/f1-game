@@ -31,6 +31,7 @@ const baseTelemetry = {
   steeringVelocity: 0,
   steeringImpulse: 0,
   controlActuationLoad: 0,
+  pedalPressureLoad: 0,
   steeringRatio: 1,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
@@ -367,6 +368,18 @@ describe("raceHapticEffect", () => {
       ...baseTelemetry,
       speedKph: 215,
       tireResponseLoad: 0.42
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns pedal pressure load into pedal texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 210,
+      pedalPressureLoad: 0.46
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

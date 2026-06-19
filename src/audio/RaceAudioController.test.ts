@@ -32,6 +32,7 @@ const baseTelemetry = {
   steeringVelocity: 0,
   steeringImpulse: 0,
   controlActuationLoad: 0,
+  pedalPressureLoad: 0,
   steeringRatio: 1,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
@@ -365,6 +366,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 215,
       tireResponseLoad: 0.42
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from pedal pressure load", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 210,
+      pedalPressureLoad: 0.46
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

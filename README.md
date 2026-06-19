@@ -218,6 +218,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Steering rack load now models self-aligning torque from front tire slip, so hard turn-in pushes back through steering, chassis motion, audio, haptics, and the HUD instead of feeling like a loose digital input.
 - Steering rack impulse now tracks how quickly the driver throws the wheel, so sudden opposite-lock changes load the tires, haptics, audio, HUD, and front-wheel motion before settling.
 - Control actuation load now turns sudden steering and pedal changes into a short physical mismatch, so panic inputs create tire pressure, audio, haptics, HUD feedback, and visible tire load while smooth inputs stay cleaner.
+- Pedal-pressure load now turns fast brake and throttle ramps into a short hydraulic/torque pressure spike, feeding lockup, traction, tire response, audio, haptics, HUD text, and visible wheel load.
 - Speed-sensitive steering ratio now trims the high-speed rack feel into tire/audio/haptic/HUD feedback and visual front-wheel angle, while countersteer and recovery keep full correction.
 - Yaw inertia now gives the chassis angular momentum and damping, so turn-in, release, and recovery carry through a short physical arc instead of snapping straight to a target rotation.
 - Road-feel feedback now turns road compression, suspension load, travel, camber, and surface edge load into one shared signal for the HUD, tire audio, haptics, car body, and camera.

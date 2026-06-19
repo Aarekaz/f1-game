@@ -33,6 +33,7 @@ type AudioTelemetry = Pick<
   | "steeringVelocity"
   | "steeringImpulse"
   | "controlActuationLoad"
+  | "pedalPressureLoad"
   | "steeringRatio"
   | "selfAlignTorque"
   | "yawInertiaLoad"
@@ -116,6 +117,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.abs(telemetry.steeringVelocity) * 0.34,
       telemetry.steeringImpulse * 0.46,
       telemetry.controlActuationLoad * 0.44,
+      telemetry.pedalPressureLoad * 0.46,
       Math.max(0, 1 - telemetry.steeringRatio) * 0.46,
       Math.abs(telemetry.selfAlignTorque) * 0.34,
       telemetry.yawInertiaLoad * 0.44,
@@ -176,6 +178,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.abs(telemetry.steeringVelocity) * 52 +
       telemetry.steeringImpulse * 88 +
       telemetry.controlActuationLoad * 66 +
+      telemetry.pedalPressureLoad * 72 +
       Math.max(0, 1 - telemetry.steeringRatio) * 82 +
       Math.abs(telemetry.selfAlignTorque) * 46 +
       telemetry.yawInertiaLoad * 58 +
@@ -221,6 +224,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         Math.abs(telemetry.steeringVelocity) * 0.007 +
         telemetry.steeringImpulse * 0.012 +
         telemetry.controlActuationLoad * 0.008 +
+        telemetry.pedalPressureLoad * 0.01 +
         Math.max(0, 1 - telemetry.steeringRatio) * 0.01 +
         Math.abs(telemetry.selfAlignTorque) * 0.006 +
         telemetry.yawInertiaLoad * 0.008 +
