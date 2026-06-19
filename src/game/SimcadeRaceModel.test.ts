@@ -1953,8 +1953,10 @@ describe("SimcadeRaceModel", () => {
     expect(braking.frontAxleLoad).toBeGreaterThan(powered.frontAxleLoad + 0.08);
     expect(braking.frontAxleLoad).toBeGreaterThan(braking.rearAxleLoad);
     expect(braking.longitudinalLoadTransfer).toBeGreaterThan(0.12);
+    expect(braking.loadTransferImpulse).toBeGreaterThan(powered.loadTransferImpulse);
     expect(relaunched.rearAxleLoad).toBeGreaterThan(braking.rearAxleLoad);
     expect(relaunched.longitudinalLoadTransfer).toBeLessThan(braking.longitudinalLoadTransfer);
+    expect(relaunched.loadTransferImpulse).toBeGreaterThan(0.01);
   });
 
   it("uses forward load transfer to support turn-in without free rear traction", () => {
@@ -2231,6 +2233,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rearAxleLoad).toBe(1);
     expect(telemetry.axleLoadSaturation).toBe(0);
     expect(telemetry.longitudinalLoadTransfer).toBe(0);
+    expect(telemetry.loadTransferImpulse).toBe(0);
     expect(telemetry.lateralLoadTransfer).toBe(0);
     expect(telemetry.outsideTireLoad).toBe(0);
     expect(telemetry.insideWheelUnload).toBe(0);

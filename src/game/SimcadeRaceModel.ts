@@ -94,6 +94,7 @@ export type RaceTelemetry = {
   rearAxleLoad: number;
   axleLoadSaturation: number;
   longitudinalLoadTransfer: number;
+  loadTransferImpulse: number;
   lateralLoadTransfer: number;
   outsideTireLoad: number;
   insideWheelUnload: number;
@@ -426,6 +427,7 @@ export class SimcadeRaceModel {
   private rearAxleLoad = 1;
   private axleLoadSaturation = 0;
   private longitudinalLoadTransfer = 0;
+  private loadTransferImpulse = 0;
   private lateralLoadTransfer = 0;
   private outsideTireLoad = 0;
   private insideWheelUnload = 0;
@@ -632,6 +634,7 @@ export class SimcadeRaceModel {
       rearAxleLoad: this.rearAxleLoad,
       axleLoadSaturation: this.axleLoadSaturation,
       longitudinalLoadTransfer: this.longitudinalLoadTransfer,
+      loadTransferImpulse: this.loadTransferImpulse,
       lateralLoadTransfer: this.lateralLoadTransfer,
       outsideTireLoad: this.outsideTireLoad,
       insideWheelUnload: this.insideWheelUnload,
@@ -915,6 +918,7 @@ export class SimcadeRaceModel {
     this.rearAxleLoad = 1;
     this.axleLoadSaturation = 0;
     this.longitudinalLoadTransfer = 0;
+    this.loadTransferImpulse = 0;
     this.lateralLoadTransfer = 0;
     this.outsideTireLoad = 0;
     this.insideWheelUnload = 0;
@@ -1326,10 +1330,24 @@ export class SimcadeRaceModel {
       -0.28,
       0.42
     );
+    const previousLoadTransfer = this.longitudinalLoadTransfer;
     this.longitudinalLoadTransfer = approach(
       this.longitudinalLoadTransfer,
       transferTarget,
       dt * (transferTarget > this.longitudinalLoadTransfer ? 8.5 : 6.2)
+    );
+    const loadTransferImpulseTarget = clamp(
+      Math.abs(this.longitudinalLoadTransfer - previousLoadTransfer) * (3.2 + speedRatio * 2.4) +
+        this.brakeReleaseShock * 0.18 +
+        throttleRelease * 0.08 +
+        throttleRise * 0.08,
+      0,
+      1
+    );
+    this.loadTransferImpulse = approach(
+      this.loadTransferImpulse,
+      loadTransferImpulseTarget,
+      dt * (loadTransferImpulseTarget > this.loadTransferImpulse ? 14 : 3.8)
     );
     this.frontAxleLoad = approach(
       this.frontAxleLoad,
@@ -2169,6 +2187,7 @@ export class SimcadeRaceModel {
         brake * (0.16 + speedRatio * 0.08) -
         throttle * 0.035 +
         Math.abs(this.longitudinalLoadTransfer) * 0.08 +
+        this.loadTransferImpulse * 0.06 +
         lateralLoad * (0.025 + speedRatio * 0.025) +
         camberLoad +
         Math.max(0, this.roadCompression) * (0.5 + speedRatio * 0.45) -
@@ -2270,6 +2289,7 @@ export class SimcadeRaceModel {
         Math.max(0, this.suspensionLoad - 1) * 0.62 +
         Math.abs(this.suspensionTravel) * 0.86 +
         this.damperImpulse * 0.65 +
+        this.loadTransferImpulse * 0.12 +
         this.floorStrikeLoad * 0.42 +
         Math.max(0, 1 - this.tireGroundContact) * 0.26 +
         contactRoughness * speedRatio * 0.3 +
@@ -2794,6 +2814,7 @@ export class SimcadeRaceModel {
         this.tireRelaxation * 0.14 +
         this.tireResponseLoad * 0.12 +
         this.tireCarcassFlex * 0.16 +
+        this.loadTransferImpulse * 0.12 +
         this.tireHeatStress() * 0.05 +
         this.axleLoadSaturation * 0.16 +
         this.outsideTireLoad * 0.08 +
@@ -2939,6 +2960,7 @@ export class SimcadeRaceModel {
         this.brakeBalanceLoad * 0.025 -
         throttle * speedRatio * 0.028 +
         this.longitudinalLoadTransfer * 0.075 +
+        this.loadTransferImpulse * Math.sign(this.longitudinalLoadTransfer || 1) * 0.024 +
         this.engineBraking * 0.035 +
         this.pedalOverlapLoad * 0.025 +
         this.suspensionTravel * 0.08 +
@@ -3207,6 +3229,7 @@ export class SimcadeRaceModel {
     this.rearAxleLoad = Math.max(this.rearAxleLoad, 0.92);
     this.axleLoadSaturation = 0;
     this.longitudinalLoadTransfer = 0;
+    this.loadTransferImpulse = 0;
     this.lateralLoadTransfer = 0;
     this.outsideTireLoad = 0;
     this.insideWheelUnload = 0;
