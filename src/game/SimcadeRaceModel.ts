@@ -1156,7 +1156,7 @@ export class SimcadeRaceModel {
       1
     );
     const aeroWashoutTarget = clamp(
-        this.dirtyAir * (0.38 + speedRatio * 0.36) +
+      this.dirtyAir * (0.38 + speedRatio * 0.36) +
         rideHeightAeroLoss * 0.55 +
         this.frontWingDamage * (0.24 + speedRatio * 0.22),
       0,
@@ -2250,7 +2250,7 @@ export class SimcadeRaceModel {
         Math.abs(this.lateralVelocity) * 0.012 +
         this.fuelLoad * 0.035 +
         this.tireRelaxation * 0.12 +
-        this.aeroWashout * 0.08 -
+        this.aeroWashout * 0.08 +
         this.aeroBuffetLoad * 0.025 -
         this.frontAeroLoad * 0.1,
       0.58,
