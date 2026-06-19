@@ -329,6 +329,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.suspensionTravel = telemetry.suspensionTravel.toFixed(3);
     this.renderer.domElement.dataset.suspensionVelocity = telemetry.suspensionVelocity.toFixed(3);
     this.renderer.domElement.dataset.damperImpulse = telemetry.damperImpulse.toFixed(3);
+    this.renderer.domElement.dataset.wheelHopLoad = telemetry.wheelHopLoad.toFixed(3);
     this.renderer.domElement.dataset.aeroPlatformLoad = telemetry.aeroPlatformLoad.toFixed(3);
     this.renderer.domElement.dataset.floorSealLoad = telemetry.floorSealLoad.toFixed(3);
     this.renderer.domElement.dataset.floorStrikeLoad = telemetry.floorStrikeLoad.toFixed(3);
@@ -570,6 +571,7 @@ export class ThreeRaceRenderer {
       insideWheelUnload: telemetry.insideWheelUnload,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
+      wheelHopLoad: telemetry.wheelHopLoad,
       floorSealLoad: telemetry.floorSealLoad,
       floorStrikeLoad: telemetry.floorStrikeLoad,
       roadTextureLoad: telemetry.roadTextureLoad,
@@ -587,6 +589,7 @@ export class ThreeRaceRenderer {
           telemetry.roadCamberLoad * 0.12 +
           telemetry.roadGuidanceLoad * 0.14 +
           telemetry.damperImpulse * 0.24 +
+          telemetry.wheelHopLoad * 0.2 +
           telemetry.loadTransferImpulse * 0.14 +
           telemetry.floorSealLoad * 0.08 +
           telemetry.floorStrikeLoad * 0.36 +
@@ -1055,6 +1058,7 @@ export class ThreeRaceRenderer {
         insideWheelUnload: 0,
         suspensionTravel: 0,
         damperImpulse: 0,
+        wheelHopLoad: 0,
         floorSealLoad: 0,
         floorStrikeLoad: 0,
         roadTextureLoad: 0,
@@ -1643,6 +1647,7 @@ export class ThreeRaceRenderer {
       insideWheelUnload: number;
       suspensionTravel: number;
       damperImpulse: number;
+      wheelHopLoad: number;
       floorSealLoad: number;
       floorStrikeLoad: number;
       roadTextureLoad: number;
@@ -1726,6 +1731,7 @@ export class ThreeRaceRenderer {
     const tireResponseLoad = clamp(state.tireResponseLoad, 0, 1);
     const tireCarcassFlex = clamp(state.tireCarcassFlex, 0, 1);
     const loadTransferImpulse = clamp(state.loadTransferImpulse, 0, 1);
+    const wheelHopLoad = clamp(state.wheelHopLoad, 0, 1);
     const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
     const outsideTireLoad = clamp(state.outsideTireLoad, 0, 1);
     const insideWheelUnload = clamp(state.insideWheelUnload, 0, 1);
@@ -1745,6 +1751,7 @@ export class ThreeRaceRenderer {
         tireResponseLoad * 0.08 +
         tireCarcassFlex * 0.08 +
         loadTransferImpulse * 0.06 +
+        wheelHopLoad * 0.1 +
         longitudinalSlipLoad * 0.06 +
         hydroplaneLoad * 0.16 +
         tireWaterFilm * 0.08 +
@@ -1765,6 +1772,7 @@ export class ThreeRaceRenderer {
       state.suspensionTravel +
         tireLoad * 0.5 +
         damperImpulse * 0.18 +
+        wheelHopLoad * 0.06 +
         floorSealLoad * 0.05 +
         floorStrikeLoad * 0.16 +
         loadTransferImpulse * 0.04 +
@@ -1881,6 +1889,7 @@ export class ThreeRaceRenderer {
         tireResponseLoad * 0.008 +
         tireCarcassFlex * 0.01 +
         loadTransferImpulse * 0.006 +
+        wheelHopLoad * 0.009 +
         longitudinalSlipLoad * 0.008 +
         hydroplaneLoad * 0.006 +
         tireWaterFilm * 0.007 +
@@ -1934,6 +1943,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tireResponseVisualLoad = tireResponseLoad.toFixed(3);
       this.renderer.domElement.dataset.tireCarcassFlexVisual = tireCarcassFlex.toFixed(3);
       this.renderer.domElement.dataset.loadTransferImpulseVisual = loadTransferImpulse.toFixed(3);
+      this.renderer.domElement.dataset.wheelHopVisualLoad = wheelHopLoad.toFixed(3);
       this.renderer.domElement.dataset.longitudinalSlipVisualLoad = longitudinalSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.hydroplaneVisualLoad = hydroplaneLoad.toFixed(3);
       this.renderer.domElement.dataset.tireWaterFilmVisual = tireWaterFilm.toFixed(3);

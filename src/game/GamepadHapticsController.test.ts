@@ -67,6 +67,7 @@ const baseTelemetry = {
   aeroYawStall: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
+  wheelHopLoad: 0,
   floorStrikeLoad: 0,
   car: {
     slip: 0,
@@ -244,6 +245,17 @@ describe("raceHapticEffect", () => {
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns wheel hop into fast chassis texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const hopping = raceHapticEffect({
+      ...baseTelemetry,
+      wheelHopLoad: 0.38
+    });
+
+    expect(hopping?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(hopping?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns tire pressure load into contact-patch texture", () => {

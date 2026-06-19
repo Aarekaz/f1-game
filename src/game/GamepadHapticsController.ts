@@ -67,6 +67,7 @@ type HapticTelemetry = Pick<
   | "aeroYawStall"
   | "suspensionVelocity"
   | "damperImpulse"
+  | "wheelHopLoad"
   | "floorStrikeLoad"
 > & {
   car: Pick<RaceTelemetry["car"], "slip" | "braking" | "wheelspin" | "understeer" | "lockup">;
@@ -129,6 +130,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireThermalLoad * 0.34,
       telemetry.tireResponseLoad * 0.5,
       telemetry.tireCarcassFlex * 0.5,
+      telemetry.wheelHopLoad * 0.46,
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.48,
       telemetry.brakeBalanceLoad * 0.52,
       brakeBiteLoss * 1.05,
@@ -188,6 +190,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.chassisHeave) * 0.9 +
       telemetry.rideSettling * 0.42 +
       telemetry.damperImpulse * 0.5 +
+      telemetry.wheelHopLoad * 0.24 +
       telemetry.floorStrikeLoad * 0.58 +
       Math.abs(telemetry.suspensionVelocity) * 0.18 +
       telemetry.tirePressureLoad * 0.2 +
@@ -244,6 +247,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireThermalLoad * 0.1 +
       telemetry.tireResponseLoad * 0.14 +
       telemetry.tireCarcassFlex * 0.14 +
+      telemetry.wheelHopLoad * 0.16 +
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.14 +
       telemetry.brakeBalanceLoad * 0.13 +
       brakeBiteLoss * 0.12 +

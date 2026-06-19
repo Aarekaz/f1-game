@@ -398,6 +398,7 @@ export class HudController {
     if (telemetry.tireLoadFeedback > 0.58) return `Tire load ${(telemetry.tireLoadFeedback * 100).toFixed(0)}%`;
     if (telemetry.tireGroundContact < 0.94) return `Light contact ${((1 - telemetry.tireGroundContact) * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.splitSurfaceLoad) > 0.2) return `Split grip ${(Math.abs(telemetry.splitSurfaceLoad) * 100).toFixed(0)}%`;
+    if (telemetry.wheelHopLoad > 0.18) return `Wheel hop ${(telemetry.wheelHopLoad * 100).toFixed(0)}%`;
     if (telemetry.rideSettling > 0.16) return `Ride settling ${(telemetry.rideSettling * 100).toFixed(0)}%`;
     if (telemetry.roadTextureLoad > 0.22) return `Road texture ${(telemetry.roadTextureLoad * 100).toFixed(0)}%`;
     if (telemetry.damperImpulse > 0.2) return `Damper hit ${(telemetry.damperImpulse * 100).toFixed(0)}%`;

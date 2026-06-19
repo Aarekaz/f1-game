@@ -69,6 +69,7 @@ type AudioTelemetry = Pick<
   | "aeroYawStall"
   | "suspensionVelocity"
   | "damperImpulse"
+  | "wheelHopLoad"
   | "floorStrikeLoad"
 > & {
   car: Pick<RaceTelemetry["car"], "slip" | "braking" | "throttle" | "wheelspin" | "understeer" | "lockup">;
@@ -125,6 +126,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.tireThermalLoad * 0.32,
       telemetry.tireResponseLoad * 0.48,
       telemetry.tireCarcassFlex * 0.5,
+      telemetry.wheelHopLoad * 0.44,
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.52,
       telemetry.brakeBalanceLoad * 0.52,
       brakeBiteLoss * 0.5,
@@ -232,6 +234,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.abs(telemetry.chassisHeave) * 220 +
       telemetry.rideSettling * 64 +
       telemetry.damperImpulse * 135 +
+      telemetry.wheelHopLoad * 92 +
       telemetry.floorStrikeLoad * 170 +
       Math.abs(telemetry.suspensionVelocity) * 80 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 110 +
@@ -260,6 +263,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.tireThermalLoad * 0.007 +
         telemetry.tireResponseLoad * 0.01 +
         telemetry.tireCarcassFlex * 0.012 +
+        telemetry.wheelHopLoad * 0.012 +
         Math.max(0, 1 - telemetry.tireContactPatch) * 0.014 +
         telemetry.brakeBalanceLoad * 0.01 +
         brakeBiteLoss * 0.014 +

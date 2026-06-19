@@ -68,6 +68,7 @@ const baseTelemetry = {
   aeroYawStall: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
+  wheelHopLoad: 0,
   floorStrikeLoad: 0,
   car: {
     slip: 0,
@@ -239,6 +240,18 @@ describe("raceAudioMix", () => {
 
     expect(loaded.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire chatter from wheel hop", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const hopping = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 170,
+      wheelHopLoad: 0.38
+    });
+
+    expect(hopping.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(hopping.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture from pressure load", () => {

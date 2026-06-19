@@ -220,6 +220,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Tire-response load now makes abrupt steering and overloaded tires build force through a short settling window, trimming lateral force while feeding tire audio, haptics, HUD text, and visible wheel load.
 - Tire carcass flex now gives overloaded rubber a short physical memory after lockups, wheelspin, kerbs, water, and heavy load, feeding tire sound, haptics, HUD text, and visible squash.
 - Road texture now has memory: kerbs, split surfaces, standing water, and repeated rough hits build into ride settling and chassis heave, then fade instead of disappearing frame by frame.
+- Wheel-hop load now catches light-contact chatter from crests, kerbs, damper hits, lockups, and wheelspin, feeding road feel, tire texture, haptics, HUD text, and visible wheel/body movement.
 - Road-camber load now gives banked asphalt a shared physics signal, feeding lateral road tug, tire and steering feedback, audio, haptics, HUD text, and visible car load without treating clean camber like a split-surface hit.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
 - Axle-load saturation now separates helpful weight transfer from overloaded tires, feeding lockup and understeer risk plus tire audio, haptics, HUD text, and visible tire load.
