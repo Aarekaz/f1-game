@@ -361,6 +361,8 @@ export class HudController {
     if (telemetry.brakeBalanceLoad > 0.24) return `Brake balance ${(telemetry.brakeBalanceLoad * 100).toFixed(0)}%`;
     if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;
+    if (telemetry.tirePressureLoad > 0.18) return `Tire pressure ${(telemetry.tirePressure * 100).toFixed(0)}%`;
+    if (telemetry.tireContactPatch < 0.93) return `Contact patch ${(telemetry.tireContactPatch * 100).toFixed(0)}%`;
     if (telemetry.insideRearSlip > 0.16) return `Inside rear ${(telemetry.insideRearSlip * 100).toFixed(0)}%`;
     if (telemetry.differentialLock > 0.18) return `Diff lock ${(telemetry.differentialLock * 100).toFixed(0)}%`;
     if (telemetry.driveTorqueLoad > 0.3) return `Drive torque ${(telemetry.driveTorqueLoad * 100).toFixed(0)}%`;

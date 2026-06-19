@@ -15,6 +15,9 @@ const baseTelemetry = {
   tireLoadFeedback: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
+  tirePressure: 1,
+  tireContactPatch: 1,
+  tirePressureLoad: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
@@ -114,6 +117,20 @@ describe("raceAudioMix", () => {
       speedKph: 205,
       combinedSlipLoad: 0.54,
       tireGripReserve: 0.68
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from pressure load", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 220,
+      tirePressure: 1.1,
+      tireContactPatch: 0.88,
+      tirePressureLoad: 0.42
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

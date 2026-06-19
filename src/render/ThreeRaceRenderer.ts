@@ -290,6 +290,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.tireForceLoad = telemetry.tireForceLoad.toFixed(3);
     this.renderer.domElement.dataset.combinedSlipLoad = telemetry.combinedSlipLoad.toFixed(3);
     this.renderer.domElement.dataset.tireGripReserve = telemetry.tireGripReserve.toFixed(3);
+    this.renderer.domElement.dataset.tirePressure = telemetry.tirePressure.toFixed(3);
+    this.renderer.domElement.dataset.tireContactPatch = telemetry.tireContactPatch.toFixed(3);
+    this.renderer.domElement.dataset.tirePressureLoad = telemetry.tirePressureLoad.toFixed(3);
     this.renderer.domElement.dataset.tireSaturation = telemetry.tireSaturation.toFixed(3);
     this.renderer.domElement.dataset.tireRelaxation = telemetry.tireRelaxation.toFixed(3);
     this.renderer.domElement.dataset.tireLoadFeedback = telemetry.tireLoadFeedback.toFixed(3);
@@ -478,6 +481,9 @@ export class ThreeRaceRenderer {
       tireLoadFeedback: telemetry.tireLoadFeedback,
       combinedSlipLoad: telemetry.combinedSlipLoad,
       tireGripReserve: telemetry.tireGripReserve,
+      tirePressure: telemetry.tirePressure,
+      tireContactPatch: telemetry.tireContactPatch,
+      tirePressureLoad: telemetry.tirePressureLoad,
       counterSteerLoad: telemetry.counterSteerLoad,
       slipRecovery: telemetry.slipRecovery,
       chassisStability: telemetry.chassisStability,
@@ -503,6 +509,7 @@ export class ThreeRaceRenderer {
           telemetry.counterSteerLoad * 0.24 +
           telemetry.slipRecovery * 0.18 +
           Math.max(0, 1 - telemetry.chassisStability) * 0.22 +
+          telemetry.tirePressureLoad * 0.2 +
           telemetry.frontLockRisk * 0.3 +
           Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22 +
           telemetry.insideRearSlip * 0.28 +
@@ -867,6 +874,9 @@ export class ThreeRaceRenderer {
         tireLoadFeedback: clamp(rival.speedKph / 320, 0, 1) * 0.28,
         combinedSlipLoad: 0,
         tireGripReserve: 1,
+        tirePressure: 1,
+        tireContactPatch: 1,
+        tirePressureLoad: 0,
         counterSteerLoad: 0,
         slipRecovery: 0,
         chassisStability: 1,
@@ -1418,6 +1428,9 @@ export class ThreeRaceRenderer {
       tireLoadFeedback: number;
       combinedSlipLoad: number;
       tireGripReserve: number;
+      tirePressure: number;
+      tireContactPatch: number;
+      tirePressureLoad: number;
       counterSteerLoad: number;
       slipRecovery: number;
       chassisStability: number;
@@ -1470,6 +1483,9 @@ export class ThreeRaceRenderer {
     const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
     const combinedSlipLoad = clamp(state.combinedSlipLoad, 0, 1);
     const tireGripReserve = clamp(state.tireGripReserve, 0.52, 1.04);
+    const tirePressure = clamp(state.tirePressure, 0.86, 1.18);
+    const tireContactPatch = clamp(state.tireContactPatch, 0.74, 1.1);
+    const tirePressureLoad = clamp(state.tirePressureLoad, 0, 1);
     const counterSteerLoad = clamp(state.counterSteerLoad, 0, 1);
     const slipRecovery = clamp(state.slipRecovery, 0, 1);
     const chassisStability = clamp(state.chassisStability, 0.34, 1.08);
@@ -1513,6 +1529,8 @@ export class ThreeRaceRenderer {
           side * Math.sign(state.steering || -rearTractionRotation || 1) * counterSteerLoad * 0.14 -
           Math.max(0, 1 - chassisStability) * 0.12 +
           slipRecovery * 0.08 +
+          tirePressureLoad * 0.1 -
+          Math.max(0, 1 - tireContactPatch) * 0.16 +
           side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
@@ -1526,6 +1544,9 @@ export class ThreeRaceRenderer {
         surfaceKick * 0.018 +
         combinedSlipLoad * 0.008 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
+        tirePressureLoad * 0.012 +
+        Math.max(0, 1 - tireContactPatch) * 0.018 +
+        Math.max(0, tirePressure - 1.04) * 0.03 +
         brakeBalanceLoad * 0.01 +
         driveTorqueLoad * 0.006 +
         counterSteerLoad * 0.01 +
@@ -1563,6 +1584,9 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.tireGripReserveVisual = tireGripReserve.toFixed(3);
+      this.renderer.domElement.dataset.tirePressureVisual = tirePressure.toFixed(3);
+      this.renderer.domElement.dataset.tireContactPatchVisual = tireContactPatch.toFixed(3);
+      this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
       this.renderer.domElement.dataset.counterSteerVisualLoad = counterSteerLoad.toFixed(3);
       this.renderer.domElement.dataset.slipRecoveryVisual = slipRecovery.toFixed(3);
       this.renderer.domElement.dataset.chassisStabilityVisual = chassisStability.toFixed(3);

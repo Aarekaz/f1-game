@@ -363,6 +363,9 @@ async function checkDesktop(browser) {
     tireForceLoad: Number(document.querySelector("#game canvas")?.dataset.tireForceLoad ?? 0),
     combinedSlipLoad: Number(document.querySelector("#game canvas")?.dataset.combinedSlipLoad ?? 0),
     tireGripReserve: Number(document.querySelector("#game canvas")?.dataset.tireGripReserve ?? 0),
+    tirePressure: Number(document.querySelector("#game canvas")?.dataset.tirePressure ?? 0),
+    tireContactPatch: Number(document.querySelector("#game canvas")?.dataset.tireContactPatch ?? 0),
+    tirePressureLoad: Number(document.querySelector("#game canvas")?.dataset.tirePressureLoad ?? 0),
     brakeBalanceVisualLoad: Number(document.querySelector("#game canvas")?.dataset.brakeBalanceVisualLoad ?? 0),
     frontLockRiskVisual: Number(document.querySelector("#game canvas")?.dataset.frontLockRiskVisual ?? 0),
     rearBrakeLightnessVisual: Number(document.querySelector("#game canvas")?.dataset.rearBrakeLightnessVisual ?? 0),
@@ -404,6 +407,9 @@ async function checkDesktop(browser) {
     chassisVisualLoad: Number(document.querySelector("#game canvas")?.dataset.chassisVisualLoad ?? 0),
     combinedSlipVisualLoad: Number(document.querySelector("#game canvas")?.dataset.combinedSlipVisualLoad ?? 0),
     tireGripReserveVisual: Number(document.querySelector("#game canvas")?.dataset.tireGripReserveVisual ?? 0),
+    tirePressureVisual: Number(document.querySelector("#game canvas")?.dataset.tirePressureVisual ?? 0),
+    tireContactPatchVisual: Number(document.querySelector("#game canvas")?.dataset.tireContactPatchVisual ?? 0),
+    tirePressureVisualLoad: Number(document.querySelector("#game canvas")?.dataset.tirePressureVisualLoad ?? 0),
     counterSteerVisualLoad: Number(document.querySelector("#game canvas")?.dataset.counterSteerVisualLoad ?? 0),
     slipRecoveryVisual: Number(document.querySelector("#game canvas")?.dataset.slipRecoveryVisual ?? 0),
     chassisStabilityVisual: Number(document.querySelector("#game canvas")?.dataset.chassisStabilityVisual ?? 0),
@@ -788,8 +794,17 @@ async function checkDesktop(browser) {
   assert(state.tireForceLoad >= 0 && state.tireForceLoad <= 1.85, `desktop tire force load telemetry was invalid: ${state.tireForceLoad}`);
   assert(state.combinedSlipLoad >= 0 && state.combinedSlipLoad <= 1, `desktop combined slip telemetry was invalid: ${state.combinedSlipLoad}`);
   assert(state.tireGripReserve >= 0.52 && state.tireGripReserve <= 1.05, `desktop tire grip reserve telemetry was invalid: ${state.tireGripReserve}`);
+  assert(state.tirePressure >= 0.86 && state.tirePressure <= 1.18, `desktop tire pressure telemetry was invalid: ${state.tirePressure}`);
+  assert(state.tireContactPatch >= 0.74 && state.tireContactPatch <= 1.1, `desktop tire contact patch telemetry was invalid: ${state.tireContactPatch}`);
+  assert(state.tirePressureLoad >= 0 && state.tirePressureLoad <= 1, `desktop tire pressure load telemetry was invalid: ${state.tirePressureLoad}`);
   assert(Number.isFinite(state.combinedSlipVisualLoad) && state.combinedSlipVisualLoad >= 0, "desktop combined slip visual load was missing");
   assert(state.tireGripReserveVisual >= 0.52 && state.tireGripReserveVisual <= 1.05, `desktop tire grip reserve visual load was invalid: ${state.tireGripReserveVisual}`);
+  assert(state.tirePressureVisual >= 0.86 && state.tirePressureVisual <= 1.18, `desktop tire pressure visual load was invalid: ${state.tirePressureVisual}`);
+  assert(
+    state.tireContactPatchVisual >= 0.74 && state.tireContactPatchVisual <= 1.1,
+    `desktop tire contact patch visual load was invalid: ${state.tireContactPatchVisual}`
+  );
+  assert(state.tirePressureVisualLoad >= 0 && state.tirePressureVisualLoad <= 1, `desktop tire pressure visual load was invalid: ${state.tirePressureVisualLoad}`);
   assert(state.brakeBalanceVisualLoad >= 0 && state.brakeBalanceVisualLoad <= 1, `desktop brake balance visual load was invalid: ${state.brakeBalanceVisualLoad}`);
   assert(state.frontLockRiskVisual >= 0 && state.frontLockRiskVisual <= 1, `desktop front lock risk visual load was invalid: ${state.frontLockRiskVisual}`);
   assert(state.rearBrakeLightnessVisual >= 0 && state.rearBrakeLightnessVisual <= 1, `desktop rear brake lightness visual load was invalid: ${state.rearBrakeLightnessVisual}`);

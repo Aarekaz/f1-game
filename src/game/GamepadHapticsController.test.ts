@@ -14,6 +14,9 @@ const baseTelemetry = {
   tireLoadFeedback: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
+  tirePressure: 1,
+  tireContactPatch: 1,
+  tirePressureLoad: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
@@ -124,6 +127,20 @@ describe("raceHapticEffect", () => {
       speedKph: 205,
       combinedSlipLoad: 0.54,
       tireGripReserve: 0.68
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns tire pressure load into contact-patch texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 220,
+      tirePressure: 1.1,
+      tireContactPatch: 0.88,
+      tirePressureLoad: 0.42
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

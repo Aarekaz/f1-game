@@ -14,6 +14,9 @@ type HapticTelemetry = Pick<
   | "tireLoadFeedback"
   | "combinedSlipLoad"
   | "tireGripReserve"
+  | "tirePressure"
+  | "tireContactPatch"
+  | "tirePressureLoad"
   | "brakeBalanceLoad"
   | "frontLockRisk"
   | "rearBrakeStability"
@@ -85,6 +88,8 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireLoadFeedback * 0.72,
       telemetry.combinedSlipLoad * 0.54,
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.46,
+      telemetry.tirePressureLoad * 0.56,
+      Math.max(0, 1 - telemetry.tireContactPatch) * 0.48,
       telemetry.brakeBalanceLoad * 0.52,
       telemetry.frontLockRisk * 0.88,
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.68,
@@ -113,6 +118,8 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadFeelFeedback * 0.48 +
       telemetry.damperImpulse * 0.5 +
       Math.abs(telemetry.suspensionVelocity) * 0.18 +
+      telemetry.tirePressureLoad * 0.2 +
+      Math.max(0, 1 - telemetry.tireContactPatch) * 0.2 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.44 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.38 +
       Math.abs(telemetry.rearTractionRotation) * 0.18 +
@@ -138,6 +145,8 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireLoadFeedback * 0.16 +
       telemetry.combinedSlipLoad * 0.14 +
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.1 +
+      telemetry.tirePressureLoad * 0.16 +
+      Math.max(0, 1 - telemetry.tireContactPatch) * 0.14 +
       telemetry.brakeBalanceLoad * 0.13 +
       telemetry.frontLockRisk * 0.18 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.14 +
