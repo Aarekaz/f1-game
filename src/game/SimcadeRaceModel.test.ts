@@ -879,6 +879,28 @@ describe("SimcadeRaceModel", () => {
     expect(committedTurn.tireForceLoad).toBeGreaterThan(firstTurn.tireForceLoad);
   });
 
+  it("loads the steering rack when the driver throws abrupt opposite lock", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    run(model, 4.8, { throttle: 1, ers: true });
+    const right = run(model, 0.42, { throttle: 1, steer: 0.82 });
+    const opposite = model.update(1 / 60, { ...idle, throttle: 1, steer: -0.82 });
+    const settled = run(model, 0.9, { throttle: 1, steer: -0.82 });
+
+    expect(right.steeringVelocity).toBeGreaterThan(0);
+    expect(opposite.steeringVelocity).toBeLessThan(-0.08);
+    expect(opposite.steeringImpulse).toBeGreaterThan(right.steeringImpulse);
+    expect(opposite.steeringRackLoad).toBeGreaterThan(0.45);
+    expect(opposite.steeringLoadFeedback).toBeGreaterThan(0.2);
+    expect(opposite.car.steering).toBeGreaterThan(-0.82);
+    expect(settled.steeringImpulse).toBeLessThan(opposite.steeringImpulse);
+    expect(settled.tireRelaxation).toBeLessThan(1);
+  });
+
   it("spends tire contact on hard steering instead of sliding without scrub", () => {
     const model = new SimcadeRaceModel();
     model.update(1 / 60, { ...idle, launch: true });
@@ -1744,6 +1766,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireLoadFeedback).toBe(0);
     expect(telemetry.steeringLoadFeedback).toBe(0);
     expect(telemetry.steeringRackLoad).toBe(0);
+    expect(telemetry.steeringVelocity).toBe(0);
+    expect(telemetry.steeringImpulse).toBe(0);
     expect(telemetry.selfAlignTorque).toBe(0);
     expect(telemetry.yawInertiaLoad).toBe(0);
     expect(telemetry.yawDamping).toBe(1);
