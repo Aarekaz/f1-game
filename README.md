@@ -74,6 +74,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP throttle pickup](readme-assets/screenshots/44-aurelia-throttle-pickup.png) |
 
+| Power-on understeer |
+| --- |
+| ![Aurelia GP power-on understeer](readme-assets/screenshots/45-aurelia-power-understeer.png) |
+
 | Trail-braking turn-in |
 | --- |
 | ![Aurelia GP trail-braking turn-in](readme-assets/screenshots/18-aurelia-trail-braking-turn-in.png) |
@@ -196,6 +200,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Lift-off engine braking now loads the nose and slows the car through the powertrain instead of making throttle release feel like a neutral coast.
 - Lift-off rotation now keeps a short rear-lightness memory when you release throttle mid-corner, adding catchable yaw, tire scrub, chassis load, audio, haptics, and HUD feedback.
 - Throttle pickup now settles the rear when you feed power back in after a lift, while an impatient reapplication still adds tire bite, wheelspin risk, chassis motion, audio, haptics, and HUD feedback.
+- Power-on understeer now loads the front tires when throttle arrives before the wheel is unwound, trimming steering authority, grip reserve, tire scrub, audio, haptics, camera, and HUD feedback from one shared signal.
 - Trail braking now has its own handling state: partial brake plus steering loads the nose, helps the car rotate, and still carries lockup risk if you overdo it.
 - Threshold braking now rewards measured brake pressure before lockup, so easing off after a panic stop can recover longitudinal grip instead of dragging flat tires forever.
 - Brake-balance stability now separates front lock risk from rear lightness under braking, so panic stops wash wide while trail braking can rotate the car without feeling random.

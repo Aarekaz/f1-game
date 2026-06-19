@@ -22,3 +22,4 @@ The current set was refreshed on 2026-05-30 from live gameplay rather than stage
 - `17-aurelia-lift-off-engine-braking.png`: lift-off moment with the car loaded on the nose while engine braking slows the chassis.
 - `43-aurelia-lift-off-rotation.png`: Basilica Hairpin lift-off rotation with rear-lightness feedback visible in the HUD.
 - `44-aurelia-throttle-pickup.png`: Basilica Hairpin throttle pickup after a lift, showing the rear settling as power comes back in.
+- `45-aurelia-power-understeer.png`: early-throttle corner-exit push with power-understeer HUD feedback visible.
