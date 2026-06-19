@@ -776,6 +776,7 @@ describe("SimcadeRaceModel", () => {
 
     expect(peakEdgeLoad).toBeGreaterThan(0.12);
     expect(lowestAdhesion).toBeLessThan(cruise.roadAdhesion);
+    expect(loaded.insideWheelUnload).toBeGreaterThan(cruise.insideWheelUnload + 0.03);
     expect(loaded.suspensionTravel).toBeGreaterThan(cruise.suspensionTravel);
   });
 
@@ -2101,6 +2102,9 @@ describe("SimcadeRaceModel", () => {
     expect(rightCruise.outsideTireLoad).toBeLessThan(0.08);
     expect(rightLoaded.outsideTireLoad).toBeGreaterThan(rightCruise.outsideTireLoad + 0.06);
     expect(leftLoaded.outsideTireLoad).toBeGreaterThan(rightCruise.outsideTireLoad + 0.06);
+    expect(rightCruise.insideWheelUnload).toBeLessThan(0.08);
+    expect(rightLoaded.insideWheelUnload).toBeGreaterThan(rightCruise.insideWheelUnload + 0.04);
+    expect(leftLoaded.insideWheelUnload).toBeGreaterThan(rightCruise.insideWheelUnload + 0.04);
     expect(rightLoaded.tireLoadFeedback).toBeGreaterThan(rightCruise.tireLoadFeedback);
     expect(rightLoaded.steeringLoadFeedback).toBeGreaterThan(rightCruise.steeringLoadFeedback);
     expect(Math.sign(rightLoaded.car.roll)).not.toBe(Math.sign(leftLoaded.car.roll));
@@ -2209,6 +2213,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.axleLoadSaturation).toBe(0);
     expect(telemetry.longitudinalLoadTransfer).toBe(0);
     expect(telemetry.lateralLoadTransfer).toBe(0);
+    expect(telemetry.outsideTireLoad).toBe(0);
+    expect(telemetry.insideWheelUnload).toBe(0);
     expect(telemetry.brakeBalanceLoad).toBe(0);
     expect(telemetry.frontLockRisk).toBe(0);
     expect(telemetry.rearBrakeStability).toBe(1);
