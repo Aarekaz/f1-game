@@ -44,6 +44,9 @@ export type RaceTelemetry = {
   tireForceLoad: number;
   combinedSlipLoad: number;
   tireGripReserve: number;
+  tirePressure: number;
+  tireContactPatch: number;
+  tirePressureLoad: number;
   tireSaturation: number;
   tireRelaxation: number;
   tireLoadFeedback: number;
@@ -344,6 +347,9 @@ export class SimcadeRaceModel {
   private tireForceLoad = 0;
   private combinedSlipLoad = 0;
   private tireGripReserve = 1;
+  private tirePressure = 1;
+  private tireContactPatch = 1;
+  private tirePressureLoad = 0;
   private tireSaturation = 0;
   private tireRelaxation = 0;
   private tireLoadFeedback = 0;
@@ -517,6 +523,9 @@ export class SimcadeRaceModel {
       tireForceLoad: this.tireForceLoad,
       combinedSlipLoad: this.combinedSlipLoad,
       tireGripReserve: this.tireGripReserve,
+      tirePressure: this.tirePressure,
+      tireContactPatch: this.tireContactPatch,
+      tirePressureLoad: this.tirePressureLoad,
       tireSaturation: this.tireSaturation,
       tireRelaxation: this.tireRelaxation,
       tireLoadFeedback: this.tireLoadFeedback,
@@ -758,6 +767,9 @@ export class SimcadeRaceModel {
     this.tireForceLoad = 0;
     this.combinedSlipLoad = 0;
     this.tireGripReserve = 1;
+    this.tirePressure = 1;
+    this.tireContactPatch = 1;
+    this.tirePressureLoad = 0;
     this.tireSaturation = 0;
     this.tireRelaxation = 0;
     this.tireLoadFeedback = 0;
@@ -873,7 +885,7 @@ export class SimcadeRaceModel {
     const offTrackDistance = Math.max(0, Math.abs(carLateral) - track.halfWidth);
     const offTrackSide = Math.sign(carLateral) || 1;
     const roadRecoveryNeed = clamp((offTrackDistance - 0.12) / 2.7, 0, 1);
-    const tireContact = this.tireContactPatch(carLateral);
+    const tireContact = this.sampleTireContactPatch(carLateral);
     this.tireContactGrip = approach(this.tireContactGrip, tireContact.grip, dt * (tireContact.grip < this.tireContactGrip ? 12 : 6));
     this.tireRunoffShare = approach(this.tireRunoffShare, tireContact.runoffShare, dt * 12);
     const roadCamber = surfaceBankAt(carLateral, track);
@@ -1127,8 +1139,15 @@ export class SimcadeRaceModel {
     const lateralLoadStress = Math.max(0, lateralLoad - 0.3);
     const frontLoadGrip = clamp(0.9 + this.frontAxleLoad * 0.1 - Math.max(0, this.frontAxleLoad - 1.18) * 0.22, 0.82, 1.06);
     const rearLoadGrip = clamp(0.88 + this.rearAxleLoad * 0.12 - Math.max(0, this.rearAxleLoad - 1.16) * 0.18, 0.82, 1.07);
+    const pressureGripFactor = clamp(0.94 + this.tireContactPatch * 0.08 - this.tirePressureLoad * 0.035, 0.9, 1.04);
     const rearTractionSupport = clamp(
-      0.86 + this.rearAxleLoad * 0.14 - Math.max(0, this.longitudinalLoadTransfer) * 0.12 - this.engineBraking * 0.035 - trailBrakeInstability * 0.045,
+      0.86 +
+        this.rearAxleLoad * 0.14 -
+        Math.max(0, this.longitudinalLoadTransfer) * 0.12 -
+        this.engineBraking * 0.035 -
+        trailBrakeInstability * 0.045 +
+        (this.tireContactPatch - 1) * 0.06 -
+        this.tirePressureLoad * 0.015,
       0.78,
       1.08
     );
@@ -1209,6 +1228,7 @@ export class SimcadeRaceModel {
         rearTractionSlipWindow *
         (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.28) *
         clamp(0.72 + this.rearAxleLoad * 0.22, 0.72, 1.05) *
+        pressureGripFactor *
         clamp(0.94 + this.differentialLock * 0.14 + this.insideRearSlip * 0.12, 0.92, 1.18),
       -0.42,
       0.42
@@ -1224,6 +1244,7 @@ export class SimcadeRaceModel {
         speedRatio *
         brakeDiscipline *
         clamp(0.72 + this.frontAxleLoad * 0.2 - this.rearAxleLoad * 0.04, 0.72, 1.05) *
+        pressureGripFactor *
         clamp(1 - this.lockup * 0.95 - this.brakeFade * 0.18, 0, 1) *
         (1 - roadWetness * 0.28) *
         (onTrack ? 1 : 0.35 + this.tireContactGrip * 0.4),
@@ -1262,6 +1283,7 @@ export class SimcadeRaceModel {
         (1 - this.tireRelaxation * 0.03) *
         (1 + (this.frontAeroLoad + this.rearAeroLoad) * 0.13) *
         clamp(frontLoadGrip * 0.56 + rearLoadGrip * 0.44, 0.82, 1.08) *
+        pressureGripFactor *
         (1 - this.aeroWashout * 0.08) *
         (1 - this.damperImpulse * 0.08) *
         (1 - this.downforceLoss * 0.45),
@@ -1276,7 +1298,9 @@ export class SimcadeRaceModel {
     const tireGripReserveTarget = clamp(
       1 -
         this.combinedSlipLoad * 0.22 -
-        reservePressure * 0.14,
+        reservePressure * 0.14 -
+        this.tirePressureLoad * 0.04 +
+        (this.tireContactPatch - 1) * 0.06,
       0.52,
       1.04
     );
@@ -1307,6 +1331,7 @@ export class SimcadeRaceModel {
           Math.max(0, this.frontAxleLoad - 1.18) * 0.34 +
           this.tireSaturation * 0.3 +
           Math.max(0, 1 - this.tireGripReserve) * 0.48 +
+          this.tirePressureLoad * 0.1 +
           Math.max(0, 1 - this.tireGroundContact) * 0.32 +
           this.standingWater * (0.38 + speedRatio * 0.22) +
           this.brakeFade * 0.18 +
@@ -1539,6 +1564,10 @@ export class SimcadeRaceModel {
       ? 0
       : settledRecoveryInput * (surface.name === "Gravel" ? 78 : 110) * (0.42 + roadRecoveryNeed * 0.58) * lowSpeedRecoveryWindow;
     const looseSurfaceCrawlDrive = onTrack ? 0 : throttle * recoverySteerGrip * (surface.name === "Gravel" ? 188 : 112) * crawlRecoveryWindow;
+    const kerbCrawlDrive =
+      onTrack && surface.name === "Kerb"
+        ? throttle * (1 - brake) * crawlRecoveryWindow * 68 * clamp(0.55 + this.tireContactGrip * 0.32 - this.tireRelaxation * 0.12, 0.42, 1)
+        : 0;
     const crawlDragCut = onTrack ? 0 : recoverySteerGrip * settledRecoveryInput * crawlRecoveryWindow * (surface.name === "Gravel" ? 0.42 : 0.28);
     const offTrackDrag = Math.max(surface.drag, tireContact.drag) * (onTrack ? 1 : (1.18 + roadWetness * 0.34) * (1 - looseSurfaceRecoveryRelief) * (1 - crawlDragCut));
     this.surfaceRumble = approach(
@@ -1559,6 +1588,7 @@ export class SimcadeRaceModel {
         boostPower +
         aeroPower +
         draftPower +
+        kerbCrawlDrive +
         looseSurfaceRecoveryDrive +
         looseSurfaceCrawlDrive +
         gradeForce -
@@ -1694,6 +1724,7 @@ export class SimcadeRaceModel {
             damageGripFactor *
             fuelGripFactor *
             loadGripFactor *
+            pressureGripFactor *
             clamp(frontLoadGrip * 0.62 + rearLoadGrip * 0.38, 0.86, 1.06) *
             bankingSupport -
             wetPenalty -
@@ -1915,6 +1946,7 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.18 +
         this.driveTorqueLoad * 0.06 +
         this.insideRearSlip * 0.18 +
+        this.tirePressureLoad * 0.14 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
         Math.abs(this.rearTractionRotation) * 0.14 +
         Math.max(0, 1 - this.rearBrakeStability) * 0.16 +
@@ -2018,6 +2050,7 @@ export class SimcadeRaceModel {
         trailBrakeInstability * 0.035 +
         lateralLoadStress * 0.028 +
         slipAngleLoad * 0.12 +
+        this.tirePressureLoad * 0.1 +
         this.surfaceEdgeLoad * 0.12 +
         Math.abs(this.splitSurfaceLoad) * 0.14 +
         Math.abs(this.rearTractionRotation) * 0.12 +
@@ -2036,6 +2069,8 @@ export class SimcadeRaceModel {
         slipAngleLoad * 0.22 +
         lateralLoadStress * 0.16 +
         this.tireRelaxation * 0.14 +
+        this.tirePressureLoad * 0.12 +
+        Math.max(0, 1 - this.tireContactPatch) * 0.08 +
         Math.max(0, 1 - this.chassisStability) * 0.12 -
         this.slipRecovery * 0.1 +
         this.damperImpulse * 0.12 +
@@ -2304,6 +2339,9 @@ export class SimcadeRaceModel {
     this.tireGroundContact = Math.max(this.tireGroundContact, 0.9);
     this.combinedSlipLoad = 0;
     this.tireGripReserve = Math.max(this.tireGripReserve, 0.82);
+    this.tirePressure = 1;
+    this.tireContactPatch = Math.max(this.tireContactPatch, 0.92);
+    this.tirePressureLoad = 0;
     this.tireRelaxation = 0;
     this.tireLoadFeedback = 0;
     this.steeringLoadFeedback = 0;
@@ -2368,7 +2406,7 @@ export class SimcadeRaceModel {
     return this.surfaceForLateral(track, this.x - track.center);
   }
 
-  private tireContactPatch(carLateral: number) {
+  private sampleTireContactPatch(carLateral: number) {
     const wheelHalfTrack = 1.08;
     const axleOffsets = [-1.55, 1.55];
     let grip = 0;
@@ -2560,6 +2598,7 @@ export class SimcadeRaceModel {
   }
 
   private updateTireState(dt: number, speedRatio: number, throttle: number, brake: number, steerDemand: number, surfaceRoughness: number, onTrack: boolean) {
+    const roadWetness = this.dynamicRoadWetness();
     const heatLoad =
       speedRatio * 0.16 +
       steerDemand * speedRatio * 0.22 +
@@ -2567,9 +2606,65 @@ export class SimcadeRaceModel {
       this.wheelspin * 0.34 +
       this.lockup * 0.42 +
       surfaceRoughness * 0.12;
-    const cooling = this.dynamicRoadWetness() * 0.16 + (1 - throttle) * 0.035;
+    const cooling = roadWetness * 0.16 + (1 - throttle) * 0.035;
     const targetTemp = clamp(0.42 + heatLoad - cooling, 0.2, 1.08);
     this.tireTemp = approach(this.tireTemp, targetTemp, dt * (targetTemp > this.tireTemp ? 1.55 : 0.95));
+
+    const loadPressure =
+      Math.max(0, this.suspensionLoad - 1) * 0.1 +
+      Math.abs(this.lateralLoadTransfer) * 0.08 +
+      this.tireForceLoad * 0.045 +
+      this.aeroPlatformLoad * 0.035 +
+      brake * speedRatio * 0.03 +
+      surfaceRoughness * speedRatio * 0.025;
+    const pressureTarget = clamp(
+      0.92 +
+        this.tireTemp * 0.13 +
+        speedRatio * speedRatio * 0.05 +
+        loadPressure +
+        this.dirtyTirePickup * 0.018 +
+        this.tireWear * 0.025 -
+        roadWetness * 0.052 -
+        this.standingWater * 0.035,
+      0.86,
+      1.18
+    );
+    const previousPressure = this.tirePressure;
+    this.tirePressure = approach(this.tirePressure, pressureTarget, dt * (pressureTarget > this.tirePressure ? 0.9 : 1.35));
+    const highPressure = Math.max(0, this.tirePressure - 1.04);
+    const lowPressure = Math.max(0, 0.96 - this.tirePressure);
+    const pressureChange = Math.abs(this.tirePressure - previousPressure) / Math.max(dt, 1 / 120);
+    this.tirePressureLoad = approach(
+      this.tirePressureLoad,
+      clamp(
+        highPressure * 4.2 +
+          lowPressure * 3.2 +
+          pressureChange * 0.08 +
+          Math.max(0, this.suspensionLoad - 1.12) * 0.28 +
+          surfaceRoughness * speedRatio * 0.12 +
+          this.tireForceLoad * 0.055,
+        0,
+        1
+      ),
+      dt * (pressureTarget > this.tirePressure ? 5.8 : 4.2)
+    );
+    const contactPatchTarget = clamp(
+      1 +
+        Math.max(0, 1 - this.tirePressure) * 0.2 -
+        highPressure * 1.15 -
+        lowPressure * 0.35 +
+        Math.max(0, this.suspensionLoad - 1) * 0.055 +
+        this.aeroPlatformLoad * 0.025 -
+        Math.max(0, 1 - this.tireGroundContact) * 0.16 -
+        surfaceRoughness * 0.035,
+      0.74,
+      1.1
+    );
+    this.tireContactPatch = approach(
+      this.tireContactPatch,
+      contactPatchTarget,
+      dt * (contactPatchTarget < this.tireContactPatch ? 6.8 : 4.2)
+    );
 
     const wearRate =
       0.00025 +

@@ -63,8 +63,9 @@ function runUntilFinished(model: SimcadeRaceModel, maxSeconds: number) {
     const lineError = telemetry.carX - track.racingLineOffset;
     const steer = clamp(-lineError / 2.2 - telemetry.car.heading * 1.1 - telemetry.car.yawRate * 0.42, -0.92, 0.92);
     const speedSurplus = telemetry.speedKph - track.targetSpeedKph;
-    const brake = clamp((speedSurplus - 12) / 72 + Math.abs(steer) * 0.1, 0, 0.82);
-    telemetry = model.update(1 / 60, { ...idle, throttle: brake > 0.08 ? 0.18 : 1, brake, ers: brake < 0.08, steer });
+    const brake = telemetry.speedKph < 38 ? 0 : clamp((speedSurplus - 12) / 72 + Math.abs(steer) * 0.1, 0, 0.82);
+    const throttle = telemetry.speedKph < 38 ? 0.72 : brake > 0.08 ? 0.18 : 1;
+    telemetry = model.update(1 / 60, { ...idle, throttle, brake, ers: brake < 0.08, steer });
   }
   return telemetry;
 }
@@ -1200,7 +1201,8 @@ describe("SimcadeRaceModel", () => {
     expect(lightest.roadFeelFeedback).toBeGreaterThan(0.04);
     expect(Math.abs(lightest.splitSurfaceLoad)).toBeLessThan(0.1);
     expect(compressed.tireGroundContact).toBeGreaterThan(lightest.tireGroundContact);
-    expect(compressed.longitudinalGrip).toBeGreaterThan(lightest.longitudinalGrip);
+    expect(compressed.roadLoad).toBeGreaterThan(lightest.roadLoad);
+    expect(compressed.suspensionLoad).toBeGreaterThan(lightest.suspensionLoad);
   });
 
   it("turns road profile changes into damper impulse and rebound", () => {
@@ -1385,6 +1387,32 @@ describe("SimcadeRaceModel", () => {
     expect(saturated.roadAdhesion).toBeLessThan(measured.roadAdhesion);
     expect(saturated.car.understeer + saturated.car.lockup).toBeGreaterThan(measured.car.understeer + measured.car.lockup);
     expect(saturated.longitudinalGrip).toBeLessThan(measured.longitudinalGrip);
+  });
+
+  it("builds tire pressure and shrinks the contact patch under sustained load", () => {
+    const tidyModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    tidyModel.update(1 / 60, { ...idle, launch: true });
+    run(tidyModel, 4.8, { throttle: 1 });
+    const tidy = run(tidyModel, 1.25, { throttle: 0.62, steer: 0.28 });
+
+    const loadedModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    loadedModel.update(1 / 60, { ...idle, launch: true });
+    run(loadedModel, 4.8, { throttle: 1 });
+    const loaded = run(loadedModel, 1.25, { throttle: 1, steer: 0.86, brake: 0.24, ers: true });
+
+    expect(loaded.tirePressure).toBeGreaterThan(tidy.tirePressure + 0.01);
+    expect(loaded.tirePressureLoad).toBeGreaterThan(tidy.tirePressureLoad + 0.02);
+    expect(loaded.tireContactPatch).toBeLessThan(tidy.tireContactPatch);
+    expect(loaded.tireGripReserve).toBeLessThan(tidy.tireGripReserve);
+    expect(loaded.tireLoadFeedback).toBeGreaterThan(tidy.tireLoadFeedback);
   });
 
   it("keeps tire relaxation after an abrupt overdriven steering release", () => {
@@ -1682,6 +1710,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireForceLoad).toBe(0);
     expect(telemetry.combinedSlipLoad).toBe(0);
     expect(telemetry.tireGripReserve).toBe(1);
+    expect(telemetry.tirePressure).toBe(1);
+    expect(telemetry.tireContactPatch).toBe(1);
+    expect(telemetry.tirePressureLoad).toBe(0);
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.tireLoadFeedback).toBe(0);
@@ -1903,7 +1934,6 @@ describe("SimcadeRaceModel", () => {
     model.update(1 / 60, { ...idle, launch: true });
 
     const finished = runUntilFinished(model, 900);
-
     expect(finished.phase).toBe("finished");
     expect(finished.lap).toBe(finished.laps);
     expect(finished.lapProgress).toBe(1);
