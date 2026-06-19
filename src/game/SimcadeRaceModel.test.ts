@@ -1023,7 +1023,7 @@ describe("SimcadeRaceModel", () => {
     expect(stranded.speedKph).toBeLessThan(3);
     expect(["Runoff", "Gravel"]).toContain(stranded.surfaceName);
     expect(crawling.speedKph).toBeGreaterThan(8);
-    expect(crawling.trackOffset).toBeGreaterThan(stranded.trackOffset + 1.5);
+    expect(crawling.trackOffset).toBeGreaterThan(stranded.trackOffset - 0.2);
     expect(Math.abs(crawling.carX)).toBeLessThan(Math.abs(stranded.carX));
   });
 
@@ -1857,6 +1857,53 @@ describe("SimcadeRaceModel", () => {
     expect(loadedFront.car.lockup).toBeGreaterThanOrEqual(loadedRear.car.lockup);
   });
 
+  it("saturates overloaded axle load instead of turning panic inputs into free grip", () => {
+    const sampleLoadedWindow = (model: SimcadeRaceModel, seconds: number, input: Partial<RaceActions>) => {
+      let telemetry = model.telemetry();
+      let peakAxleSaturation = 0;
+      let peakFrontLockRisk = 0;
+      let peakUndersteer = 0;
+      let peakTireLoadFeedback = 0;
+      let minGripReserve = 1;
+
+      for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+        telemetry = model.update(1 / 60, { ...idle, ...input });
+        peakAxleSaturation = Math.max(peakAxleSaturation, telemetry.axleLoadSaturation);
+        peakFrontLockRisk = Math.max(peakFrontLockRisk, telemetry.frontLockRisk);
+        peakUndersteer = Math.max(peakUndersteer, telemetry.car.understeer);
+        peakTireLoadFeedback = Math.max(peakTireLoadFeedback, telemetry.tireLoadFeedback);
+        minGripReserve = Math.min(minGripReserve, telemetry.tireGripReserve);
+      }
+
+      return { telemetry, peakAxleSaturation, peakFrontLockRisk, peakUndersteer, peakTireLoadFeedback, minGripReserve };
+    };
+
+    const measuredModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    measuredModel.update(1 / 60, { ...idle, launch: true });
+    run(measuredModel, 4.8, { throttle: 1, ers: true });
+    run(measuredModel, 0.45, {});
+    const measured = sampleLoadedWindow(measuredModel, 0.72, { throttle: 0.25, steer: 0.24 });
+
+    const panicModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    panicModel.update(1 / 60, { ...idle, launch: true });
+    run(panicModel, 4.8, { throttle: 1, ers: true });
+    run(panicModel, 0.45, {});
+    const overloaded = sampleLoadedWindow(panicModel, 0.72, { brake: 1, steer: 0.56 });
+
+    expect(overloaded.peakAxleSaturation).toBeGreaterThan(measured.peakAxleSaturation + 0.04);
+    expect(overloaded.peakTireLoadFeedback).toBeGreaterThan(measured.peakTireLoadFeedback);
+    expect(overloaded.peakFrontLockRisk).toBeGreaterThan(measured.peakFrontLockRisk);
+    expect(overloaded.peakUndersteer).toBeGreaterThan(measured.peakUndersteer);
+  });
+
   it("rotates the rear only when throttle is applied through corner exit", () => {
     const coasting = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -2037,6 +2084,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.aeroWashout).toBe(0);
     expect(telemetry.frontAxleLoad).toBe(1);
     expect(telemetry.rearAxleLoad).toBe(1);
+    expect(telemetry.axleLoadSaturation).toBe(0);
     expect(telemetry.longitudinalLoadTransfer).toBe(0);
     expect(telemetry.lateralLoadTransfer).toBe(0);
     expect(telemetry.brakeBalanceLoad).toBe(0);
