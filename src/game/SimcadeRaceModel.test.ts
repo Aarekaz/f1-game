@@ -1030,6 +1030,8 @@ describe("SimcadeRaceModel", () => {
     expect(wide.onTrack).toBe(false);
     expect(Math.abs(recovering.carX)).toBeLessThan(Math.abs(wide.carX));
     expect(Math.abs(recovering.carX)).toBeLessThanOrEqual(track.halfWidth + 2.7);
+    expect(recovering.roadGuidanceLoad).toBeGreaterThan(0.07);
+    expect(recovering.roadFeelFeedback).toBeGreaterThan(0.04);
     expect(["Kerb", "Runoff", "Gravel"]).toContain(recovering.surfaceName);
   });
 
@@ -1247,6 +1249,27 @@ describe("SimcadeRaceModel", () => {
     expect(before.roadCamberLoad).toBeGreaterThan(0.015);
     expect(Math.sign(after.carX - before.carX)).toBe(-bankSign);
     expect(Math.abs(after.car.roll)).toBeGreaterThan(0.005);
+  });
+
+  it("loads road guidance when the car drifts away from the racing line", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const settled = run(model, 4.8, { throttle: 1 });
+
+    let guided = settled;
+    for (let elapsed = 0; elapsed < 1.2; elapsed += 1 / 60) {
+      guided = model.update(1 / 60, { ...idle, throttle: 0.92, steer: 0.52 });
+    }
+
+    expect(guided.onTrack).toBe(true);
+    expect(Math.abs(guided.carX - sampleTrack(guided.trackOffset).racingLineOffset)).toBeGreaterThan(1.4);
+    expect(guided.roadGuidanceLoad).toBeGreaterThan(settled.roadGuidanceLoad + 0.04);
+    expect(guided.roadFeelFeedback).toBeGreaterThan(settled.roadFeelFeedback);
+    expect(guided.tireLoadFeedback).toBeGreaterThan(settled.tireLoadFeedback);
   });
 
   it("changes tire load over crests and compressions in the road profile", () => {
@@ -2166,6 +2189,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadGrade).toBe(0);
     expect(telemetry.roadLoad).toBe(1);
     expect(telemetry.roadCompression).toBe(0);
+    expect(telemetry.roadGuidanceLoad).toBe(0);
     expect(telemetry.roadFeelFeedback).toBe(0);
     expect(telemetry.roadTextureLoad).toBe(0);
     expect(telemetry.chassisHeave).toBe(0);

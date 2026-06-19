@@ -71,6 +71,7 @@ export type RaceTelemetry = {
   roadGrade: number;
   roadLoad: number;
   roadCompression: number;
+  roadGuidanceLoad: number;
   roadFeelFeedback: number;
   roadTextureLoad: number;
   chassisHeave: number;
@@ -393,6 +394,7 @@ export class SimcadeRaceModel {
   private roadGrade = 0;
   private roadLoad = 1;
   private roadCompression = 0;
+  private roadGuidanceLoad = 0;
   private roadFeelFeedback = 0;
   private roadTextureLoad = 0;
   private roadTexturePhase = 0;
@@ -591,6 +593,7 @@ export class SimcadeRaceModel {
       roadGrade: this.roadGrade,
       roadLoad: this.roadLoad,
       roadCompression: this.roadCompression,
+      roadGuidanceLoad: this.roadGuidanceLoad,
       roadFeelFeedback: this.roadFeelFeedback,
       roadTextureLoad: this.roadTextureLoad,
       chassisHeave: this.chassisHeave,
@@ -860,6 +863,7 @@ export class SimcadeRaceModel {
     this.roadGrade = 0;
     this.roadLoad = 1;
     this.roadCompression = 0;
+    this.roadGuidanceLoad = 0;
     this.roadFeelFeedback = 0;
     this.roadTextureLoad = 0;
     this.roadTexturePhase = 0;
@@ -1967,6 +1971,26 @@ export class SimcadeRaceModel {
       roadCamberLoadTarget,
       dt * (roadCamberLoadTarget > this.roadCamberLoad ? 10.5 : 4.8)
     );
+    const rollingGuidanceForce =
+      clamp(Math.max((this.speed - 5) / 48, throttle * (1 - brake) * 0.58), 0, 1) *
+      clamp(0.45 + this.roadAdhesion * 0.55, 0.35, 1.04);
+    const lineGuidanceError = Math.abs(this.x - track.center - track.racingLineOffset);
+    const lineGuidanceLoad = clamp(lineGuidanceError / Math.max(2.2, track.halfWidth * 0.46), 0, 1);
+    const roadGuidanceTarget = clamp(
+      (lineGuidanceLoad * (onTrack ? 0.34 : 0.12) +
+        roadRecoveryNeed * 0.58 +
+        this.roadCamberLoad * 0.18 +
+        Math.abs(this.splitSurfaceLoad) * 0.08) *
+        rollingGuidanceForce *
+        (1 - Math.abs(rawSteer) * 0.28),
+      0,
+      1
+    );
+    this.roadGuidanceLoad = approach(
+      this.roadGuidanceLoad,
+      roadGuidanceTarget,
+      dt * (roadGuidanceTarget > this.roadGuidanceLoad ? 10.8 : 5.2)
+    );
     const textureExcitationTarget = clamp(
       contactRoughness * speedRatio * 0.42 +
         this.surfaceEdgeLoad * 0.24 +
@@ -2120,6 +2144,7 @@ export class SimcadeRaceModel {
         Math.abs(this.chassisHeave) * 0.38 +
         this.rideSettling * 0.18 +
         this.roadCamberLoad * 0.2 +
+        this.roadGuidanceLoad * 0.22 +
         this.hydroplaneLoad * 0.18 +
         this.aeroBuffetLoad * 0.1 +
         Math.abs(roadCamber) * speedRatio * 0.12,
@@ -2481,9 +2506,21 @@ export class SimcadeRaceModel {
     const steeringLoad = 1 - clamp(speedRatio * 0.38 + this.wheelspin * 0.12, 0, 0.52);
     const lineError = this.x - track.center - track.racingLineOffset * (onTrack ? 0.42 : 0.16);
     const rollingRoadForce = clamp(Math.max((this.speed - 2) / 24, throttle * (1 - brake) * 0.65), 0, 1);
+    const roadGuidanceAuthority = 1 + this.roadGuidanceLoad * (onTrack ? 0.22 : 0.08);
     const roadCentering =
-      -lineError * this.roadAdhesion * (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) * (1 - Math.abs(rawSteer)) * rollingRoadForce;
-    const roadRecoveryPull = -offTrackSide * roadRecoveryNeed * (0.78 + speedRatio * 1.84) * (1 - Math.abs(rawSteer) * 0.32) * rollingRoadForce;
+      -lineError *
+      this.roadAdhesion *
+      (onTrack ? 0.22 + speedRatio * 0.48 : 0.08 + speedRatio * 0.16) *
+      (1 - Math.abs(rawSteer)) *
+      rollingRoadForce *
+      roadGuidanceAuthority;
+    const roadRecoveryPull =
+      -offTrackSide *
+      roadRecoveryNeed *
+      (0.78 + speedRatio * 1.84) *
+      (1 - Math.abs(rawSteer) * 0.32) *
+      rollingRoadForce *
+      roadGuidanceAuthority;
     const camberForce = -roadCamber * (0.32 + speedRatio * 0.92) * (onTrack ? 1 : 1.16) * (1 - Math.abs(rawSteer) * 0.5) * rollingRoadForce;
     const splitGripPull = tireContact.sideBias * speedRatio * (0.42 + contactRoughness * 0.6) * (1 - Math.abs(rawSteer) * 0.35) * rollingRoadForce;
     const splitSurfaceTug =
@@ -2590,6 +2627,7 @@ export class SimcadeRaceModel {
         Math.max(0, 1 - this.chassisStability) * 0.12 -
         this.slipRecovery * 0.1 +
         this.damperImpulse * 0.12 +
+        this.roadGuidanceLoad * 0.1 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
         this.hydroplaneLoad * 0.1 +
@@ -2621,6 +2659,7 @@ export class SimcadeRaceModel {
           this.outsideTireLoad * 0.08 +
           steeringRatioLoad * 0.18 +
           this.roadCamberLoad * 0.1 +
+          this.roadGuidanceLoad * 0.1 +
           this.frontAxleLoad * 0.08) *
         (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.35) *
         clamp(1.08 - this.wheelspin * 0.18 - this.lockup * 0.24, 0.54, 1.08) +
@@ -2958,6 +2997,7 @@ export class SimcadeRaceModel {
     this.roadCamberLoad = 0;
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;
+    this.roadGuidanceLoad = 0;
     this.roadFeelFeedback = 0;
     this.roadTextureLoad = 0;
     this.roadTexturePhase = 0;
