@@ -1646,6 +1646,7 @@ describe("SimcadeRaceModel", () => {
     expect(loaded.tireContactPatch).toBeLessThan(tidy.tireContactPatch);
     expect(loaded.tireGripReserve).toBeLessThan(tidy.tireGripReserve);
     expect(loaded.tireLoadFeedback).toBeGreaterThan(tidy.tireLoadFeedback);
+    expect(loaded.tireCarcassFlex).toBeGreaterThan(tidy.tireCarcassFlex + 0.02);
   });
 
   it("keeps tire relaxation after an abrupt overdriven steering release", () => {
@@ -1660,6 +1661,8 @@ describe("SimcadeRaceModel", () => {
     const released = run(model, 0.28, { throttle: 0.55 });
 
     expect(overloaded.tireRelaxation).toBeGreaterThan(0.08);
+    expect(overloaded.tireCarcassFlex).toBeGreaterThan(settled.tireCarcassFlex + 0.04);
+    expect(released.tireCarcassFlex).toBeGreaterThan(settled.tireCarcassFlex + 0.02);
     expect(released.tireRelaxation).toBeGreaterThan(settled.tireRelaxation + 0.04);
     expect(released.roadAdhesion).toBeLessThan(settled.roadAdhesion);
     expect(released.forwardBite).toBeLessThan(settled.forwardBite);
@@ -2185,6 +2188,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.tireResponseLoad).toBe(0);
+    expect(telemetry.tireCarcassFlex).toBe(0);
     expect(telemetry.tireLoadFeedback).toBe(0);
     expect(telemetry.steeringLoadFeedback).toBe(0);
     expect(telemetry.steeringRackLoad).toBe(0);
