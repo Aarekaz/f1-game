@@ -17,6 +17,7 @@ type HapticTelemetry = Pick<
   | "axleLoadSaturation"
   | "combinedSlipLoad"
   | "tireGripReserve"
+  | "outsideTireLoad"
   | "tirePressure"
   | "tireContactPatch"
   | "tirePressureLoad"
@@ -109,6 +110,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.longitudinalSlipLoad * 0.56,
       telemetry.axleLoadSaturation * 0.62,
       telemetry.combinedSlipLoad * 0.54,
+      telemetry.outsideTireLoad * 0.46,
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.46,
       telemetry.tirePressureLoad * 0.56,
       telemetry.tireResponseLoad * 0.5,
@@ -158,6 +160,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadCamberLoad * 0.18 +
       telemetry.roadTextureLoad * 0.58 +
       telemetry.axleLoadSaturation * 0.2 +
+      telemetry.outsideTireLoad * 0.2 +
       Math.abs(telemetry.chassisHeave) * 0.9 +
       telemetry.rideSettling * 0.42 +
       telemetry.damperImpulse * 0.5 +
@@ -202,6 +205,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.longitudinalSlipLoad * 0.16 +
       telemetry.axleLoadSaturation * 0.12 +
       telemetry.combinedSlipLoad * 0.14 +
+      telemetry.outsideTireLoad * 0.12 +
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.1 +
       telemetry.tirePressureLoad * 0.16 +
       telemetry.tireResponseLoad * 0.14 +

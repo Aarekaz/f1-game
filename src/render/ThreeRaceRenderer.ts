@@ -338,6 +338,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.axleLoadSaturation = telemetry.axleLoadSaturation.toFixed(3);
     this.renderer.domElement.dataset.longitudinalLoadTransfer = telemetry.longitudinalLoadTransfer.toFixed(3);
     this.renderer.domElement.dataset.lateralLoadTransfer = telemetry.lateralLoadTransfer.toFixed(3);
+    this.renderer.domElement.dataset.outsideTireLoad = telemetry.outsideTireLoad.toFixed(3);
     this.renderer.domElement.dataset.chassisPitch = telemetry.car.pitch.toFixed(3);
     this.renderer.domElement.dataset.chassisRoll = telemetry.car.roll.toFixed(3);
     this.renderer.domElement.dataset.trackRubber = telemetry.trackRubber.toFixed(3);
@@ -551,6 +552,7 @@ export class ThreeRaceRenderer {
       longitudinalSlipLoad: telemetry.longitudinalSlipLoad,
       hydroplaneLoad: telemetry.hydroplaneLoad,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
+      outsideTireLoad: telemetry.outsideTireLoad,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
       floorStrikeLoad: telemetry.floorStrikeLoad,
@@ -1020,6 +1022,7 @@ export class ThreeRaceRenderer {
         longitudinalSlipLoad: 0,
         hydroplaneLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
+        outsideTireLoad: 0,
         suspensionTravel: 0,
         damperImpulse: 0,
         floorStrikeLoad: 0,
@@ -1599,6 +1602,7 @@ export class ThreeRaceRenderer {
       longitudinalSlipLoad: number;
       hydroplaneLoad: number;
       lateralLoadTransfer: number;
+      outsideTireLoad: number;
       suspensionTravel: number;
       damperImpulse: number;
       floorStrikeLoad: number;
@@ -1677,6 +1681,7 @@ export class ThreeRaceRenderer {
     const powerUndersteerLoad = clamp(state.powerUndersteerLoad, 0, 1);
     const tireResponseLoad = clamp(state.tireResponseLoad, 0, 1);
     const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
+    const outsideTireLoad = clamp(state.outsideTireLoad, 0, 1);
     const roadTextureLoad = clamp(state.roadTextureLoad, 0, 1);
     const roadCamberLoad = clamp(state.roadCamberLoad, 0, 1);
     const chassisHeave = clamp(state.chassisHeave, -0.24, 0.24);
@@ -1691,6 +1696,7 @@ export class ThreeRaceRenderer {
         tireResponseLoad * 0.08 +
         longitudinalSlipLoad * 0.06 +
         hydroplaneLoad * 0.16 +
+        outsideTireLoad * 0.1 +
         controlActuationLoad * 0.05 +
         pedalPressureLoad * 0.06 +
         roadCamberLoad * 0.04 +
@@ -1743,6 +1749,7 @@ export class ThreeRaceRenderer {
       const cornerLoad = clamp(
           tireLoad * 0.58 +
           axleLoadSaturation * 0.08 +
+          outsideTireLoad * 0.12 +
           controlActuationLoad * 0.05 +
           pedalPressureLoad * 0.05 +
           longitudinalSlipLoad * 0.06 +
@@ -1787,6 +1794,7 @@ export class ThreeRaceRenderer {
         rideSettling * 0.003 +
         combinedSlipLoad * 0.008 +
         axleLoadSaturation * 0.01 +
+        outsideTireLoad * 0.01 +
         controlActuationLoad * 0.006 +
         pedalPressureLoad * 0.007 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
@@ -1838,6 +1846,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.loadedWheelBias = loadedSideBias.toFixed(3);
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.axleLoadSaturationVisual = axleLoadSaturation.toFixed(3);
+      this.renderer.domElement.dataset.outsideTireVisualLoad = outsideTireLoad.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.tireGripReserveVisual = tireGripReserve.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisual = tirePressure.toFixed(3);

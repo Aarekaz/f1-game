@@ -224,6 +224,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Speed-sensitive steering ratio now trims the high-speed rack feel into tire/audio/haptic/HUD feedback and visual front-wheel angle, while countersteer and recovery keep full correction.
 - Yaw inertia now gives the chassis angular momentum and damping, so turn-in, release, and recovery carry through a short physical arc instead of snapping straight to a target rotation.
 - Road-feel feedback now turns road compression, suspension load, travel, camber, and surface edge load into one shared signal for the HUD, tire audio, haptics, car body, and camera.
+- Outside-tire load now turns sustained cornering weight transfer into a shared tire state, feeding axle saturation, tire and steering feedback, audio, haptics, HUD text, and visible tire squash.
 - Split-surface contact now notices when the left and right side of the car are on different grip or height, then tugs yaw, lateral motion, tire scrub, sound, haptics, and camera feel together.
 - Vertical tire contact now drops over light crests and recovers under compression/downforce, feeding traction, braking, steering authority, tire noise, haptics, camera float, and chassis motion.
 - Suspension damper impulses now track compression and rebound speed, feeding tire contact, grip, road feel, haptics, tire audio, camera lift, and car body pitch.

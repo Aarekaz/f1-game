@@ -16,6 +16,7 @@ const baseTelemetry = {
   axleLoadSaturation: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
+  outsideTireLoad: 0,
   tirePressure: 1,
   tireContactPatch: 1,
   tirePressureLoad: 0,
@@ -107,6 +108,18 @@ describe("raceHapticEffect", () => {
 
     expect(turbulent?.strongMagnitude).toBeGreaterThan(clean?.strongMagnitude ?? 0);
     expect(turbulent?.weakMagnitude).toBeGreaterThan(clean?.weakMagnitude ?? 0);
+  });
+
+  it("adds loaded tire rumble from outside tire load", () => {
+    const clean = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 215,
+      outsideTireLoad: 0.5
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(clean?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(clean?.weakMagnitude ?? 0);
   });
 
   it("makes kerbs and gravel stronger than clean asphalt", () => {
