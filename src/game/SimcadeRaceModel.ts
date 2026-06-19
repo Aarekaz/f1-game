@@ -64,6 +64,9 @@ export type RaceTelemetry = {
   roadLoad: number;
   roadCompression: number;
   roadFeelFeedback: number;
+  roadTextureLoad: number;
+  chassisHeave: number;
+  rideSettling: number;
   suspensionLoad: number;
   suspensionTravel: number;
   suspensionVelocity: number;
@@ -366,6 +369,10 @@ export class SimcadeRaceModel {
   private roadLoad = 1;
   private roadCompression = 0;
   private roadFeelFeedback = 0;
+  private roadTextureLoad = 0;
+  private roadTexturePhase = 0;
+  private chassisHeave = 0;
+  private rideSettling = 0;
   private suspensionLoad = 1;
   private suspensionTravel = 0;
   private suspensionVelocity = 0;
@@ -543,6 +550,9 @@ export class SimcadeRaceModel {
       roadLoad: this.roadLoad,
       roadCompression: this.roadCompression,
       roadFeelFeedback: this.roadFeelFeedback,
+      roadTextureLoad: this.roadTextureLoad,
+      chassisHeave: this.chassisHeave,
+      rideSettling: this.rideSettling,
       suspensionLoad: this.suspensionLoad,
       suspensionTravel: this.suspensionTravel,
       suspensionVelocity: this.suspensionVelocity,
@@ -786,6 +796,10 @@ export class SimcadeRaceModel {
     this.roadLoad = 1;
     this.roadCompression = 0;
     this.roadFeelFeedback = 0;
+    this.roadTextureLoad = 0;
+    this.roadTexturePhase = 0;
+    this.chassisHeave = 0;
+    this.rideSettling = 0;
     this.suspensionLoad = 1;
     this.suspensionTravel = 0;
     this.suspensionVelocity = 0;
@@ -1009,6 +1023,8 @@ export class SimcadeRaceModel {
       Math.max(0, 1 - this.tireGroundContact) * 0.58 +
         this.damperImpulse * 0.24 +
         Math.abs(this.suspensionVelocity) * 0.08 +
+        this.roadTextureLoad * 0.08 +
+        this.rideSettling * 0.07 +
         this.surfaceEdgeLoad * 0.16 +
         this.standingWater * 0.18 +
         this.downforceLoss * 0.7,
@@ -1060,6 +1076,8 @@ export class SimcadeRaceModel {
             Math.max(0, -this.roadCompression) * (0.28 + speedRatio * 0.22) -
             Math.max(0, -this.suspensionVelocity) * (0.045 + speedRatio * 0.04) -
             this.damperImpulse * (0.025 + speedRatio * 0.035) -
+            this.roadTextureLoad * (0.018 + speedRatio * 0.02) -
+            this.rideSettling * 0.018 -
             this.surfaceEdgeLoad * 0.025 +
             compressionLoad * 0.06 +
             Math.max(0, this.suspensionVelocity) * 0.018 +
@@ -1605,7 +1623,41 @@ export class SimcadeRaceModel {
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const camberLoad = Math.abs(roadCamber) * (0.16 + speedRatio * 0.2);
-    const suspensionOscillation = Math.sin(this.z * 0.095 + this.lateralVelocity * 0.12) * contactRoughness * speedRatio * 0.14;
+    const textureExcitationTarget = clamp(
+      contactRoughness * speedRatio * 0.42 +
+        this.surfaceEdgeLoad * 0.24 +
+        Math.abs(this.splitSurfaceLoad) * 0.2 +
+        this.standingWater * speedRatio * 0.18 +
+        Math.max(0, 1 - this.tireGroundContact) * 0.18 +
+        Math.abs(this.suspensionVelocity) * 0.09,
+      0,
+      1
+    );
+    this.roadTextureLoad = approach(
+      this.roadTextureLoad,
+      textureExcitationTarget,
+      dt * (textureExcitationTarget > this.roadTextureLoad ? 13 : 3.4)
+    );
+    this.roadTexturePhase += (7.2 + speedRatio * 12.5 + contactRoughness * 5.5 + this.surfaceEdgeLoad * 3.2) * dt;
+    const textureWave = Math.sin(this.roadTexturePhase) * this.roadTextureLoad;
+    const shortTextureWave = Math.sin(this.roadTexturePhase * 2.35 + this.z * 0.012) * this.roadTextureLoad;
+    const heaveTarget = clamp(
+      textureWave * (0.055 + speedRatio * 0.13) + shortTextureWave * (0.018 + speedRatio * 0.045),
+      -0.24,
+      0.24
+    );
+    this.chassisHeave = approach(this.chassisHeave, heaveTarget, dt * 17);
+    const rideSettlingTarget = clamp(
+      this.roadTextureLoad * 0.48 +
+        Math.abs(this.chassisHeave) * 2.6 +
+        this.damperImpulse * 0.18 +
+        Math.max(0, 1 - this.tireGroundContact) * 0.2,
+      0,
+      1
+    );
+    this.rideSettling = approach(this.rideSettling, rideSettlingTarget, dt * (rideSettlingTarget > this.rideSettling ? 10.5 : 3.6));
+    const suspensionOscillation =
+      Math.sin(this.z * 0.095 + this.lateralVelocity * 0.12) * contactRoughness * speedRatio * 0.14 + this.chassisHeave * 0.58;
     const loadTarget = clamp(
       1 +
         speedRatio * speedRatio * 0.2 +
@@ -1624,6 +1676,8 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.16 +
         Math.abs(this.splitSurfaceLoad) * 0.1 +
         tireContact.heightSpread * speedRatio * 0.12 +
+        this.roadTextureLoad * 0.045 +
+        this.rideSettling * 0.032 +
         suspensionOscillation -
         roadWetness * 0.035,
       0.62,
@@ -1638,6 +1692,9 @@ export class SimcadeRaceModel {
           contactRoughness * speedRatio * 0.12 +
           this.surfaceEdgeLoad * 0.08 +
           Math.abs(this.splitSurfaceLoad) * 0.045 +
+          this.roadTextureLoad * 0.045 +
+          this.chassisHeave * 0.12 +
+          this.rideSettling * 0.028 +
           this.aeroPlatformLoad * 0.025 +
           tireContact.heightSpread * speedRatio * 0.075 +
           Math.max(0, this.roadCompression) * 0.1 -
@@ -1652,7 +1709,7 @@ export class SimcadeRaceModel {
     const rawSuspensionVelocity = clamp((this.suspensionTravel - previousSuspensionTravel) / Math.max(dt, 1 / 120), -1.4, 1.4);
     const roadCompressionVelocity = clamp((this.roadCompression - previousRoadCompression) / Math.max(dt, 1 / 120), -1.2, 1.2);
     const suspensionVelocityTarget = clamp(
-      rawSuspensionVelocity * 0.78 + roadCompressionVelocity * 0.22 + suspensionOscillation * 0.4,
+      rawSuspensionVelocity * 0.78 + roadCompressionVelocity * 0.22 + suspensionOscillation * 0.4 + this.chassisHeave * 0.38,
       -1,
       1
     );
@@ -1665,7 +1722,10 @@ export class SimcadeRaceModel {
       Math.abs(this.suspensionVelocity) * (0.55 + speedRatio * 0.45) +
         contactRoughness * speedRatio * 0.12 +
         this.surfaceEdgeLoad * 0.08 +
-        Math.abs(this.splitSurfaceLoad) * 0.08,
+        Math.abs(this.splitSurfaceLoad) * 0.08 +
+        this.roadTextureLoad * 0.075 +
+        Math.abs(this.chassisHeave) * 0.24 +
+        this.rideSettling * 0.045,
       0,
       1
     );
@@ -1683,6 +1743,9 @@ export class SimcadeRaceModel {
         contactRoughness * speedRatio * 0.3 +
         this.surfaceEdgeLoad * 0.18 +
         Math.abs(this.splitSurfaceLoad) * 0.18 +
+        this.roadTextureLoad * 0.24 +
+        Math.abs(this.chassisHeave) * 0.38 +
+        this.rideSettling * 0.18 +
         Math.abs(roadCamber) * speedRatio * 0.12,
       0,
       1
@@ -2356,6 +2419,10 @@ export class SimcadeRaceModel {
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;
     this.roadFeelFeedback = 0;
+    this.roadTextureLoad = 0;
+    this.roadTexturePhase = 0;
+    this.chassisHeave = 0;
+    this.rideSettling = 0;
     this.suspensionLoad = Math.max(this.suspensionLoad, 0.9);
     this.suspensionTravel = 0;
     this.suspensionVelocity = 0;
@@ -2642,6 +2709,8 @@ export class SimcadeRaceModel {
           pressureChange * 0.08 +
           Math.max(0, this.suspensionLoad - 1.12) * 0.28 +
           surfaceRoughness * speedRatio * 0.12 +
+          this.roadTextureLoad * speedRatio * 0.08 +
+          this.rideSettling * 0.04 +
           this.tireForceLoad * 0.055,
         0,
         1
@@ -2656,7 +2725,9 @@ export class SimcadeRaceModel {
         Math.max(0, this.suspensionLoad - 1) * 0.055 +
         this.aeroPlatformLoad * 0.025 -
         Math.max(0, 1 - this.tireGroundContact) * 0.16 -
-        surfaceRoughness * 0.035,
+        surfaceRoughness * 0.035 -
+        this.roadTextureLoad * 0.018 -
+        this.rideSettling * 0.012,
       0.74,
       1.1
     );

@@ -1235,6 +1235,32 @@ describe("SimcadeRaceModel", () => {
     expect(impulseSample.tireLoadFeedback).toBeGreaterThan(0.015);
   });
 
+  it("builds ride texture memory over repeated rough surface hits", () => {
+    const model = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    model.update(1 / 60, { ...idle, launch: true });
+    const cruise = run(model, 5, { throttle: 1, ers: true });
+
+    let roughest = cruise;
+    let peakHeave = Math.abs(cruise.chassisHeave);
+    for (let elapsed = 0; elapsed < 3.2; elapsed += 1 / 60) {
+      const telemetry = model.update(1 / 60, { ...idle, throttle: 1, steer: 0.95, ers: true });
+      peakHeave = Math.max(peakHeave, Math.abs(telemetry.chassisHeave));
+      if (telemetry.roadTextureLoad + telemetry.rideSettling > roughest.roadTextureLoad + roughest.rideSettling) roughest = telemetry;
+    }
+
+    expect(["Kerb", "Runoff", "Gravel"]).toContain(roughest.surfaceName);
+    expect(roughest.roadTextureLoad).toBeGreaterThan(cruise.roadTextureLoad + 0.06);
+    expect(roughest.rideSettling).toBeGreaterThan(cruise.rideSettling + 0.035);
+    expect(peakHeave).toBeGreaterThan(Math.abs(cruise.chassisHeave) + 0.004);
+    expect(roughest.roadFeelFeedback).toBeGreaterThan(cruise.roadFeelFeedback);
+    expect(roughest.damperImpulse).toBeGreaterThan(cruise.damperImpulse);
+    expect(roughest.tireGroundContact).toBeLessThan(1.08);
+  });
+
   it("loads and sheds the aero platform through clean and disrupted contact", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1730,6 +1756,9 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.roadLoad).toBe(1);
     expect(telemetry.roadCompression).toBe(0);
     expect(telemetry.roadFeelFeedback).toBe(0);
+    expect(telemetry.roadTextureLoad).toBe(0);
+    expect(telemetry.chassisHeave).toBe(0);
+    expect(telemetry.rideSettling).toBe(0);
     expect(telemetry.suspensionLoad).toBe(1);
     expect(telemetry.suspensionTravel).toBe(0);
     expect(telemetry.suspensionVelocity).toBe(0);
