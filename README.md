@@ -223,6 +223,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Road-camber load now gives banked asphalt a shared physics signal, feeding lateral road tug, tire and steering feedback, audio, haptics, HUD text, and visible car load without treating clean camber like a split-surface hit.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.
 - Axle-load saturation now separates helpful weight transfer from overloaded tires, feeding lockup and understeer risk plus tire audio, haptics, HUD text, and visible tire load.
+- Load-transfer impulse now gives braking, lift-off, brake release, and throttle reapplication a short physical jolt, feeding suspension, pitch, tire texture, audio, haptics, HUD text, and renderer telemetry.
 - Combined grip reserve now exposes how much of the tire envelope is left when steering, throttle, and brake overlap, then trims drive, steering, visual tire load, audio, haptics, and HUD feedback from that shared signal.
 - Steering-load feedback now rises from tire force, saturation, slip angle, front axle load, and driver steering, then feeds the HUD, tire audio, and gamepad haptics together.
 - Steering rack load now models self-aligning torque from front tire slip, so hard turn-in pushes back through steering, chassis motion, audio, haptics, and the HUD instead of feeling like a loose digital input.

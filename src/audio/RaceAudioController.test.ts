@@ -16,6 +16,7 @@ const baseTelemetry = {
   tireWaterFilm: 0,
   tireLoadFeedback: 0,
   axleLoadSaturation: 0,
+  loadTransferImpulse: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
   outsideTireLoad: 0,
@@ -222,6 +223,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 205,
       axleLoadSaturation: 0.38
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire texture from load transfer impulse", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 180,
+      loadTransferImpulse: 0.42
     });
 
     expect(loaded.tireGain).toBeGreaterThan(tidy.tireGain);

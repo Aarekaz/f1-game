@@ -369,6 +369,7 @@ export class HudController {
     if (telemetry.brakeBalanceLoad > 0.24) return `Brake balance ${(telemetry.brakeBalanceLoad * 100).toFixed(0)}%`;
     if (telemetry.car.braking > 0.2 && telemetry.brakeBite < 0.84) return `Brake bite ${(telemetry.brakeBite * 100).toFixed(0)}%`;
     if (telemetry.axleLoadSaturation > 0.18) return `Axle load ${(telemetry.axleLoadSaturation * 100).toFixed(0)}%`;
+    if (telemetry.loadTransferImpulse > 0.18) return `Load transfer ${(telemetry.loadTransferImpulse * 100).toFixed(0)}%`;
     if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.longitudinalSlipLoad > 0.18) return `Long slip ${(telemetry.longitudinalSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;

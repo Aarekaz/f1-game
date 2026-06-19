@@ -15,6 +15,7 @@ const baseTelemetry = {
   contactRisk: 0,
   tireLoadFeedback: 0,
   axleLoadSaturation: 0,
+  loadTransferImpulse: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
   outsideTireLoad: 0,
@@ -228,6 +229,17 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       axleLoadSaturation: 0.4
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns load transfer impulse into chassis texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      loadTransferImpulse: 0.42
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
