@@ -484,10 +484,14 @@ describe("SimcadeRaceModel", () => {
     const wet = driveThroughFirstPuddle("storm");
 
     expect(dry.standingWater).toBe(0);
+    expect(dry.hydroplaneLoad).toBe(0);
     expect(wet.standingWater).toBeGreaterThan(0.24);
+    expect(wet.hydroplaneLoad).toBeGreaterThan(0.04);
+    expect(wet.tireGroundContact).toBeLessThan(dry.tireGroundContact);
     expect(wet.roadAdhesion).toBeLessThan(0.24);
     expect(wet.car.lockup).toBeGreaterThan(0.35);
     expect(wet.car.understeer).toBeGreaterThan(0.35);
+    expect(wet.longitudinalSlipLoad).toBeGreaterThan(dry.longitudinalSlipLoad);
     expect(wet.longitudinalGrip).toBeLessThan(0.45);
   });
 

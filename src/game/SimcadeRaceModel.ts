@@ -95,6 +95,7 @@ export type RaceTelemetry = {
   rearBrakeStability: number;
   roadWetness: number;
   standingWater: number;
+  hydroplaneLoad: number;
   rainIntensity: number;
   trackRubber: number;
   dryingLine: number;
@@ -414,6 +415,7 @@ export class SimcadeRaceModel {
   private frontLockRisk = 0;
   private rearBrakeStability = 1;
   private standingWater = 0;
+  private hydroplaneLoad = 0;
   private chassisPitch = 0;
   private chassisRoll = 0;
   private ers = 1;
@@ -609,6 +611,7 @@ export class SimcadeRaceModel {
       rearBrakeStability: this.rearBrakeStability,
       roadWetness: this.dynamicRoadWetness(),
       standingWater: this.standingWater,
+      hydroplaneLoad: this.hydroplaneLoad,
       rainIntensity: this.session.weather.rainIntensity,
       trackRubber: this.trackRubber,
       dryingLine: this.dryingLine,
@@ -810,6 +813,7 @@ export class SimcadeRaceModel {
     this.trackRubber = 0;
     this.dryingLine = 0;
     this.standingWater = 0;
+    this.hydroplaneLoad = 0;
     this.dirtyTirePickup = 0;
     this.roadAdhesion = 1;
     this.lateralScrub = 0;
@@ -986,6 +990,24 @@ export class SimcadeRaceModel {
     const roadWetness = this.dynamicRoadWetness();
     const standingWaterTarget = roadWetness * tireContact.standingWater * (1 - this.dryingLine * 0.28);
     this.standingWater = approach(this.standingWater, standingWaterTarget, dt * (standingWaterTarget > this.standingWater ? 18 : 7));
+    const hydroplaneSpeedWindow = clamp((this.speed - 128) / 142, 0, 1);
+    const hydroplaneWaterFilm = clamp(this.standingWater * 1.25 + roadWetness * 0.18 - this.dryingLine * 0.12, 0, 1);
+    const hydroplaneContactRelief = clamp(1.08 - this.tireContactPatch * 0.34 + Math.max(0, this.tirePressure - 1.02) * 0.65, 0.68, 1.18);
+    const hydroplaneLoadTarget = onTrack
+      ? clamp(
+          hydroplaneWaterFilm *
+            hydroplaneSpeedWindow *
+            hydroplaneContactRelief *
+            clamp(0.72 + Math.max(throttleTarget, brakeTarget, Math.abs(steerTarget)) * 0.28, 0.72, 1),
+          0,
+          1
+        )
+      : 0;
+    this.hydroplaneLoad = approach(
+      this.hydroplaneLoad,
+      hydroplaneLoadTarget,
+      dt * (hydroplaneLoadTarget > this.hydroplaneLoad ? 13 : 5.2)
+    );
     const gripContext = this.trackGripContext(track);
     this.updateDirtyTirePickup(dt, gripContext, speedRatio, onTrack, contactRoughness, roadWetness);
     const previousBrake = this.lastBrake;
@@ -1091,6 +1113,7 @@ export class SimcadeRaceModel {
         (1 - this.surfaceEdgeLoad * 0.34) *
         (1 - this.tireRunoffShare * 0.38) *
         (1 - this.standingWater * 0.55) *
+        (1 - this.hydroplaneLoad * 0.18) *
         (1 - this.downforceLoss * 0.75) *
         (1 - this.dirtyAir * 0.28)
       : 0;
@@ -1108,6 +1131,7 @@ export class SimcadeRaceModel {
         this.rideSettling * 0.07 +
         this.surfaceEdgeLoad * 0.16 +
         this.standingWater * 0.18 +
+        this.hydroplaneLoad * 0.12 +
         this.downforceLoss * 0.7,
       0,
       1
@@ -1161,7 +1185,8 @@ export class SimcadeRaceModel {
             this.roadTextureLoad * (0.018 + speedRatio * 0.02) -
             this.rideSettling * 0.018 -
             this.surfaceEdgeLoad * 0.025 +
-            compressionLoad * 0.06 +
+            compressionLoad * 0.06 -
+            this.hydroplaneLoad * (0.08 + speedRatio * 0.08) +
             Math.max(0, this.suspensionVelocity) * 0.018 +
             this.aeroPlatformLoad * 0.11,
           0.68,
@@ -1493,6 +1518,7 @@ export class SimcadeRaceModel {
         clamp(0.84 + this.roadLoad * 0.16, 0.84, 1.08) *
         (1 - roadWetness * 0.1) *
         (1 - this.standingWater * 0.2) *
+        (1 - this.hydroplaneLoad * 0.14) *
         (1 - this.surfaceEdgeLoad * 0.12) *
         (1 - this.tireRunoffShare * 0.18) *
         clamp(0.82 + this.tireGroundContact * 0.18, 0.82, 1.04) *
@@ -1553,6 +1579,7 @@ export class SimcadeRaceModel {
           this.tirePressureLoad * 0.1 +
           Math.max(0, 1 - this.tireGroundContact) * 0.32 +
           this.standingWater * (0.38 + speedRatio * 0.22) +
+          this.hydroplaneLoad * (0.2 + speedRatio * 0.16) +
           this.brakeFade * 0.18 +
           this.surfaceEdgeLoad * 0.12 +
           this.dirtyTirePickup * 0.12) -
@@ -1607,6 +1634,7 @@ export class SimcadeRaceModel {
             Math.max(0, 1 - this.tireGroundContact) * throttle * (0.18 + speedRatio * 0.16) +
             this.surfaceEdgeLoad * throttle * 0.12 +
             this.standingWater * throttle * (0.32 + speedRatio * 0.34) +
+            this.hydroplaneLoad * throttle * (0.18 + speedRatio * 0.16) +
             this.tireSaturation * throttle * 0.34 +
             this.tireRelaxation * throttle * 0.08 +
             this.pedalPressureLoad * throttle * 0.08 +
@@ -1623,7 +1651,16 @@ export class SimcadeRaceModel {
           0,
           1
         )
-      : clamp(throttle * (0.48 + contactRoughness * 0.34) + speedRatio * 0.18 + this.tireRunoffShare * 0.12 + this.standingWater * throttle * 0.24 + this.tireSaturation * throttle * 0.22, 0, 1);
+      : clamp(
+          throttle * (0.48 + contactRoughness * 0.34) +
+            speedRatio * 0.18 +
+            this.tireRunoffShare * 0.12 +
+            this.standingWater * throttle * 0.24 +
+            this.hydroplaneLoad * throttle * 0.14 +
+            this.tireSaturation * throttle * 0.22,
+          0,
+          1
+        );
     const lockupTarget = onTrack
       ? clamp(
           brake *
@@ -1636,6 +1673,7 @@ export class SimcadeRaceModel {
               (1 - this.tireContactGrip) * 0.26 +
               Math.max(0, 1 - this.tireGroundContact) * (0.16 + speedRatio * 0.14) +
               this.standingWater * (0.44 + speedRatio * 0.28) +
+              this.hydroplaneLoad * (0.22 + speedRatio * 0.18) +
               this.tireSaturation * 0.42 +
               this.pedalOverlapLoad * 0.22 +
               this.pedalPressureLoad * 0.16 +
@@ -1647,7 +1685,16 @@ export class SimcadeRaceModel {
           0,
           1
         )
-      : clamp(brake * (0.38 + contactRoughness * 0.26) + speedRatio * 0.18 + this.tireRunoffShare * 0.12 + this.standingWater * brake * 0.22 + this.tireSaturation * brake * 0.24, 0, 1);
+      : clamp(
+          brake * (0.38 + contactRoughness * 0.26) +
+            speedRatio * 0.18 +
+            this.tireRunoffShare * 0.12 +
+            this.standingWater * brake * 0.22 +
+            this.hydroplaneLoad * brake * 0.14 +
+            this.tireSaturation * brake * 0.24,
+          0,
+          1
+        );
     const understeerTarget = clamp(
       Math.abs(steer) *
         speedRatio *
@@ -1655,6 +1702,7 @@ export class SimcadeRaceModel {
           overspeed * 0.82 +
           (1 - this.grip) * 0.7 +
           this.standingWater * 0.38 +
+          this.hydroplaneLoad * 0.28 +
           this.tireSaturation * 0.52 +
           Math.max(0, 1 - this.tireGroundContact) * 0.18 +
           this.tireRelaxation * 0.1 +
@@ -1682,7 +1730,8 @@ export class SimcadeRaceModel {
         this.driveTorqueLoad * throttle * 0.12 +
         this.insideRearSlip * throttle * 0.18 +
         Math.max(0, 1 - this.longitudinalGrip) * 0.08 +
-        this.standingWater * speedRatio * Math.max(throttle, brake) * 0.16 -
+        this.standingWater * speedRatio * Math.max(throttle, brake) * 0.16 +
+        this.hydroplaneLoad * Math.max(throttle, brake) * 0.22 -
         thresholdBrakeSupport * 0.08 -
         throttlePickupSettle * 0.06) *
         (onTrack ? 0.78 : 0.32),
@@ -2030,6 +2079,7 @@ export class SimcadeRaceModel {
         Math.abs(this.chassisHeave) * 0.38 +
         this.rideSettling * 0.18 +
         this.roadCamberLoad * 0.2 +
+        this.hydroplaneLoad * 0.18 +
         Math.abs(roadCamber) * speedRatio * 0.12,
       0,
       1
@@ -2061,7 +2111,10 @@ export class SimcadeRaceModel {
       0.7,
       1.12
     );
-    const wetPenalty = roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05) + this.standingWater * (brake * 0.12 + throttle * 0.08 + Math.abs(steer) * 0.1);
+    const wetPenalty =
+      roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05) +
+      this.standingWater * (brake * 0.12 + throttle * 0.08 + Math.abs(steer) * 0.1) +
+      this.hydroplaneLoad * (brake * 0.08 + throttle * 0.05 + Math.abs(steer) * 0.07);
     const bankingSupport = 1 + Math.min(0.12, Math.abs(roadCamber) * 0.24);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
     const gripTarget = onTrack
@@ -2096,6 +2149,7 @@ export class SimcadeRaceModel {
         Math.abs(this.splitSurfaceLoad) * 0.16 +
         Math.max(0, 1 - this.tireGroundContact) * 0.11 +
         this.standingWater * (0.18 + speedRatio * 0.22) +
+        this.hydroplaneLoad * (0.12 + speedRatio * 0.16) +
         this.tireSaturation * 0.2 +
         this.tireRelaxation * 0.06 +
         this.pedalOverlapLoad * 0.18 +
@@ -2331,6 +2385,7 @@ export class SimcadeRaceModel {
         Math.abs(this.splitSurfaceLoad) * 0.16 +
         Math.max(0, 1 - this.tireGroundContact) * 0.14 +
         this.standingWater * (0.12 + speedRatio * 0.1) +
+        this.hydroplaneLoad * (0.12 + speedRatio * 0.1) +
         this.brakeReleaseShock * 0.18 +
         this.engineBraking * (0.06 + Math.abs(rawSteer) * 0.05) +
         trailBrakeInstability * 0.085 +
@@ -2352,6 +2407,7 @@ export class SimcadeRaceModel {
         this.combinedSlipLoad * 0.14 +
         lateralLoadStress * 0.12 +
         Math.max(0, 1 - this.tireGroundContact) * 0.16 +
+        this.hydroplaneLoad * 0.14 +
         roadWetness * speedRatio * 0.08 -
         this.slipRecovery * 0.18 -
         Math.max(0, this.chassisStability - 1) * 0.08,
@@ -2490,6 +2546,7 @@ export class SimcadeRaceModel {
         this.damperImpulse * 0.12 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
+        this.hydroplaneLoad * 0.1 +
         this.powerUndersteerLoad * 0.12 +
         this.throttlePickupLoad * 0.1 +
         Math.abs(this.rearTractionRotation) * 0.12 +
@@ -2594,6 +2651,7 @@ export class SimcadeRaceModel {
         trailBrakeInstability * 0.04 -
         this.standingWater * 0.14 +
         thresholdBrakeSupport * 0.05 -
+        this.hydroplaneLoad * 0.06 -
         roadWetness * (onTrack ? 0.025 : 0.075),
       onTrack ? 0.42 : 0.2,
       1.08
@@ -2818,6 +2876,7 @@ export class SimcadeRaceModel {
     this.surfaceRumble = 0;
     this.surfaceEdgeLoad = 0;
     this.splitSurfaceLoad = 0;
+    this.hydroplaneLoad = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
     this.slipAngle = 0;
