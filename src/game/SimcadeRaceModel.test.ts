@@ -274,6 +274,7 @@ describe("SimcadeRaceModel", () => {
     const heated = model.telemetry();
 
     expect(heated.brakeTemp).toBeGreaterThan(initial.brakeTemp);
+    expect(heated.brakeBite).toBeGreaterThanOrEqual(initial.brakeBite);
     expect(heated.brakeFade).toBeGreaterThanOrEqual(0);
     expect(["Brakes ready", "Brakes hot", "Brake fade"]).toContain(heated.brakeState);
     expect(heated.speedKph).toBeLessThan(260);
@@ -2294,6 +2295,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.fuelState).toBe("Heavy fuel");
     expect(telemetry.brakeTemp).toBeGreaterThan(0);
     expect(telemetry.brakeFade).toBe(0);
+    expect(telemetry.brakeBite).toBeGreaterThan(0);
     expect(telemetry.brakeState).toBe("Brakes ready");
     expect(telemetry.flowScore).toBeGreaterThan(0);
     expect(telemetry.flowState).toBe("Good rhythm");

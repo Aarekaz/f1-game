@@ -149,6 +149,7 @@ export type RaceTelemetry = {
   fuelState: string;
   brakeTemp: number;
   brakeFade: number;
+  brakeBite: number;
   brakeState: string;
   grip: number;
   flowScore: number;
@@ -453,6 +454,7 @@ export class SimcadeRaceModel {
   private fuelLoad = 1;
   private brakeTemp = 0.34;
   private brakeFade = 0;
+  private brakeBite = 0.896;
   private brakeReleaseShock = 0;
   private controlSteer = 0;
   private controlThrottle = 0;
@@ -677,6 +679,7 @@ export class SimcadeRaceModel {
       fuelState: this.fuelState(),
       brakeTemp: this.brakeTemp,
       brakeFade: this.brakeFade,
+      brakeBite: this.brakeBite,
       brakeState: this.brakeState(),
       grip: this.grip,
       flowScore: this.flowScore,
@@ -825,6 +828,7 @@ export class SimcadeRaceModel {
     this.fuelLoad = 1;
     this.brakeTemp = 0.34;
     this.brakeFade = 0;
+    this.brakeBite = 0.896;
     this.brakeReleaseShock = 0;
     this.controlSteer = 0;
     this.controlThrottle = 0;
@@ -1588,6 +1592,7 @@ export class SimcadeRaceModel {
         clamp(0.72 + this.frontAxleLoad * 0.2 - this.rearAxleLoad * 0.04, 0.72, 1.05) *
         pressureGripFactor *
         clamp(1 - this.lockup * 0.95 - this.brakeFade * 0.18, 0, 1) *
+        clamp(0.92 + this.brakeBite * 0.08, 0.86, 1.01) *
         (1 - roadWetness * 0.28) *
         (onTrack ? 1 : 0.35 + this.tireContactGrip * 0.4),
       0,
@@ -1684,6 +1689,7 @@ export class SimcadeRaceModel {
           this.standingWater * (0.38 + speedRatio * 0.22) +
           this.hydroplaneLoad * (0.2 + speedRatio * 0.16) +
           this.brakeFade * 0.18 +
+          Math.max(0, 0.82 - this.brakeBite) * 0.22 +
           this.surfaceEdgeLoad * 0.12 +
           this.dirtyTirePickup * 0.12) -
         thresholdBrakeSupport * 0.34 -
@@ -1910,7 +1916,6 @@ export class SimcadeRaceModel {
       throttle * (122 - speedRatio * 52) * torqueCurve * shiftInterruption * tractionDelivery * (1 - this.wheelspin * 0.24) * (1 - fuelWeightPenalty);
     const engineBrakeDrag =
       this.engineBraking * (16 + speedRatio * 62) * (1 - brake * 0.45) * (1 + Math.abs(steer) * speedRatio * 0.2) * (onTrack ? 1 : 0.62 + this.tireContactGrip * 0.28);
-    const brakeWarmth = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
     const brakingGrip = clamp(
       0.58 +
         this.longitudinalGrip * 0.5 +
@@ -1928,7 +1933,7 @@ export class SimcadeRaceModel {
       0.38,
       1.08
     );
-    const braking = brake * 248 * brakingGrip * (1 - this.lockup * 0.3) * (1 - fuelWeightPenalty * 0.45) * brakeWarmth * (1 + thresholdBrakeSupport * 0.08);
+    const braking = brake * 248 * brakingGrip * (1 - this.lockup * 0.3) * (1 - fuelWeightPenalty * 0.45) * this.brakeBite * (1 + thresholdBrakeSupport * 0.08);
     const boostPower = boost * 86;
     const aeroPower = this.aeroBoostActive * throttle * (10 + speedRatio * 22);
     const draftPower = this.draft * throttle * (16 + speedRatio * 28);
@@ -3534,6 +3539,8 @@ export class SimcadeRaceModel {
     const cooling = (1 - brake) * (0.08 + speedRatio * 0.12) + roadWetness * 0.04;
     this.brakeTemp = clamp(this.brakeTemp + (heat - cooling) * dt * 0.34, 0.16, 1.1);
     this.brakeFade = clamp((this.brakeTemp - 0.86) / 0.2, 0, 1);
+    const biteTarget = clamp(0.78 + this.brakeTemp * 0.34 - this.brakeFade * 0.2, 0.72, 1.05);
+    this.brakeBite = approach(this.brakeBite, biteTarget, dt * (biteTarget > this.brakeBite ? 3.8 : 5.2));
   }
 
   private fuelMassKg() {
