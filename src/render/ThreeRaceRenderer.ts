@@ -340,6 +340,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.longitudinalLoadTransfer = telemetry.longitudinalLoadTransfer.toFixed(3);
     this.renderer.domElement.dataset.lateralLoadTransfer = telemetry.lateralLoadTransfer.toFixed(3);
     this.renderer.domElement.dataset.outsideTireLoad = telemetry.outsideTireLoad.toFixed(3);
+    this.renderer.domElement.dataset.insideWheelUnload = telemetry.insideWheelUnload.toFixed(3);
     this.renderer.domElement.dataset.chassisPitch = telemetry.car.pitch.toFixed(3);
     this.renderer.domElement.dataset.chassisRoll = telemetry.car.roll.toFixed(3);
     this.renderer.domElement.dataset.trackRubber = telemetry.trackRubber.toFixed(3);
@@ -554,6 +555,7 @@ export class ThreeRaceRenderer {
       hydroplaneLoad: telemetry.hydroplaneLoad,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       outsideTireLoad: telemetry.outsideTireLoad,
+      insideWheelUnload: telemetry.insideWheelUnload,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
       floorStrikeLoad: telemetry.floorStrikeLoad,
@@ -1026,6 +1028,7 @@ export class ThreeRaceRenderer {
         hydroplaneLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
         outsideTireLoad: 0,
+        insideWheelUnload: 0,
         suspensionTravel: 0,
         damperImpulse: 0,
         floorStrikeLoad: 0,
@@ -1607,6 +1610,7 @@ export class ThreeRaceRenderer {
       hydroplaneLoad: number;
       lateralLoadTransfer: number;
       outsideTireLoad: number;
+      insideWheelUnload: number;
       suspensionTravel: number;
       damperImpulse: number;
       floorStrikeLoad: number;
@@ -1687,6 +1691,7 @@ export class ThreeRaceRenderer {
     const tireResponseLoad = clamp(state.tireResponseLoad, 0, 1);
     const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
     const outsideTireLoad = clamp(state.outsideTireLoad, 0, 1);
+    const insideWheelUnload = clamp(state.insideWheelUnload, 0, 1);
     const roadTextureLoad = clamp(state.roadTextureLoad, 0, 1);
     const roadCamberLoad = clamp(state.roadCamberLoad, 0, 1);
     const roadGuidanceLoad = clamp(state.roadGuidanceLoad, 0, 1);
@@ -1703,6 +1708,7 @@ export class ThreeRaceRenderer {
         longitudinalSlipLoad * 0.06 +
         hydroplaneLoad * 0.16 +
         outsideTireLoad * 0.1 +
+        insideWheelUnload * 0.08 +
         roadGuidanceLoad * 0.1 +
         controlActuationLoad * 0.05 +
         pedalPressureLoad * 0.06 +
@@ -1734,6 +1740,7 @@ export class ThreeRaceRenderer {
       if (!wheel) continue;
 
       const side = wheelName.includes("left") ? -1 : 1;
+      const insideSideBias = Math.max(0, side * Math.sign(lateralLoad || state.steering || 1));
       const rearInsideBias = wheelName.startsWith("rear") ? clamp(side * Math.sign(state.steering || rearTractionRotation || 1), -1, 1) : 0;
       const liftOffSideBias = Math.sign(state.steering || rearTractionRotation || 1);
       const frontLoad = wheelName.startsWith("front")
@@ -1757,6 +1764,8 @@ export class ThreeRaceRenderer {
           tireLoad * 0.58 +
           axleLoadSaturation * 0.08 +
           outsideTireLoad * 0.12 +
+          insideWheelUnload * 0.04 -
+          insideSideBias * insideWheelUnload * 0.18 +
           roadGuidanceLoad * 0.08 +
           controlActuationLoad * 0.05 +
           pedalPressureLoad * 0.05 +
@@ -1803,6 +1812,8 @@ export class ThreeRaceRenderer {
         combinedSlipLoad * 0.008 +
         axleLoadSaturation * 0.01 +
         outsideTireLoad * 0.01 +
+        insideWheelUnload * 0.006 -
+        insideSideBias * insideWheelUnload * 0.018 +
         roadGuidanceLoad * 0.008 +
         controlActuationLoad * 0.006 +
         pedalPressureLoad * 0.007 +
@@ -1827,7 +1838,7 @@ export class ThreeRaceRenderer {
         yawInertiaLoad * 0.01 +
         floorStrikeLoad * 0.012 +
         (wheelName.startsWith("front") ? steeringRackLoad * 0.01 + Math.abs(steeringVelocity) * 0.002 + (1.2 - yawDamping) * 0.004 : 0);
-      const squash = Math.min(rawSquash, 0.155);
+      const squash = clamp(rawSquash, 0, 0.155);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
       loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin - (wheelName.startsWith("rear") ? insideRearSlip * (0.55 + Math.max(0, rearInsideBias) * 0.65) : 0);
@@ -1856,6 +1867,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.axleLoadSaturationVisual = axleLoadSaturation.toFixed(3);
       this.renderer.domElement.dataset.outsideTireVisualLoad = outsideTireLoad.toFixed(3);
+      this.renderer.domElement.dataset.insideWheelUnloadVisual = insideWheelUnload.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.tireGripReserveVisual = tireGripReserve.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisual = tirePressure.toFixed(3);

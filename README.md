@@ -230,6 +230,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Road-feel feedback now turns road compression, suspension load, travel, camber, and surface edge load into one shared signal for the HUD, tire audio, haptics, car body, and camera.
 - Road-guidance load now lets racing-line error, camber, and runoff recovery feed lateral force, tire load, road feel, sound, haptics, HUD text, and visible chassis texture.
 - Outside-tire load now turns sustained cornering weight transfer into a shared tire state, feeding axle saturation, tire and steering feedback, audio, haptics, HUD text, and visible tire squash.
+- Inside-wheel unload now makes the light side of the car matter during cornering and kerb hits, feeding inside-rear slip, tire response, grip reserve, sound, haptics, HUD text, and per-wheel squash.
 - Split-surface contact now notices when the left and right side of the car are on different grip or height, then tugs yaw, lateral motion, tire scrub, sound, haptics, and camera feel together.
 - Vertical tire contact now drops over light crests and recovers under compression/downforce, feeding traction, braking, steering authority, tire noise, haptics, camera float, and chassis motion.
 - Suspension damper impulses now track compression and rebound speed, feeding tire contact, grip, road feel, haptics, tire audio, camera lift, and car body pitch.

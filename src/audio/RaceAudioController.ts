@@ -20,6 +20,7 @@ type AudioTelemetry = Pick<
   | "combinedSlipLoad"
   | "tireGripReserve"
   | "outsideTireLoad"
+  | "insideWheelUnload"
   | "tirePressure"
   | "tireContactPatch"
   | "tirePressureLoad"
@@ -108,6 +109,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.axleLoadSaturation * 0.58,
       telemetry.combinedSlipLoad * 0.56,
       telemetry.outsideTireLoad * 0.42,
+      telemetry.insideWheelUnload * 0.38,
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.48,
       telemetry.tirePressureLoad * 0.58,
       telemetry.tireResponseLoad * 0.48,
@@ -173,6 +175,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.axleLoadSaturation * 96 +
       telemetry.combinedSlipLoad * 82 +
       telemetry.outsideTireLoad * 80 +
+      telemetry.insideWheelUnload * 72 +
       Math.max(0, 1 - telemetry.tireGripReserve) * 68 +
       telemetry.tirePressureLoad * 92 +
       telemetry.tireResponseLoad * 76 +
@@ -225,6 +228,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.axleLoadSaturation * 0.012 +
         telemetry.combinedSlipLoad * 0.01 +
         telemetry.outsideTireLoad * 0.01 +
+        telemetry.insideWheelUnload * 0.009 +
         Math.max(0, 1 - telemetry.tireGripReserve) * 0.008 +
         telemetry.tirePressureLoad * 0.012 +
         telemetry.tireResponseLoad * 0.01 +

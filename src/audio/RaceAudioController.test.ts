@@ -18,6 +18,7 @@ const baseTelemetry = {
   combinedSlipLoad: 0,
   tireGripReserve: 1,
   outsideTireLoad: 0,
+  insideWheelUnload: 0,
   tirePressure: 1,
   tireContactPatch: 1,
   tirePressureLoad: 0,
@@ -152,6 +153,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 210,
       outsideTireLoad: 0.5
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from inside wheel unload", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 210,
+      insideWheelUnload: 0.42
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

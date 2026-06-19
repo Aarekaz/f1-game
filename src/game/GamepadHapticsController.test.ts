@@ -17,6 +17,7 @@ const baseTelemetry = {
   combinedSlipLoad: 0,
   tireGripReserve: 1,
   outsideTireLoad: 0,
+  insideWheelUnload: 0,
   tirePressure: 1,
   tireContactPatch: 1,
   tirePressureLoad: 0,
@@ -117,6 +118,18 @@ describe("raceHapticEffect", () => {
       ...baseTelemetry,
       speedKph: 215,
       outsideTireLoad: 0.5
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(clean?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(clean?.weakMagnitude ?? 0);
+  });
+
+  it("adds light inside-wheel rumble from inside wheel unload", () => {
+    const clean = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 215,
+      insideWheelUnload: 0.42
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(clean?.strongMagnitude ?? 0);
