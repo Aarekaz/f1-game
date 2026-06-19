@@ -1437,6 +1437,45 @@ describe("SimcadeRaceModel", () => {
     expect(saturated.longitudinalGrip).toBeLessThan(measured.longitudinalGrip);
   });
 
+  it("turns throttle and brake overlap into drivetrain bind instead of free drive", () => {
+    const powerModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    powerModel.update(1 / 60, { ...idle, launch: true });
+    const fast = run(powerModel, 4.8, { throttle: 1, ers: true });
+    const powered = run(powerModel, 0.75, { throttle: 1, steer: 0.18 });
+
+    const brakeModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    brakeModel.update(1 / 60, { ...idle, launch: true });
+    run(brakeModel, 4.8, { throttle: 1, ers: true });
+    const braked = run(brakeModel, 0.75, { brake: 0.52, steer: 0.18 });
+
+    const overlapModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    overlapModel.update(1 / 60, { ...idle, launch: true });
+    run(overlapModel, 4.8, { throttle: 1, ers: true });
+    const overlapped = run(overlapModel, 0.75, { throttle: 0.86, brake: 0.52, steer: 0.18 });
+
+    expect(overlapped.pedalOverlapLoad).toBeGreaterThan(0.16);
+    expect(powered.pedalOverlapLoad).toBeLessThan(0.01);
+    expect(braked.pedalOverlapLoad).toBeLessThan(0.01);
+    expect(overlapped.speedKph).toBeLessThan(powered.speedKph);
+    expect(overlapped.speedKph).toBeGreaterThan(braked.speedKph);
+    expect(overlapped.tireForceLoad).toBeGreaterThan(braked.tireForceLoad);
+    expect(overlapped.tireRelaxation).toBeGreaterThan(braked.tireRelaxation);
+    expect(overlapped.longitudinalGrip).toBeLessThan(fast.longitudinalGrip);
+    expect(overlapped.powerState).toBe("Pedal overlap");
+  });
+
   it("builds tire pressure and shrinks the contact patch under sustained load", () => {
     const tidyModel = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1856,6 +1895,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.engineBraking).toBe(0);
     expect(telemetry.trailBraking).toBe(0);
     expect(telemetry.thresholdBraking).toBe(0);
+    expect(telemetry.pedalOverlapLoad).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);

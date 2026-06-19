@@ -121,6 +121,7 @@ export type RaceTelemetry = {
   engineBraking: number;
   trailBraking: number;
   thresholdBraking: number;
+  pedalOverlapLoad: number;
   powerState: string;
   tireTemp: number;
   tireWear: number;
@@ -410,6 +411,7 @@ export class SimcadeRaceModel {
   private engineBraking = 0;
   private trailBraking = 0;
   private thresholdBraking = 0;
+  private pedalOverlapLoad = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
   private fuelLoad = 1;
@@ -611,6 +613,7 @@ export class SimcadeRaceModel {
       engineBraking: this.engineBraking,
       trailBraking: this.trailBraking,
       thresholdBraking: this.thresholdBraking,
+      pedalOverlapLoad: this.pedalOverlapLoad,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
       tireWear: this.tireWear,
@@ -753,6 +756,7 @@ export class SimcadeRaceModel {
     this.engineBraking = 0;
     this.trailBraking = 0;
     this.thresholdBraking = 0;
+    this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
     this.differentialLock = 0;
@@ -1142,11 +1146,25 @@ export class SimcadeRaceModel {
     );
     const trailBrakeSupport = this.trailBraking * clamp(1 - this.lockup * 0.55 - roadWetness * 0.22, 0.35, 1);
     const trailBrakeInstability = this.trailBraking * (0.28 + this.lockup * 0.55 + roadWetness * 0.25);
+    const pedalOverlapTarget = clamp(
+      Math.min(throttleTarget, brakeTarget) *
+        clamp((this.speed - 18) / 130, 0.12, 1) *
+        (0.72 + speedRatio * 0.42) *
+        (onTrack ? 1 : 0.58 + this.tireContactGrip * 0.28),
+      0,
+      1
+    );
+    this.pedalOverlapLoad = approach(
+      this.pedalOverlapLoad,
+      pedalOverlapTarget,
+      dt * (pedalOverlapTarget > this.pedalOverlapLoad ? 13 : 4.6)
+    );
 
     const driverDemand = Math.max(throttle, brake, Math.abs(steer));
     const tractionStress = throttle * speedRatio * (track.section.kind === "straight" ? 0.22 : track.section.difficulty);
     const cornerDemand = track.section.kind === "straight" ? 0.18 : track.section.difficulty;
-    const longitudinalForceDemand = throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52);
+    const longitudinalForceDemand =
+      throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52) + this.pedalOverlapLoad * (0.22 + speedRatio * 0.3);
     const signedLateralLoadTarget = clamp(
       (steer * speedRatio * speedRatio * (0.34 + cornerDemand * 0.62) +
         track.curve * speedRatio * (0.95 + cornerDemand * 0.5) +
@@ -1186,7 +1204,8 @@ export class SimcadeRaceModel {
           Math.abs(steer) * speedRatio * 0.2 +
           this.tractionBite * 0.2 +
           Math.max(0, 1 - this.tireGripReserve) * 0.22) *
-        (1 - brake * 0.82),
+        (1 - brake * 0.82) *
+        (1 - this.pedalOverlapLoad * 0.32),
       0,
       1
     );
@@ -1209,7 +1228,8 @@ export class SimcadeRaceModel {
           this.tireSaturation * 0.16 +
           this.standingWater * 0.22 +
           (gripContext.marbles + this.dirtyTirePickup) * 0.14) *
-        (1 - brake * 0.86),
+        (1 - brake * 0.86) *
+        (1 + this.pedalOverlapLoad * 0.42),
       0,
       1
     );
@@ -1223,7 +1243,8 @@ export class SimcadeRaceModel {
           this.tractionBite * 0.24 +
           boost * 0.16 -
           this.tireRunoffShare * 0.08) *
-        (1 - brake * 0.78),
+        (1 - brake * 0.78) *
+        (1 - this.pedalOverlapLoad * 0.18),
       0,
       1
     );
@@ -1233,7 +1254,14 @@ export class SimcadeRaceModel {
       dt * (differentialLockTarget > this.differentialLock ? 10.5 : 4.8)
     );
     const rearTractionSpeedWindow = clamp((speedRatio - 0.08) / 0.18, 0, 1);
-    const rearRotationDemand = throttle * Math.abs(steer) * speedRatio * rearTractionSpeedWindow * (0.24 + cornerDemand * 0.64) * (1 - brake * 0.82);
+    const rearRotationDemand =
+      throttle *
+      Math.abs(steer) *
+      speedRatio *
+      rearTractionSpeedWindow *
+      (0.24 + cornerDemand * 0.64) *
+      (1 - brake * 0.82) *
+      (1 - this.pedalOverlapLoad * 0.26);
     const rearTractionSlipWindow = clamp(
       0.34 +
         this.tractionBite * 0.34 +
@@ -1355,6 +1383,7 @@ export class SimcadeRaceModel {
         (0.12 +
           brake * 0.32 +
           Math.max(0, 1.03 - this.frontAxleLoad) * 0.28 +
+          this.pedalOverlapLoad * 0.24 +
           Math.max(0, this.frontAxleLoad - 1.18) * 0.34 +
           this.tireSaturation * 0.3 +
           Math.max(0, 1 - this.tireGripReserve) * 0.48 +
@@ -1374,6 +1403,7 @@ export class SimcadeRaceModel {
       brakeEnergy *
         (0.22 +
           Math.max(0, this.longitudinalLoadTransfer) * 0.74 +
+          this.pedalOverlapLoad * 0.32 +
           this.frontLockRisk * 0.36 +
           rearLightness * 0.26 +
           this.frontAeroLoad * 0.08 +
@@ -1388,6 +1418,7 @@ export class SimcadeRaceModel {
           (rearLightness * 0.46 +
             Math.abs(steer) * this.trailBraking * 0.44 +
             this.engineBraking * 0.12 +
+            this.pedalOverlapLoad * 0.12 +
             this.brakeReleaseShock * 0.18 +
             roadWetness * 0.14) -
         Math.max(0, 1 - rearTractionSupport) * 0.22 -
@@ -1415,6 +1446,7 @@ export class SimcadeRaceModel {
             this.tireRelaxation * throttle * 0.08 +
             this.engineBraking * Math.abs(steer) * 0.08 +
             this.driveTorqueLoad * throttle * 0.1 +
+            this.pedalOverlapLoad * 0.28 +
             this.insideRearSlip * 0.58 -
             this.differentialLock * 0.08 +
             Math.abs(this.rearTractionRotation) * throttle * 0.32 +
@@ -1436,6 +1468,7 @@ export class SimcadeRaceModel {
               Math.max(0, 1 - this.tireGroundContact) * (0.16 + speedRatio * 0.14) +
               this.standingWater * (0.44 + speedRatio * 0.28) +
               this.tireSaturation * 0.42 +
+              this.pedalOverlapLoad * 0.22 +
               this.tireRelaxation * 0.08 +
               this.frontLockRisk * 0.95 +
               this.dirtyTirePickup * 0.18) -
@@ -1525,6 +1558,7 @@ export class SimcadeRaceModel {
       clamp(1 + this.differentialLock * 0.035 - this.insideRearSlip * 0.16 - this.driveTorqueLoad * this.tireSaturation * 0.08, 0.78, 1.04) *
       clamp(0.86 + this.tireGroundContact * 0.14, 0.86, 1.04) *
       (1 - this.tireRelaxation * 0.03) *
+      (1 - this.pedalOverlapLoad * 0.24) *
       (1 - steeringPowerTrim) *
       standingStartTraction;
     const acceleration =
@@ -1544,7 +1578,8 @@ export class SimcadeRaceModel {
         this.tireSaturation * 0.12 -
         this.frontLockRisk * 0.1 -
         this.tireRelaxation * 0.035 +
-        thresholdBrakeSupport * 0.16,
+        thresholdBrakeSupport * 0.16 -
+        this.pedalOverlapLoad * 0.08,
       0.38,
       1.08
     );
@@ -1561,6 +1596,7 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 6 +
         Math.max(0, 1 - this.tireGroundContact) * 8 +
         this.tireSaturation * 10 +
+        this.pedalOverlapLoad * 9 +
         this.tireRelaxation * 5 +
         this.steeringRackLoad * 3 +
         Math.abs(this.rearTractionRotation) * 4) *
@@ -1689,6 +1725,7 @@ export class SimcadeRaceModel {
         tireContact.heightSpread * speedRatio * 0.12 +
         this.roadTextureLoad * 0.045 +
         this.rideSettling * 0.032 +
+        this.pedalOverlapLoad * 0.035 +
         suspensionOscillation -
         roadWetness * 0.035,
       0.62,
@@ -1822,6 +1859,7 @@ export class SimcadeRaceModel {
         this.standingWater * (0.18 + speedRatio * 0.22) +
         this.tireSaturation * 0.2 +
         this.tireRelaxation * 0.06 +
+        this.pedalOverlapLoad * 0.18 +
         Math.abs(this.rearTractionRotation) * 0.08 +
         this.engineBraking * (0.045 + Math.abs(rawSteer) * 0.045) +
         trailBrakeInstability * 0.07 +
@@ -2022,6 +2060,7 @@ export class SimcadeRaceModel {
         this.frontLockRisk * 0.16 +
         this.wheelspin * 0.18 +
         this.driveTorqueLoad * 0.06 +
+        this.pedalOverlapLoad * 0.16 +
         this.insideRearSlip * 0.18 +
         this.tirePressureLoad * 0.14 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
@@ -2236,6 +2275,7 @@ export class SimcadeRaceModel {
         this.damperImpulse * 0.045 -
         this.tireSaturation * 0.12 -
         this.tireRelaxation * 0.04 -
+        this.pedalOverlapLoad * 0.12 -
         slipAngleLoad * 0.1 -
         this.wheelspin * 0.08 -
         this.lockup * 0.06 -
@@ -2266,6 +2306,7 @@ export class SimcadeRaceModel {
         throttle * speedRatio * 0.028 +
         this.longitudinalLoadTransfer * 0.075 +
         this.engineBraking * 0.035 +
+        this.pedalOverlapLoad * 0.025 +
         this.suspensionTravel * 0.08 +
         this.suspensionVelocity * 0.03 +
         this.brakeReleaseShock * 0.03,
@@ -2423,6 +2464,7 @@ export class SimcadeRaceModel {
     this.engineBraking = 0;
     this.trailBraking = 0;
     this.thresholdBraking = 0;
+    this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
     this.differentialLock = 0;
@@ -2847,6 +2889,7 @@ export class SimcadeRaceModel {
         gearTorqueLoad +
         roughLoad +
         shiftRecoveryLoad +
+        this.pedalOverlapLoad * 0.18 +
         this.wheelspin * 0.36 +
         Math.abs(this.rearTractionRotation) * 0.28,
       0,
@@ -2866,7 +2909,7 @@ export class SimcadeRaceModel {
   }
 
   private updateBrakeState(dt: number, brake: number, speedRatio: number, roadWetness: number) {
-    const heat = brake * speedRatio * (0.32 + brake * 0.42 + this.lockup * 0.18);
+    const heat = brake * speedRatio * (0.32 + brake * 0.42 + this.lockup * 0.18 + this.pedalOverlapLoad * 0.16);
     const cooling = (1 - brake) * (0.08 + speedRatio * 0.12) + roadWetness * 0.04;
     this.brakeTemp = clamp(this.brakeTemp + (heat - cooling) * dt * 0.34, 0.16, 1.1);
     this.brakeFade = clamp((this.brakeTemp - 0.86) / 0.2, 0, 1);
@@ -3131,6 +3174,7 @@ export class SimcadeRaceModel {
   private powerState() {
     if (this.shiftCut > 0.32) return "Shift cut";
     if (this.engineBraking > 0.11) return "Engine braking";
+    if (this.pedalOverlapLoad > 0.18) return "Pedal overlap";
     if (this.trailBraking > 0.08) return "Trail braking";
     if (this.thresholdBraking > 0.16) return "Threshold braking";
     if (this.insideRearSlip > 0.16) return "Inside rear slip";
