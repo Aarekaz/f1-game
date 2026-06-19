@@ -19,6 +19,7 @@ const baseTelemetry = {
   tirePressure: 1,
   tireContactPatch: 1,
   tirePressureLoad: 0,
+  tireResponseLoad: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
@@ -352,6 +353,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 205,
       roadCamberLoad: 0.34
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from tire response load", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 215,
+      tireResponseLoad: 0.42
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

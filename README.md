@@ -208,6 +208,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Differential corner-exit load now tracks drive torque, diff lock, and inside-rear slip, so throttle application can rotate or tighten the rear axle instead of behaving like a simple speed button.
 - Countersteer recovery now turns an opposite-lock catch into slip-angle recovery, chassis stability, tire sound, haptics, HUD feedback, and visible loaded-wheel motion.
 - Tire pressure and contact-patch load now react to heat, aero, suspension, wet cooling, rough contact, and force demand, then feed grip reserve, scrub, audio, haptics, and tire squash together.
+- Tire-response load now makes abrupt steering and overloaded tires build force through a short settling window, trimming lateral force while feeding tire audio, haptics, HUD text, and visible wheel load.
 - Road texture now has memory: kerbs, split surfaces, standing water, and repeated rough hits build into ride settling and chassis heave, then fade instead of disappearing frame by frame.
 - Road-camber load now gives banked asphalt a shared physics signal, feeding lateral road tug, tire and steering feedback, audio, haptics, HUD text, and visible car load without treating clean camber like a split-surface hit.
 - Tire-load feedback now comes from one shared physics signal and feeds the HUD, tire audio, gamepad haptics, and renderer telemetry together.

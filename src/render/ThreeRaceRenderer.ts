@@ -296,6 +296,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.tirePressureLoad = telemetry.tirePressureLoad.toFixed(3);
     this.renderer.domElement.dataset.tireSaturation = telemetry.tireSaturation.toFixed(3);
     this.renderer.domElement.dataset.tireRelaxation = telemetry.tireRelaxation.toFixed(3);
+    this.renderer.domElement.dataset.tireResponseLoad = telemetry.tireResponseLoad.toFixed(3);
     this.renderer.domElement.dataset.tireLoadFeedback = telemetry.tireLoadFeedback.toFixed(3);
     this.renderer.domElement.dataset.steeringLoadFeedback = telemetry.steeringLoadFeedback.toFixed(3);
     this.renderer.domElement.dataset.steeringRackLoad = telemetry.steeringRackLoad.toFixed(3);
@@ -542,6 +543,7 @@ export class ThreeRaceRenderer {
       liftOffRotationLoad: telemetry.liftOffRotationLoad,
       throttlePickupLoad: telemetry.throttlePickupLoad,
       powerUndersteerLoad: telemetry.powerUndersteerLoad,
+      tireResponseLoad: telemetry.tireResponseLoad,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
@@ -568,6 +570,7 @@ export class ThreeRaceRenderer {
           telemetry.powerUndersteerLoad * 0.26 +
           telemetry.counterSteerLoad * 0.24 +
           telemetry.slipRecovery * 0.18 +
+          telemetry.tireResponseLoad * 0.2 +
           Math.max(0, 1 - telemetry.chassisStability) * 0.22 +
           telemetry.steeringImpulse * 0.24 +
           telemetry.controlActuationLoad * 0.12 +
@@ -990,6 +993,7 @@ export class ThreeRaceRenderer {
         liftOffRotationLoad: 0,
         throttlePickupLoad: 0,
         powerUndersteerLoad: 0,
+        tireResponseLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
         suspensionTravel: 0,
         damperImpulse: 0,
@@ -1565,6 +1569,7 @@ export class ThreeRaceRenderer {
       liftOffRotationLoad: number;
       throttlePickupLoad: number;
       powerUndersteerLoad: number;
+      tireResponseLoad: number;
       lateralLoadTransfer: number;
       suspensionTravel: number;
       damperImpulse: number;
@@ -1638,6 +1643,7 @@ export class ThreeRaceRenderer {
     const liftOffRotationLoad = clamp(state.liftOffRotationLoad, 0, 1);
     const throttlePickupLoad = clamp(state.throttlePickupLoad, 0, 1);
     const powerUndersteerLoad = clamp(state.powerUndersteerLoad, 0, 1);
+    const tireResponseLoad = clamp(state.tireResponseLoad, 0, 1);
     const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
     const roadTextureLoad = clamp(state.roadTextureLoad, 0, 1);
     const roadCamberLoad = clamp(state.roadCamberLoad, 0, 1);
@@ -1650,6 +1656,7 @@ export class ThreeRaceRenderer {
         liftOffRotationLoad * 0.08 +
         throttlePickupLoad * 0.08 +
         powerUndersteerLoad * 0.09 +
+        tireResponseLoad * 0.08 +
         controlActuationLoad * 0.05 +
         roadCamberLoad * 0.04 +
         axleLoadSaturation * 0.07,
@@ -1717,6 +1724,7 @@ export class ThreeRaceRenderer {
           side * liftOffSideBias * liftOffRotationLoad * 0.18 +
           side * liftOffSideBias * throttlePickupLoad * 0.14 +
           side * liftOffSideBias * powerUndersteerLoad * 0.16 +
+          tireResponseLoad * 0.06 +
           side * Math.sign(state.steering || -rearTractionRotation || 1) * counterSteerLoad * 0.14 -
           Math.max(0, 1 - chassisStability) * 0.12 +
           slipRecovery * 0.08 +
@@ -1752,6 +1760,7 @@ export class ThreeRaceRenderer {
         liftOffRotationLoad * 0.01 +
         throttlePickupLoad * 0.01 +
         powerUndersteerLoad * 0.012 +
+        tireResponseLoad * 0.008 +
         counterSteerLoad * 0.01 +
         Math.max(0, 1 - chassisStability) * 0.014 -
         slipRecovery * 0.006 +
@@ -1765,7 +1774,7 @@ export class ThreeRaceRenderer {
       loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin - (wheelName.startsWith("rear") ? insideRearSlip * (0.55 + Math.max(0, rearInsideBias) * 0.65) : 0);
       wheel.rotation.y = wheelName.startsWith("front") ? steerAngle * steeringRatio + selfAlignTorque * 0.045 + steeringVelocity * 0.025 : 0;
-      wheel.rotation.z = -side * (0.015 + cornerLoad * 0.042);
+      wheel.rotation.z = -side * (0.015 + cornerLoad * 0.042 + tireResponseLoad * 0.012);
       wheel.scale.set(1 + squash * 0.12, 1 - squash, 1 + squash * 0.08);
     }
     loadedSideBias = clamp(loadedSideBias / 4, -1, 1);
@@ -1793,6 +1802,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tirePressureVisual = tirePressure.toFixed(3);
       this.renderer.domElement.dataset.tireContactPatchVisual = tireContactPatch.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
+      this.renderer.domElement.dataset.tireResponseVisualLoad = tireResponseLoad.toFixed(3);
       this.renderer.domElement.dataset.roadCamberVisualLoad = roadCamberLoad.toFixed(3);
       this.renderer.domElement.dataset.roadTextureVisualLoad = roadTextureLoad.toFixed(3);
       this.renderer.domElement.dataset.floorStrikeVisualLoad = floorStrikeLoad.toFixed(3);
