@@ -23,6 +23,7 @@ type AudioTelemetry = Pick<
   | "frontLockRisk"
   | "rearBrakeStability"
   | "driveTorqueLoad"
+  | "pedalOverlapLoad"
   | "differentialLock"
   | "insideRearSlip"
   | "steeringLoadFeedback"
@@ -96,6 +97,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.frontLockRisk * 0.82,
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.66,
       telemetry.driveTorqueLoad * 0.36,
+      telemetry.pedalOverlapLoad * 0.62,
       telemetry.differentialLock * 0.42,
       telemetry.insideRearSlip * 0.72,
       telemetry.steeringLoadFeedback * 0.62,
@@ -146,6 +148,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.frontLockRisk * 135 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 95 +
       telemetry.driveTorqueLoad * 54 +
+      telemetry.pedalOverlapLoad * 108 +
       telemetry.differentialLock * 78 +
       telemetry.insideRearSlip * 130 +
       telemetry.steeringLoadFeedback * 90 +
@@ -181,6 +184,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.frontLockRisk * 0.018 +
         Math.max(0, 1 - telemetry.rearBrakeStability) * 0.014 +
         telemetry.driveTorqueLoad * 0.006 +
+        telemetry.pedalOverlapLoad * 0.014 +
         telemetry.differentialLock * 0.008 +
         telemetry.insideRearSlip * 0.016 +
         telemetry.steeringLoadFeedback * 0.012 +

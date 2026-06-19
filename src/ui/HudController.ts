@@ -358,6 +358,7 @@ export class HudController {
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
     if (telemetry.frontLockRisk > 0.18) return `Front lock risk ${(telemetry.frontLockRisk * 100).toFixed(0)}%`;
     if (telemetry.rearBrakeStability < 0.9 && telemetry.brakeBalanceLoad > 0.06) return `Rear light ${((1 - telemetry.rearBrakeStability) * 100).toFixed(0)}%`;
+    if (telemetry.pedalOverlapLoad > 0.18) return `Pedal overlap ${(telemetry.pedalOverlapLoad * 100).toFixed(0)}%`;
     if (telemetry.brakeBalanceLoad > 0.24) return `Brake balance ${(telemetry.brakeBalanceLoad * 100).toFixed(0)}%`;
     if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;
@@ -386,7 +387,7 @@ export class HudController {
     if (Math.abs(telemetry.aeroBalance) > 0.16) return telemetry.aeroBalance > 0 ? "Front aero loaded" : "Rear aero bias";
     if (telemetry.dirtyTirePickup > 0.18 || telemetry.marbles > 0.12) return telemetry.gripState;
     if (telemetry.brakeFade > 0.2 || telemetry.brakeState === "Cold brakes") return telemetry.brakeState;
-    if (telemetry.shiftCut > 0.2 || telemetry.tractionBite > 0.38) return telemetry.powerState;
+    if (telemetry.shiftCut > 0.2 || telemetry.tractionBite > 0.38 || telemetry.pedalOverlapLoad > 0.18) return telemetry.powerState;
     if (telemetry.fuelLoad < 0.7) return telemetry.fuelState;
     if (telemetry.frontWingDamage > 0.04) return `${telemetry.damageState} ${(telemetry.frontWingDamage * 100).toFixed(0)}%`;
     if (telemetry.trackRubber > 0.12 || telemetry.dryingLine > 0.1) return telemetry.trackEvolutionState;

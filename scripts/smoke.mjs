@@ -313,6 +313,7 @@ async function checkDesktop(browser) {
     engineBraking: Number(document.querySelector("#game canvas")?.dataset.engineBraking ?? 0),
     trailBraking: Number(document.querySelector("#game canvas")?.dataset.trailBraking ?? 0),
     thresholdBraking: Number(document.querySelector("#game canvas")?.dataset.thresholdBraking ?? 0),
+    pedalOverlapLoad: Number(document.querySelector("#game canvas")?.dataset.pedalOverlapLoad ?? 0),
     brakeBalanceLoad: Number(document.querySelector("#game canvas")?.dataset.brakeBalanceLoad ?? 0),
     frontLockRisk: Number(document.querySelector("#game canvas")?.dataset.frontLockRisk ?? 0),
     rearBrakeStability: Number(document.querySelector("#game canvas")?.dataset.rearBrakeStability ?? 0),
@@ -370,6 +371,7 @@ async function checkDesktop(browser) {
     frontLockRiskVisual: Number(document.querySelector("#game canvas")?.dataset.frontLockRiskVisual ?? 0),
     rearBrakeLightnessVisual: Number(document.querySelector("#game canvas")?.dataset.rearBrakeLightnessVisual ?? 0),
     driveTorqueVisualLoad: Number(document.querySelector("#game canvas")?.dataset.driveTorqueVisualLoad ?? 0),
+    pedalOverlapVisualLoad: Number(document.querySelector("#game canvas")?.dataset.pedalOverlapVisualLoad ?? 0),
     differentialLockVisual: Number(document.querySelector("#game canvas")?.dataset.differentialLockVisual ?? 0),
     insideRearSlipVisual: Number(document.querySelector("#game canvas")?.dataset.insideRearSlipVisual ?? 0),
     tireSaturation: Number(document.querySelector("#game canvas")?.dataset.tireSaturation ?? 0),
@@ -752,10 +754,11 @@ async function checkDesktop(browser) {
   assert(state.engineBraking >= 0 && state.engineBraking <= 1, `desktop engine-braking telemetry was invalid: ${state.engineBraking}`);
   assert(state.trailBraking >= 0 && state.trailBraking <= 1, `desktop trail-braking telemetry was invalid: ${state.trailBraking}`);
   assert(state.thresholdBraking >= 0 && state.thresholdBraking <= 1, `desktop threshold-braking telemetry was invalid: ${state.thresholdBraking}`);
+  assert(state.pedalOverlapLoad >= 0 && state.pedalOverlapLoad <= 1, `desktop pedal-overlap telemetry was invalid: ${state.pedalOverlapLoad}`);
   assert(state.brakeBalanceLoad >= 0 && state.brakeBalanceLoad <= 1, `desktop brake balance load was invalid: ${state.brakeBalanceLoad}`);
   assert(state.frontLockRisk >= 0 && state.frontLockRisk <= 1, `desktop front lock risk was invalid: ${state.frontLockRisk}`);
   assert(state.rearBrakeStability >= 0.42 && state.rearBrakeStability <= 1.05, `desktop rear brake stability was invalid: ${state.rearBrakeStability}`);
-  assert(/Power|Shift|Traction|Rear|Engine|Trail|Threshold|Diff|Inside|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
+  assert(/Power|Shift|Traction|Rear|Engine|Trail|Threshold|Pedal|Diff|Inside|redline/i.test(state.powerState), `desktop power state was missing: ${state.powerState}`);
   assert(state.wetRivalSprays > 0, `desktop wet rival spray did not render in storm weather: ${state.wetRivalSprays}`);
   assert(state.wetRivalSprayStrength > 0.2, `desktop wet rival spray stayed too faint: ${state.wetRivalSprayStrength}`);
   assert(state.playerWaterSpray === "active", `desktop player spray did not render in storm weather: ${state.playerWaterSpray}`);
@@ -819,6 +822,7 @@ async function checkDesktop(browser) {
   assert(state.frontLockRiskVisual >= 0 && state.frontLockRiskVisual <= 1, `desktop front lock risk visual load was invalid: ${state.frontLockRiskVisual}`);
   assert(state.rearBrakeLightnessVisual >= 0 && state.rearBrakeLightnessVisual <= 1, `desktop rear brake lightness visual load was invalid: ${state.rearBrakeLightnessVisual}`);
   assert(state.driveTorqueVisualLoad >= 0 && state.driveTorqueVisualLoad <= 1, `desktop drive torque visual load was invalid: ${state.driveTorqueVisualLoad}`);
+  assert(state.pedalOverlapVisualLoad >= 0 && state.pedalOverlapVisualLoad <= 1, `desktop pedal-overlap visual load was invalid: ${state.pedalOverlapVisualLoad}`);
   assert(state.differentialLockVisual >= 0 && state.differentialLockVisual <= 1, `desktop differential lock visual load was invalid: ${state.differentialLockVisual}`);
   assert(state.insideRearSlipVisual >= 0 && state.insideRearSlipVisual <= 1, `desktop inside rear slip visual load was invalid: ${state.insideRearSlipVisual}`);
   assert(state.tireSaturation >= 0 && state.tireSaturation <= 1, `desktop tire saturation telemetry was invalid: ${state.tireSaturation}`);

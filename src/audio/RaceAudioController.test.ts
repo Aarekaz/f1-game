@@ -22,6 +22,7 @@ const baseTelemetry = {
   frontLockRisk: 0,
   rearBrakeStability: 1,
   driveTorqueLoad: 0,
+  pedalOverlapLoad: 0,
   differentialLock: 0,
   insideRearSlip: 0,
   steeringLoadFeedback: 0,
@@ -166,6 +167,19 @@ describe("raceAudioMix", () => {
       differentialLock: 0.32,
       insideRearSlip: 0.28,
       car: { ...baseTelemetry.car, throttle: 1, wheelspin: 0.12 }
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from pedal overlap bind", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 205,
+      pedalOverlapLoad: 0.46,
+      car: { ...baseTelemetry.car, throttle: 0.75, braking: 0.52 }
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

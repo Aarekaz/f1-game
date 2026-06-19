@@ -365,6 +365,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.engineBraking = telemetry.engineBraking.toFixed(3);
     this.renderer.domElement.dataset.trailBraking = telemetry.trailBraking.toFixed(3);
     this.renderer.domElement.dataset.thresholdBraking = telemetry.thresholdBraking.toFixed(3);
+    this.renderer.domElement.dataset.pedalOverlapLoad = telemetry.pedalOverlapLoad.toFixed(3);
     this.renderer.domElement.dataset.brakeBalanceLoad = telemetry.brakeBalanceLoad.toFixed(3);
     this.renderer.domElement.dataset.frontLockRisk = telemetry.frontLockRisk.toFixed(3);
     this.renderer.domElement.dataset.rearBrakeStability = telemetry.rearBrakeStability.toFixed(3);
@@ -432,6 +433,7 @@ export class ThreeRaceRenderer {
       telemetry.car.pitch +
       telemetry.car.braking * 0.035 -
       telemetry.brakeBalanceLoad * 0.018 -
+      telemetry.pedalOverlapLoad * 0.018 -
       telemetry.car.throttle * speedRatio * 0.018 +
       telemetry.shiftCut * 0.018 +
       telemetry.tractionBite * 0.014 +
@@ -508,6 +510,7 @@ export class ThreeRaceRenderer {
       frontLockRisk: telemetry.frontLockRisk,
       rearBrakeStability: telemetry.rearBrakeStability,
       driveTorqueLoad: telemetry.driveTorqueLoad,
+      pedalOverlapLoad: telemetry.pedalOverlapLoad,
       differentialLock: telemetry.differentialLock,
       insideRearSlip: telemetry.insideRearSlip,
       tireGroundContact: telemetry.tireGroundContact,
@@ -535,6 +538,7 @@ export class ThreeRaceRenderer {
           telemetry.steeringImpulse * 0.24 +
           Math.abs(telemetry.steeringVelocity) * 0.12 +
           telemetry.tirePressureLoad * 0.2 +
+          telemetry.pedalOverlapLoad * 0.18 +
           telemetry.frontLockRisk * 0.3 +
           Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22 +
           telemetry.insideRearSlip * 0.28 +
@@ -920,6 +924,7 @@ export class ThreeRaceRenderer {
         frontLockRisk: 0,
         rearBrakeStability: 1,
         driveTorqueLoad: 0,
+        pedalOverlapLoad: 0,
         differentialLock: 0,
         insideRearSlip: 0,
         tireGroundContact: 1,
@@ -1486,6 +1491,7 @@ export class ThreeRaceRenderer {
       frontLockRisk: number;
       rearBrakeStability: number;
       driveTorqueLoad: number;
+      pedalOverlapLoad: number;
       differentialLock: number;
       insideRearSlip: number;
       tireGroundContact: number;
@@ -1548,6 +1554,7 @@ export class ThreeRaceRenderer {
     const frontLockRisk = clamp(state.frontLockRisk, 0, 1);
     const rearBrakeLightness = clamp(1 - state.rearBrakeStability, 0, 1);
     const driveTorqueLoad = clamp(state.driveTorqueLoad, 0, 1);
+    const pedalOverlapLoad = clamp(state.pedalOverlapLoad, 0, 1);
     const differentialLock = clamp(state.differentialLock, 0, 1);
     const insideRearSlip = clamp(state.insideRearSlip, 0, 1);
     const tireGroundContact = clamp(state.tireGroundContact, 0, 1.08);
@@ -1577,12 +1584,18 @@ export class ThreeRaceRenderer {
       const rearInsideBias = wheelName.startsWith("rear") ? clamp(side * Math.sign(state.steering || rearTractionRotation || 1), -1, 1) : 0;
       const frontLoad = wheelName.startsWith("front")
         ? state.braking * 0.22 + brakeBalanceLoad * 0.16 + frontLockRisk * 0.1 + frontAeroLoad * 0.12
-        : state.throttle * 0.08 + driveTorqueLoad * 0.08 + rearAeroLoad * 0.1 - rearBrakeLightness * 0.08 - Math.max(0, rearInsideBias) * insideRearSlip * 0.16;
+        : state.throttle * 0.08 +
+          driveTorqueLoad * 0.08 -
+          pedalOverlapLoad * 0.06 +
+          rearAeroLoad * 0.1 -
+          rearBrakeLightness * 0.08 -
+          Math.max(0, rearInsideBias) * insideRearSlip * 0.16;
       const cornerLoad = clamp(
         tireLoad * 0.58 +
           combinedSlipLoad * 0.16 +
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
+          pedalOverlapLoad * 0.1 +
           suspensionCompression * 0.32 +
           roadTextureLoad * 0.04 +
           rideSettling * 0.025 +
@@ -1617,6 +1630,7 @@ export class ThreeRaceRenderer {
         Math.max(0, tirePressure - 1.04) * 0.03 +
         brakeBalanceLoad * 0.01 +
         driveTorqueLoad * 0.006 +
+        pedalOverlapLoad * 0.006 +
         counterSteerLoad * 0.01 +
         Math.max(0, 1 - chassisStability) * 0.014 -
         slipRecovery * 0.006 +
@@ -1668,6 +1682,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.frontLockRiskVisual = frontLockRisk.toFixed(3);
       this.renderer.domElement.dataset.rearBrakeLightnessVisual = rearBrakeLightness.toFixed(3);
       this.renderer.domElement.dataset.driveTorqueVisualLoad = driveTorqueLoad.toFixed(3);
+      this.renderer.domElement.dataset.pedalOverlapVisualLoad = pedalOverlapLoad.toFixed(3);
       this.renderer.domElement.dataset.differentialLockVisual = differentialLock.toFixed(3);
       this.renderer.domElement.dataset.insideRearSlipVisual = insideRearSlip.toFixed(3);
       this.renderer.domElement.dataset.frontAeroVisualLoad = frontAeroLoad.toFixed(3);

@@ -21,6 +21,7 @@ const baseTelemetry = {
   frontLockRisk: 0,
   rearBrakeStability: 1,
   driveTorqueLoad: 0,
+  pedalOverlapLoad: 0,
   differentialLock: 0,
   insideRearSlip: 0,
   steeringLoadFeedback: 0,
@@ -176,6 +177,19 @@ describe("raceHapticEffect", () => {
       differentialLock: 0.34,
       insideRearSlip: 0.28,
       car: { ...baseTelemetry.car, wheelspin: 0.14 }
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns pedal overlap bind into drivetrain texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      pedalOverlapLoad: 0.42,
+      car: { ...baseTelemetry.car, braking: 0.52 }
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
