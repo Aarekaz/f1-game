@@ -85,6 +85,7 @@ export type RaceTelemetry = {
   rearAeroLoad: number;
   aeroBalance: number;
   aeroWashout: number;
+  aeroBuffetLoad: number;
   frontAxleLoad: number;
   rearAxleLoad: number;
   axleLoadSaturation: number;
@@ -406,6 +407,7 @@ export class SimcadeRaceModel {
   private rearAeroLoad = 0;
   private aeroBalance = 0;
   private aeroWashout = 0;
+  private aeroBuffetLoad = 0;
   private frontAxleLoad = 1;
   private rearAxleLoad = 1;
   private axleLoadSaturation = 0;
@@ -601,6 +603,7 @@ export class SimcadeRaceModel {
       rearAeroLoad: this.rearAeroLoad,
       aeroBalance: this.aeroBalance,
       aeroWashout: this.aeroWashout,
+      aeroBuffetLoad: this.aeroBuffetLoad,
       frontAxleLoad: this.frontAxleLoad,
       rearAxleLoad: this.rearAxleLoad,
       axleLoadSaturation: this.axleLoadSaturation,
@@ -769,6 +772,7 @@ export class SimcadeRaceModel {
     this.launchQuality = 0;
     this.draft = 0;
     this.dirtyAir = 0;
+    this.aeroBuffetLoad = 0;
     this.rivalProximity = 0;
     this.sideBySide = 0;
     this.contactRisk = 0;
@@ -868,6 +872,7 @@ export class SimcadeRaceModel {
     this.rearAeroLoad = 0;
     this.aeroBalance = 0;
     this.aeroWashout = 0;
+    this.aeroBuffetLoad = 0;
     this.frontAxleLoad = 1;
     this.rearAxleLoad = 1;
     this.axleLoadSaturation = 0;
@@ -1088,6 +1093,20 @@ export class SimcadeRaceModel {
     this.rivalProximity = approach(this.rivalProximity, racecraft.proximity, dt * 7.2);
     this.sideBySide = approach(this.sideBySide, racecraft.sideBySide, dt * 8.2);
     this.contactRisk = approach(this.contactRisk, racecraft.contactRisk, dt * 9.5);
+    const aeroBuffetTarget = onTrack
+      ? clamp(
+          (this.dirtyAir * 0.9 + this.sideBySide * 0.06) *
+            Math.pow(speedRatio, 1.18) *
+            (0.72 + Math.abs(steer) * 0.28),
+          0,
+          1
+        )
+      : 0;
+    this.aeroBuffetLoad = approach(
+      this.aeroBuffetLoad,
+      aeroBuffetTarget,
+      dt * (aeroBuffetTarget > this.aeroBuffetLoad ? 9.2 : 4.2)
+    );
     this.racecraftCooldown = Math.max(0, this.racecraftCooldown - dt);
     this.damageMessageCooldown = Math.max(0, this.damageMessageCooldown - dt);
     if (this.contactRisk > 0.7 && this.racecraftCooldown === 0) {
@@ -1137,7 +1156,9 @@ export class SimcadeRaceModel {
       1
     );
     const aeroWashoutTarget = clamp(
-      this.dirtyAir * (0.38 + speedRatio * 0.36) + rideHeightAeroLoss * 0.55 + this.frontWingDamage * (0.24 + speedRatio * 0.22),
+        this.dirtyAir * (0.38 + speedRatio * 0.36) +
+        rideHeightAeroLoss * 0.55 +
+        this.frontWingDamage * (0.24 + speedRatio * 0.22),
       0,
       1
     );
@@ -2080,6 +2101,7 @@ export class SimcadeRaceModel {
         this.rideSettling * 0.18 +
         this.roadCamberLoad * 0.2 +
         this.hydroplaneLoad * 0.18 +
+        this.aeroBuffetLoad * 0.1 +
         Math.abs(roadCamber) * speedRatio * 0.12,
       0,
       1
@@ -2173,6 +2195,7 @@ export class SimcadeRaceModel {
       (1 + this.frontAeroLoad * 0.18) *
       frontLoadGrip *
       (1 - this.aeroWashout * 0.18) *
+      (1 - this.aeroBuffetLoad * 0.025) *
       (1 - this.understeer * 0.35) *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
       (1 - this.tireSaturation * 0.24) *
@@ -2228,6 +2251,7 @@ export class SimcadeRaceModel {
         this.fuelLoad * 0.035 +
         this.tireRelaxation * 0.12 +
         this.aeroWashout * 0.08 -
+        this.aeroBuffetLoad * 0.025 -
         this.frontAeroLoad * 0.1,
       0.58,
       1.26
@@ -2250,7 +2274,8 @@ export class SimcadeRaceModel {
         Math.abs(this.selfAlignTorque) * 0.12 -
         this.tireSaturation * 0.22 -
         this.lockup * 0.14 -
-        this.aeroWashout * 0.08,
+        this.aeroWashout * 0.08 -
+        this.aeroBuffetLoad * 0.025,
       0.2,
       1.2
     );
@@ -2925,6 +2950,7 @@ export class SimcadeRaceModel {
     this.rearAeroLoad = 0;
     this.aeroBalance = 0;
     this.aeroWashout = 0;
+    this.aeroBuffetLoad = 0;
     this.frontAxleLoad = Math.max(this.frontAxleLoad, 0.92);
     this.rearAxleLoad = Math.max(this.rearAxleLoad, 0.92);
     this.axleLoadSaturation = 0;

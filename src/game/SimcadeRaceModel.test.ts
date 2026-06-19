@@ -2200,6 +2200,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.assistThrottleTrim).toBe(0);
     expect(telemetry.draft).toBe(0);
     expect(telemetry.dirtyAir).toBe(0);
+    expect(telemetry.aeroBuffetLoad).toBe(0);
     expect(telemetry.airState).toBe("Clean air");
     expect(telemetry.racecraftState).toBe("Clean air");
     expect(telemetry.rivalProximity).toBe(0);
@@ -2618,11 +2619,13 @@ describe("SimcadeRaceModel", () => {
     const straightTow = run(model, 4.4, { throttle: 1 });
 
     expect(straightTow.draft).toBeGreaterThan(0);
+    expect(straightTow.aeroBuffetLoad).toBeGreaterThanOrEqual(0);
     expect(["Slipstream", "Dirty air", "Clean air"]).toContain(straightTow.airState);
 
     const tuckedIn = run(model, 2, { throttle: 1, steer: 0.15 });
 
     expect(tuckedIn.draft + tuckedIn.dirtyAir).toBeGreaterThan(0);
+    expect(tuckedIn.aeroBuffetLoad).toBeGreaterThanOrEqual(0);
     expect(tuckedIn.car.slip).toBeGreaterThanOrEqual(0);
   });
 
@@ -2633,6 +2636,7 @@ describe("SimcadeRaceModel", () => {
     let peakProximity = 0;
     let peakSideBySide = 0;
     let peakContactRisk = 0;
+    let peakAeroBuffet = 0;
     let peakDamage = 0;
     let state = run(model, 18, { throttle: 1, ers: true });
 
@@ -2643,11 +2647,13 @@ describe("SimcadeRaceModel", () => {
       peakProximity = Math.max(peakProximity, state.rivalProximity);
       peakSideBySide = Math.max(peakSideBySide, state.sideBySide);
       peakContactRisk = Math.max(peakContactRisk, state.contactRisk);
+      peakAeroBuffet = Math.max(peakAeroBuffet, state.aeroBuffetLoad);
       peakDamage = Math.max(peakDamage, state.frontWingDamage);
     }
 
     expect(peakProximity).toBeGreaterThan(0.2);
     expect(peakSideBySide).toBeGreaterThan(0.1);
+    expect(peakAeroBuffet).toBeGreaterThan(0.01);
     expect(Number.isFinite(peakContactRisk)).toBe(true);
     expect(Number.isFinite(peakDamage)).toBe(true);
     expect(["Wing damage", "Closing rival", "Wheel to wheel", "Contact risk", "Slipstream", "Dirty air", "Clean air"]).toContain(state.racecraftState);
