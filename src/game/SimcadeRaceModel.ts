@@ -103,6 +103,7 @@ export type RaceTelemetry = {
   roadWetness: number;
   standingWater: number;
   hydroplaneLoad: number;
+  tireWaterFilm: number;
   rainIntensity: number;
   trackRubber: number;
   dryingLine: number;
@@ -433,6 +434,7 @@ export class SimcadeRaceModel {
   private rearBrakeStability = 1;
   private standingWater = 0;
   private hydroplaneLoad = 0;
+  private tireWaterFilm = 0;
   private chassisPitch = 0;
   private chassisRoll = 0;
   private ers = 1;
@@ -639,6 +641,7 @@ export class SimcadeRaceModel {
       roadWetness: this.dynamicRoadWetness(),
       standingWater: this.standingWater,
       hydroplaneLoad: this.hydroplaneLoad,
+      tireWaterFilm: this.tireWaterFilm,
       rainIntensity: this.session.weather.rainIntensity,
       trackRubber: this.trackRubber,
       dryingLine: this.dryingLine,
@@ -848,6 +851,7 @@ export class SimcadeRaceModel {
     this.dryingLine = 0;
     this.standingWater = 0;
     this.hydroplaneLoad = 0;
+    this.tireWaterFilm = 0;
     this.dirtyTirePickup = 0;
     this.roadAdhesion = 1;
     this.lateralScrub = 0;
@@ -1048,6 +1052,21 @@ export class SimcadeRaceModel {
       this.hydroplaneLoad,
       hydroplaneLoadTarget,
       dt * (hydroplaneLoadTarget > this.hydroplaneLoad ? 13 : 5.2)
+    );
+    const tireWaterFilmTarget = clamp(
+      roadWetness * 0.18 +
+        this.standingWater * 0.58 +
+        this.hydroplaneLoad * 0.36 +
+        this.session.weather.rainIntensity * 0.08 -
+        this.dryingLine * 0.1 -
+        this.tireThermalLoad * 0.06,
+      0,
+      1
+    );
+    this.tireWaterFilm = approach(
+      this.tireWaterFilm,
+      tireWaterFilmTarget,
+      dt * (tireWaterFilmTarget > this.tireWaterFilm ? 15.5 : 2.4 + speedRatio * 1.7 + this.dryingLine * 1.2)
     );
     const gripContext = this.trackGripContext(track);
     this.updateDirtyTirePickup(dt, gripContext, speedRatio, onTrack, contactRoughness, roadWetness);
@@ -2305,7 +2324,8 @@ export class SimcadeRaceModel {
     const wetPenalty =
       roadWetness * (brake * 0.08 + throttle * 0.04 + Math.abs(steer) * 0.05) +
       this.standingWater * (brake * 0.12 + throttle * 0.08 + Math.abs(steer) * 0.1) +
-      this.hydroplaneLoad * (brake * 0.08 + throttle * 0.05 + Math.abs(steer) * 0.07);
+      this.hydroplaneLoad * (brake * 0.08 + throttle * 0.05 + Math.abs(steer) * 0.07) +
+      this.tireWaterFilm * (brake * 0.045 + throttle * 0.03 + Math.abs(steer) * 0.04);
     const bankingSupport = 1 + Math.min(0.12, Math.abs(roadCamber) * 0.24);
     const dirtyAirPenalty = this.dirtyAir * (0.1 + speedRatio * 0.14);
     const gripTarget = onTrack
@@ -2580,6 +2600,7 @@ export class SimcadeRaceModel {
         this.surfaceEdgeLoad * 0.12 +
         Math.abs(this.splitSurfaceLoad) * 0.16 +
         Math.max(0, 1 - this.tireGroundContact) * 0.14 +
+        this.tireWaterFilm * (0.08 + speedRatio * 0.08) +
         this.standingWater * (0.12 + speedRatio * 0.1) +
         this.hydroplaneLoad * (0.12 + speedRatio * 0.1) +
         this.brakeReleaseShock * 0.18 +
@@ -2605,6 +2626,7 @@ export class SimcadeRaceModel {
         lateralLoadStress * 0.12 +
         this.insideWheelUnload * 0.05 +
         Math.max(0, 1 - this.tireGroundContact) * 0.16 +
+        this.tireWaterFilm * 0.12 +
         this.hydroplaneLoad * 0.14 +
         roadWetness * speedRatio * 0.08 -
         this.slipRecovery * 0.18 -
@@ -2630,6 +2652,7 @@ export class SimcadeRaceModel {
         Math.max(0, 1 - this.tireGroundContact) * 0.14 +
         this.surfaceEdgeLoad * 0.1 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
+        this.tireWaterFilm * 0.1 +
         this.hydroplaneLoad * 0.12 +
         this.outsideTireLoad * 0.08 +
         this.pedalOverlapLoad * 0.1 -
@@ -2788,6 +2811,7 @@ export class SimcadeRaceModel {
         this.roadGuidanceLoad * 0.1 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
+        this.tireWaterFilm * 0.1 +
         this.hydroplaneLoad * 0.1 +
         this.powerUndersteerLoad * 0.12 +
         this.throttlePickupLoad * 0.1 +
@@ -3125,6 +3149,7 @@ export class SimcadeRaceModel {
     this.surfaceEdgeLoad = 0;
     this.splitSurfaceLoad = 0;
     this.hydroplaneLoad = 0;
+    this.tireWaterFilm = 0;
     this.roadAdhesion = Math.max(this.roadAdhesion, 0.72);
     this.lateralScrub = 0;
     this.slipAngle = 0;

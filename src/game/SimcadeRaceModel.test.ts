@@ -488,6 +488,7 @@ describe("SimcadeRaceModel", () => {
     expect(dry.hydroplaneLoad).toBe(0);
     expect(wet.standingWater).toBeGreaterThan(0.24);
     expect(wet.hydroplaneLoad).toBeGreaterThan(0.04);
+    expect(wet.tireWaterFilm).toBeGreaterThan(dry.tireWaterFilm + 0.12);
     expect(wet.tireGroundContact).toBeLessThan(dry.tireGroundContact);
     expect(wet.roadAdhesion).toBeLessThan(0.24);
     expect(wet.car.lockup).toBeGreaterThan(0.35);
@@ -2238,6 +2239,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rearBrakeStability).toBe(1);
     expect(telemetry.roadWetness).toBe(0);
     expect(telemetry.rainIntensity).toBe(0);
+    expect(telemetry.tireWaterFilm).toBe(0);
     expect(telemetry.trackRubber).toBe(0);
     expect(telemetry.dryingLine).toBe(0);
     expect(telemetry.trackEvolutionState).toBe("Green track");
