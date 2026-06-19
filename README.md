@@ -150,6 +150,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP road texture memory](readme-assets/screenshots/38-aurelia-road-texture-memory.png) |
 
+| Steering rack impulse |
+| --- |
+| ![Aurelia GP steering rack impulse](readme-assets/screenshots/39-aurelia-steering-rack-impulse.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -181,6 +185,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Combined grip reserve now exposes how much of the tire envelope is left when steering, throttle, and brake overlap, then trims drive, steering, visual tire load, audio, haptics, and HUD feedback from that shared signal.
 - Steering-load feedback now rises from tire force, saturation, slip angle, front axle load, and driver steering, then feeds the HUD, tire audio, and gamepad haptics together.
 - Steering rack load now models self-aligning torque from front tire slip, so hard turn-in pushes back through steering, chassis motion, audio, haptics, and the HUD instead of feeling like a loose digital input.
+- Steering rack impulse now tracks how quickly the driver throws the wheel, so sudden opposite-lock changes load the tires, haptics, audio, HUD, and front-wheel motion before settling.
 - Yaw inertia now gives the chassis angular momentum and damping, so turn-in, release, and recovery carry through a short physical arc instead of snapping straight to a target rotation.
 - Road-feel feedback now turns road compression, suspension load, travel, camber, and surface edge load into one shared signal for the HUD, tire audio, haptics, car body, and camera.
 - Split-surface contact now notices when the left and right side of the car are on different grip or height, then tugs yaw, lateral motion, tire scrub, sound, haptics, and camera feel together.
