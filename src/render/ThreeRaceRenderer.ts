@@ -388,6 +388,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.brakeBalanceLoad = telemetry.brakeBalanceLoad.toFixed(3);
     this.renderer.domElement.dataset.frontLockRisk = telemetry.frontLockRisk.toFixed(3);
     this.renderer.domElement.dataset.rearBrakeStability = telemetry.rearBrakeStability.toFixed(3);
+    this.renderer.domElement.dataset.brakeBite = telemetry.brakeBite.toFixed(3);
     this.renderer.domElement.dataset.powerState = telemetry.powerState;
     this.renderer.domElement.dataset.tireTemp = telemetry.tireTemp.toFixed(2);
     this.renderer.domElement.dataset.tireWear = telemetry.tireWear.toFixed(3);

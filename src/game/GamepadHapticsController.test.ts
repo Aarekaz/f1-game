@@ -26,6 +26,7 @@ const baseTelemetry = {
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
+  brakeBite: 0.9,
   driveTorqueLoad: 0,
   pedalOverlapLoad: 0,
   differentialLock: 0,
@@ -556,5 +557,20 @@ describe("raceHapticEffect", () => {
 
     expect(hot?.strongMagnitude).toBeGreaterThan(cool?.strongMagnitude ?? 0);
     expect(hot?.weakMagnitude).toBeGreaterThan(cool?.weakMagnitude ?? 0);
+  });
+
+  it("turns weak brake bite into braking texture", () => {
+    const ready = raceHapticEffect({
+      ...baseTelemetry,
+      car: { ...baseTelemetry.car, braking: 0.7 }
+    });
+    const weak = raceHapticEffect({
+      ...baseTelemetry,
+      brakeBite: 0.72,
+      car: { ...baseTelemetry.car, braking: 0.7 }
+    });
+
+    expect(weak?.strongMagnitude).toBeGreaterThan(ready?.strongMagnitude ?? 0);
+    expect(weak?.weakMagnitude).toBeGreaterThan(ready?.weakMagnitude ?? 0);
   });
 });

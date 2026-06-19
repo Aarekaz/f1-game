@@ -27,6 +27,7 @@ const baseTelemetry = {
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
+  brakeBite: 0.9,
   driveTorqueLoad: 0,
   pedalOverlapLoad: 0,
   differentialLock: 0,
@@ -576,5 +577,20 @@ describe("raceAudioMix", () => {
 
     expect(hot.tireFrequency).toBeGreaterThan(cool.tireFrequency);
     expect(hot.tireGain).toBeGreaterThan(cool.tireGain);
+  });
+
+  it("adds brake texture when bite falls under braking", () => {
+    const ready = raceAudioMix({
+      ...baseTelemetry,
+      car: { ...baseTelemetry.car, braking: 0.7 }
+    });
+    const weak = raceAudioMix({
+      ...baseTelemetry,
+      brakeBite: 0.72,
+      car: { ...baseTelemetry.car, braking: 0.7 }
+    });
+
+    expect(weak.tireFrequency).toBeGreaterThan(ready.tireFrequency);
+    expect(weak.tireGain).toBeGreaterThan(ready.tireGain);
   });
 });

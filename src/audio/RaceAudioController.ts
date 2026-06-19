@@ -29,6 +29,7 @@ type AudioTelemetry = Pick<
   | "brakeBalanceLoad"
   | "frontLockRisk"
   | "rearBrakeStability"
+  | "brakeBite"
   | "driveTorqueLoad"
   | "pedalOverlapLoad"
   | "differentialLock"
@@ -99,6 +100,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
   const speed = clamp01(telemetry.speedKph / 310);
   const rpm = clamp01(telemetry.rpm / 10000);
   const throttle = clamp01(telemetry.car.throttle);
+  const brakeBiteLoss = Math.max(0, 0.9 - telemetry.brakeBite) * clamp01(telemetry.car.braking);
   const slip = clamp01(
     Math.max(
       telemetry.car.slip,
@@ -118,6 +120,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.tireResponseLoad * 0.48,
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.52,
       telemetry.brakeBalanceLoad * 0.52,
+      brakeBiteLoss * 0.5,
       telemetry.frontLockRisk * 0.82,
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.66,
       telemetry.driveTorqueLoad * 0.36,
@@ -187,6 +190,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.max(0, 1 - telemetry.tireContactPatch) * 110 +
       Math.max(0, telemetry.tirePressure - 1.04) * 260 +
       telemetry.brakeBalanceLoad * 72 +
+      brakeBiteLoss * 120 +
       telemetry.frontLockRisk * 135 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 95 +
       telemetry.driveTorqueLoad * 54 +
@@ -241,6 +245,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.tireResponseLoad * 0.01 +
         Math.max(0, 1 - telemetry.tireContactPatch) * 0.014 +
         telemetry.brakeBalanceLoad * 0.01 +
+        brakeBiteLoss * 0.014 +
         telemetry.frontLockRisk * 0.018 +
         Math.max(0, 1 - telemetry.rearBrakeStability) * 0.014 +
         telemetry.driveTorqueLoad * 0.006 +

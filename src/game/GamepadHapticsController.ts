@@ -27,6 +27,7 @@ type HapticTelemetry = Pick<
   | "brakeBalanceLoad"
   | "frontLockRisk"
   | "rearBrakeStability"
+  | "brakeBite"
   | "driveTorqueLoad"
   | "pedalOverlapLoad"
   | "differentialLock"
@@ -103,6 +104,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
   const speed = clamp01(telemetry.speedKph / 310);
   const surface =
     telemetry.surfaceName === "Gravel" ? 0.92 : telemetry.surfaceName === "Runoff" ? 0.58 : telemetry.surfaceName === "Kerb" ? 0.42 : 0;
+  const brakeBiteLoss = Math.max(0, 0.9 - telemetry.brakeBite) * clamp01(telemetry.car.braking);
   const tractionStress = clamp01(
     Math.max(
       telemetry.car.slip * 0.68,
@@ -122,6 +124,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireResponseLoad * 0.5,
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.48,
       telemetry.brakeBalanceLoad * 0.52,
+      brakeBiteLoss * 1.05,
       telemetry.frontLockRisk * 0.88,
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.68,
       telemetry.driveTorqueLoad * 0.34,
@@ -188,6 +191,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.powerUndersteerLoad * 0.24 +
       telemetry.floorSealLoad * 0.12 +
       telemetry.brakeBalanceLoad * 0.14 +
+      brakeBiteLoss * 0.16 +
       telemetry.frontLockRisk * 0.22 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.2 +
       telemetry.driveTorqueLoad * 0.1 +
@@ -225,6 +229,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tireResponseLoad * 0.14 +
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.14 +
       telemetry.brakeBalanceLoad * 0.13 +
+      brakeBiteLoss * 0.12 +
       telemetry.frontLockRisk * 0.18 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.14 +
       telemetry.driveTorqueLoad * 0.08 +
