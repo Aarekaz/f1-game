@@ -22,6 +22,7 @@ const baseTelemetry = {
   tirePressure: 1,
   tireContactPatch: 1,
   tirePressureLoad: 0,
+  tireThermalLoad: 0,
   tireResponseLoad: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
@@ -564,5 +565,16 @@ describe("raceAudioMix", () => {
     expect(noDeployment.ersGain).toBe(0);
     expect(deploying.ersGain).toBeGreaterThan(0);
     expect(deploying.ersFrequency).toBeGreaterThan(noDeployment.ersFrequency);
+  });
+
+  it("adds tire texture from thermal load", () => {
+    const cool = raceAudioMix(baseTelemetry);
+    const hot = raceAudioMix({
+      ...baseTelemetry,
+      tireThermalLoad: 0.72
+    });
+
+    expect(hot.tireFrequency).toBeGreaterThan(cool.tireFrequency);
+    expect(hot.tireGain).toBeGreaterThan(cool.tireGain);
   });
 });

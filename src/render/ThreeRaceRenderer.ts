@@ -295,6 +295,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.tirePressure = telemetry.tirePressure.toFixed(3);
     this.renderer.domElement.dataset.tireContactPatch = telemetry.tireContactPatch.toFixed(3);
     this.renderer.domElement.dataset.tirePressureLoad = telemetry.tirePressureLoad.toFixed(3);
+    this.renderer.domElement.dataset.tireThermalLoad = telemetry.tireThermalLoad.toFixed(3);
     this.renderer.domElement.dataset.tireSaturation = telemetry.tireSaturation.toFixed(3);
     this.renderer.domElement.dataset.tireRelaxation = telemetry.tireRelaxation.toFixed(3);
     this.renderer.domElement.dataset.tireResponseLoad = telemetry.tireResponseLoad.toFixed(3);

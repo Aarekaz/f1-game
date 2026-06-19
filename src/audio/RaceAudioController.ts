@@ -24,6 +24,7 @@ type AudioTelemetry = Pick<
   | "tirePressure"
   | "tireContactPatch"
   | "tirePressureLoad"
+  | "tireThermalLoad"
   | "tireResponseLoad"
   | "brakeBalanceLoad"
   | "frontLockRisk"
@@ -113,6 +114,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.insideWheelUnload * 0.38,
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.48,
       telemetry.tirePressureLoad * 0.58,
+      telemetry.tireThermalLoad * 0.32,
       telemetry.tireResponseLoad * 0.48,
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.52,
       telemetry.brakeBalanceLoad * 0.52,
@@ -180,6 +182,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.insideWheelUnload * 72 +
       Math.max(0, 1 - telemetry.tireGripReserve) * 68 +
       telemetry.tirePressureLoad * 92 +
+      telemetry.tireThermalLoad * 66 +
       telemetry.tireResponseLoad * 76 +
       Math.max(0, 1 - telemetry.tireContactPatch) * 110 +
       Math.max(0, telemetry.tirePressure - 1.04) * 260 +
@@ -234,6 +237,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.insideWheelUnload * 0.009 +
         Math.max(0, 1 - telemetry.tireGripReserve) * 0.008 +
         telemetry.tirePressureLoad * 0.012 +
+        telemetry.tireThermalLoad * 0.007 +
         telemetry.tireResponseLoad * 0.01 +
         Math.max(0, 1 - telemetry.tireContactPatch) * 0.014 +
         telemetry.brakeBalanceLoad * 0.01 +

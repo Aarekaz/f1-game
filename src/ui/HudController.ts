@@ -369,6 +369,7 @@ export class HudController {
     if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.longitudinalSlipLoad > 0.18) return `Long slip ${(telemetry.longitudinalSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;
+    if (telemetry.tireThermalLoad > 0.42) return `Tire heat ${(telemetry.tireThermalLoad * 100).toFixed(0)}%`;
     if (telemetry.tirePressureLoad > 0.18) return `Tire pressure ${(telemetry.tirePressure * 100).toFixed(0)}%`;
     if (telemetry.tireContactPatch < 0.93) return `Contact patch ${(telemetry.tireContactPatch * 100).toFixed(0)}%`;
     if (telemetry.insideRearSlip > 0.16) return `Inside rear ${(telemetry.insideRearSlip * 100).toFixed(0)}%`;

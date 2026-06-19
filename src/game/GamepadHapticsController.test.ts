@@ -21,6 +21,7 @@ const baseTelemetry = {
   tirePressure: 1,
   tireContactPatch: 1,
   tirePressureLoad: 0,
+  tireThermalLoad: 0,
   tireResponseLoad: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
@@ -544,5 +545,16 @@ describe("raceHapticEffect", () => {
 
     expect(sealed?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(sealed?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns tire thermal load into texture", () => {
+    const cool = raceHapticEffect(baseTelemetry);
+    const hot = raceHapticEffect({
+      ...baseTelemetry,
+      tireThermalLoad: 0.72
+    });
+
+    expect(hot?.strongMagnitude).toBeGreaterThan(cool?.strongMagnitude ?? 0);
+    expect(hot?.weakMagnitude).toBeGreaterThan(cool?.weakMagnitude ?? 0);
   });
 });
