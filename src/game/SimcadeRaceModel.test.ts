@@ -573,11 +573,13 @@ describe("SimcadeRaceModel", () => {
 
     let peakShiftCut = 0;
     let peakTractionBite = 0;
+    let peakCompliance = 0;
     let highestGear = 1;
     for (let elapsed = 0; elapsed < 7; elapsed += 1 / 60) {
       const telemetry = model.update(1 / 60, { ...idle, throttle: 1, ers: true });
       peakShiftCut = Math.max(peakShiftCut, telemetry.shiftCut);
       peakTractionBite = Math.max(peakTractionBite, telemetry.tractionBite);
+      peakCompliance = Math.max(peakCompliance, telemetry.drivetrainCompliance);
       highestGear = Math.max(highestGear, telemetry.gear);
     }
 
@@ -585,6 +587,7 @@ describe("SimcadeRaceModel", () => {
     expect(highestGear).toBeGreaterThan(1);
     expect(peakShiftCut).toBeGreaterThan(0.2);
     expect(peakTractionBite).toBeGreaterThan(0.2);
+    expect(peakCompliance).toBeGreaterThan(0.03);
     expect(telemetry.rpm).toBeGreaterThan(4200);
     expect(["Power hooked", "Near redline", "Shift cut", "Traction limited", "Engine braking", "Trail braking", "Threshold braking"]).toContain(telemetry.powerState);
   });
@@ -1609,6 +1612,7 @@ describe("SimcadeRaceModel", () => {
     expect(overlapped.pedalOverlapLoad).toBeGreaterThan(0.16);
     expect(powered.pedalOverlapLoad).toBeLessThan(0.01);
     expect(braked.pedalOverlapLoad).toBeLessThan(0.01);
+    expect(overlapped.drivetrainCompliance).toBeGreaterThan(powered.drivetrainCompliance);
     expect(overlapped.speedKph).toBeLessThan(powered.speedKph);
     expect(overlapped.speedKph).toBeGreaterThan(braked.speedKph);
     expect(overlapped.tireForceLoad).toBeGreaterThan(braked.tireForceLoad);
@@ -2290,6 +2294,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.throttlePickupLoad).toBe(0);
     expect(telemetry.powerUndersteerLoad).toBe(0);
     expect(telemetry.pedalOverlapLoad).toBe(0);
+    expect(telemetry.drivetrainCompliance).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
     expect(telemetry.tireWear).toBe(0);

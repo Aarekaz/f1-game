@@ -140,6 +140,7 @@ export type RaceTelemetry = {
   throttlePickupLoad: number;
   powerUndersteerLoad: number;
   pedalOverlapLoad: number;
+  drivetrainCompliance: number;
   powerState: string;
   tireTemp: number;
   tireThermalLoad: number;
@@ -450,6 +451,7 @@ export class SimcadeRaceModel {
   private throttlePickupLoad = 0;
   private powerUndersteerLoad = 0;
   private pedalOverlapLoad = 0;
+  private drivetrainCompliance = 0;
   private tireTemp = 0.52;
   private tireThermalLoad = 0;
   private tireWear = 0;
@@ -672,6 +674,7 @@ export class SimcadeRaceModel {
       throttlePickupLoad: this.throttlePickupLoad,
       powerUndersteerLoad: this.powerUndersteerLoad,
       pedalOverlapLoad: this.pedalOverlapLoad,
+      drivetrainCompliance: this.drivetrainCompliance,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
       tireThermalLoad: this.tireThermalLoad,
@@ -821,6 +824,7 @@ export class SimcadeRaceModel {
     this.throttlePickupLoad = 0;
     this.powerUndersteerLoad = 0;
     this.pedalOverlapLoad = 0;
+    this.drivetrainCompliance = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
     this.differentialLock = 0;
@@ -1562,6 +1566,22 @@ export class SimcadeRaceModel {
       differentialLockTarget,
       dt * (differentialLockTarget > this.differentialLock ? 10.5 : 4.8)
     );
+    const drivetrainComplianceTarget = clamp(
+      this.shiftCut * throttle * 0.18 +
+        throttlePickupShock * 0.26 +
+        this.driveTorqueLoad * this.tireSaturation * 0.18 +
+        this.insideRearSlip * 0.2 +
+        this.pedalOverlapLoad * 0.24 +
+        this.differentialLock * Math.abs(steer) * 0.08 +
+        boost * throttle * speedRatio * 0.04,
+      0,
+      1
+    );
+    this.drivetrainCompliance = approach(
+      this.drivetrainCompliance,
+      drivetrainComplianceTarget,
+      dt * (drivetrainComplianceTarget > this.drivetrainCompliance ? 12 : 4.6)
+    );
     const rearTractionSpeedWindow = clamp((speedRatio - 0.08) / 0.18, 0, 1);
     const rearRotationDemand =
       throttle *
@@ -1926,7 +1946,16 @@ export class SimcadeRaceModel {
       clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08 - this.tireRelaxation * 0.035, 0.52, 1.06) *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
       rearTractionSupport *
-      clamp(1 + throttlePickupSettle * 0.05 + this.differentialLock * 0.035 - this.insideRearSlip * 0.16 - this.driveTorqueLoad * this.tireSaturation * 0.08 - throttlePickupShock * this.tireSaturation * 0.04, 0.78, 1.06) *
+      clamp(
+        1 +
+          throttlePickupSettle * 0.05 +
+          this.differentialLock * 0.035 -
+          this.insideRearSlip * 0.16 -
+          this.driveTorqueLoad * this.tireSaturation * 0.08 -
+          throttlePickupShock * this.tireSaturation * 0.04,
+        0.78,
+        1.06
+      ) *
       clamp(0.86 + this.tireGroundContact * 0.14, 0.86, 1.04) *
       (1 - this.tireRelaxation * 0.03) *
       (1 - this.pedalOverlapLoad * 0.24) *
@@ -2721,6 +2750,7 @@ export class SimcadeRaceModel {
         steeringRatioLoad * 0.08 +
         this.roadCamberLoad * 0.08 +
         this.tirePressureLoad * 0.12 +
+        this.drivetrainCompliance * 0.08 +
         Math.max(0, 1 - this.tireContactPatch) * 0.08 +
         Math.max(0, 1 - this.chassisStability) * 0.12 -
         this.slipRecovery * 0.1 +
@@ -3054,6 +3084,7 @@ export class SimcadeRaceModel {
     this.throttlePickupLoad = 0;
     this.powerUndersteerLoad = 0;
     this.pedalOverlapLoad = 0;
+    this.drivetrainCompliance = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
     this.differentialLock = 0;
