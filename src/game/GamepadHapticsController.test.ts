@@ -23,6 +23,7 @@ const baseTelemetry = {
   tirePressureLoad: 0,
   tireThermalLoad: 0,
   tireResponseLoad: 0,
+  tireCarcassFlex: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
@@ -421,6 +422,18 @@ describe("raceHapticEffect", () => {
 
     expect(struck?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(struck?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns tire carcass flex into rubber texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      tireCarcassFlex: 0.48
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns split surface contact into edge texture", () => {

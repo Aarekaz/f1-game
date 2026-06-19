@@ -390,6 +390,7 @@ export class HudController {
     if (telemetry.steeringLoadFeedback > 0.2) return `Steering load ${(telemetry.steeringLoadFeedback * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.rearTractionRotation) > 0.16) return `Rear rotation ${(Math.abs(telemetry.rearTractionRotation) * 100).toFixed(0)}%`;
     if (telemetry.tireResponseLoad > 0.18) return `Tire response ${(telemetry.tireResponseLoad * 100).toFixed(0)}%`;
+    if (telemetry.tireCarcassFlex > 0.18) return `Tire flex ${(telemetry.tireCarcassFlex * 100).toFixed(0)}%`;
     if (telemetry.outsideTireLoad > 0.18) return `Outside tire ${(telemetry.outsideTireLoad * 100).toFixed(0)}%`;
     if (telemetry.insideWheelUnload > 0.16) return `Inside unload ${(telemetry.insideWheelUnload * 100).toFixed(0)}%`;
     if (telemetry.tireLoadFeedback > 0.58) return `Tire load ${(telemetry.tireLoadFeedback * 100).toFixed(0)}%`;

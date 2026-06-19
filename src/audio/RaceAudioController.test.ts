@@ -24,6 +24,7 @@ const baseTelemetry = {
   tirePressureLoad: 0,
   tireThermalLoad: 0,
   tireResponseLoad: 0,
+  tireCarcassFlex: 0,
   brakeBalanceLoad: 0,
   frontLockRisk: 0,
   rearBrakeStability: 1,
@@ -528,6 +529,18 @@ describe("raceAudioMix", () => {
 
     expect(pushing.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(pushing.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire texture from carcass flex", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      tireCarcassFlex: 0.48
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture when crest contact gets light", () => {

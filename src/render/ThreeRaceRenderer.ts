@@ -299,6 +299,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.tireSaturation = telemetry.tireSaturation.toFixed(3);
     this.renderer.domElement.dataset.tireRelaxation = telemetry.tireRelaxation.toFixed(3);
     this.renderer.domElement.dataset.tireResponseLoad = telemetry.tireResponseLoad.toFixed(3);
+    this.renderer.domElement.dataset.tireCarcassFlex = telemetry.tireCarcassFlex.toFixed(3);
     this.renderer.domElement.dataset.tireLoadFeedback = telemetry.tireLoadFeedback.toFixed(3);
     this.renderer.domElement.dataset.steeringLoadFeedback = telemetry.steeringLoadFeedback.toFixed(3);
     this.renderer.domElement.dataset.steeringRackLoad = telemetry.steeringRackLoad.toFixed(3);
@@ -557,6 +558,7 @@ export class ThreeRaceRenderer {
       throttlePickupLoad: telemetry.throttlePickupLoad,
       powerUndersteerLoad: telemetry.powerUndersteerLoad,
       tireResponseLoad: telemetry.tireResponseLoad,
+      tireCarcassFlex: telemetry.tireCarcassFlex,
       longitudinalSlipLoad: telemetry.longitudinalSlipLoad,
       hydroplaneLoad: telemetry.hydroplaneLoad,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
@@ -595,6 +597,7 @@ export class ThreeRaceRenderer {
           telemetry.counterSteerLoad * 0.24 +
           telemetry.slipRecovery * 0.18 +
           telemetry.tireResponseLoad * 0.2 +
+          telemetry.tireCarcassFlex * 0.2 +
           Math.max(0, 1 - telemetry.chassisStability) * 0.22 +
           telemetry.steeringImpulse * 0.24 +
           telemetry.controlActuationLoad * 0.12 +
@@ -1036,6 +1039,7 @@ export class ThreeRaceRenderer {
         throttlePickupLoad: 0,
         powerUndersteerLoad: 0,
         tireResponseLoad: 0,
+        tireCarcassFlex: 0,
         longitudinalSlipLoad: 0,
         hydroplaneLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
@@ -1621,6 +1625,7 @@ export class ThreeRaceRenderer {
       throttlePickupLoad: number;
       powerUndersteerLoad: number;
       tireResponseLoad: number;
+      tireCarcassFlex: number;
       longitudinalSlipLoad: number;
       hydroplaneLoad: number;
       lateralLoadTransfer: number;
@@ -1708,6 +1713,7 @@ export class ThreeRaceRenderer {
     const throttlePickupLoad = clamp(state.throttlePickupLoad, 0, 1);
     const powerUndersteerLoad = clamp(state.powerUndersteerLoad, 0, 1);
     const tireResponseLoad = clamp(state.tireResponseLoad, 0, 1);
+    const tireCarcassFlex = clamp(state.tireCarcassFlex, 0, 1);
     const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
     const outsideTireLoad = clamp(state.outsideTireLoad, 0, 1);
     const insideWheelUnload = clamp(state.insideWheelUnload, 0, 1);
@@ -1725,6 +1731,7 @@ export class ThreeRaceRenderer {
         powerUndersteerLoad * 0.09 +
         drivetrainCompliance * 0.08 +
         tireResponseLoad * 0.08 +
+        tireCarcassFlex * 0.08 +
         longitudinalSlipLoad * 0.06 +
         hydroplaneLoad * 0.16 +
         outsideTireLoad * 0.1 +
@@ -1811,6 +1818,7 @@ export class ThreeRaceRenderer {
           side * liftOffSideBias * throttlePickupLoad * 0.14 +
           side * liftOffSideBias * powerUndersteerLoad * 0.16 +
           tireResponseLoad * 0.06 +
+          tireCarcassFlex * 0.06 +
           side * Math.sign(state.steering || -rearTractionRotation || 1) * counterSteerLoad * 0.14 -
           Math.max(0, 1 - chassisStability) * 0.12 +
           slipRecovery * 0.08 +
@@ -1855,6 +1863,7 @@ export class ThreeRaceRenderer {
         throttlePickupLoad * 0.01 +
         powerUndersteerLoad * 0.012 +
         tireResponseLoad * 0.008 +
+        tireCarcassFlex * 0.01 +
         longitudinalSlipLoad * 0.008 +
         hydroplaneLoad * 0.006 +
         counterSteerLoad * 0.01 +
@@ -1905,6 +1914,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tireContactPatchVisual = tireContactPatch.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
       this.renderer.domElement.dataset.tireResponseVisualLoad = tireResponseLoad.toFixed(3);
+      this.renderer.domElement.dataset.tireCarcassFlexVisual = tireCarcassFlex.toFixed(3);
       this.renderer.domElement.dataset.longitudinalSlipVisualLoad = longitudinalSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.hydroplaneVisualLoad = hydroplaneLoad.toFixed(3);
       this.renderer.domElement.dataset.roadCamberVisualLoad = roadCamberLoad.toFixed(3);

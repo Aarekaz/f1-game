@@ -24,6 +24,7 @@ type HapticTelemetry = Pick<
   | "tirePressureLoad"
   | "tireThermalLoad"
   | "tireResponseLoad"
+  | "tireCarcassFlex"
   | "brakeBalanceLoad"
   | "frontLockRisk"
   | "rearBrakeStability"
@@ -124,6 +125,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tirePressureLoad * 0.56,
       telemetry.tireThermalLoad * 0.34,
       telemetry.tireResponseLoad * 0.5,
+      telemetry.tireCarcassFlex * 0.5,
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.48,
       telemetry.brakeBalanceLoad * 0.52,
       brakeBiteLoss * 1.05,
@@ -186,6 +188,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tirePressureLoad * 0.2 +
       telemetry.tireThermalLoad * 0.16 +
       telemetry.tireResponseLoad * 0.22 +
+      telemetry.tireCarcassFlex * 0.22 +
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.2 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.44 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.38 +
@@ -233,6 +236,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.tirePressureLoad * 0.16 +
       telemetry.tireThermalLoad * 0.1 +
       telemetry.tireResponseLoad * 0.14 +
+      telemetry.tireCarcassFlex * 0.14 +
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.14 +
       telemetry.brakeBalanceLoad * 0.13 +
       brakeBiteLoss * 0.12 +
