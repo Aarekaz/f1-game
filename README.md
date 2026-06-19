@@ -162,6 +162,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP floor strike load](readme-assets/screenshots/41-aurelia-floor-strike-load.png) |
 
+| Rejoin frame guard |
+| --- |
+| ![Aurelia GP rejoin frame guard](readme-assets/screenshots/42-aurelia-frame-guard-floor-strike.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -211,6 +215,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The chase camera now has road-frame drift, letting slip angle and lateral load move the car inside the view while the road stays readable as the reference.
 - The chase camera now opens up with speed, tire load, traffic, and braking zones, giving the road more room when the car is moving quickly through a pack.
 - A chase-frame guard now pulls the look target back toward the car when hard cornering or rejoin motion tries to push it out of frame.
+- The chase-frame guard now also opens and lifts the camera during edge pressure, keeping floor-strike and rejoin moments readable instead of clipping the player car.
 - Off-track recovery keeps the road in frame instead of letting the view become a giant car over empty grass.
 - Portrait screens get a backed-off chase camera, so mobile play shows the road instead of filling the screen with the rear wing.
 - Camera-safe GP gate logic gives the chase view a small lift under bridges and timing structures, keeping the fictional formula car readable at speed.
