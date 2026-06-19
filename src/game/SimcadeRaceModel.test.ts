@@ -1619,6 +1619,87 @@ describe("SimcadeRaceModel", () => {
     expect(lifted.peakSlip).toBeLessThan(0.72);
   });
 
+  it("settles lift-off rotation when throttle is picked up cleanly", () => {
+    const samplePickupWindow = (model: SimcadeRaceModel, seconds: number, input: Partial<RaceActions>) => {
+      let telemetry = model.telemetry();
+      let peakPickup = 0;
+      let peakWheelspin = 0;
+      let peakTireLoad = 0;
+
+      for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+        telemetry = model.update(1 / 60, { ...idle, ...input });
+        peakPickup = Math.max(peakPickup, telemetry.throttlePickupLoad);
+        peakWheelspin = Math.max(peakWheelspin, telemetry.car.wheelspin);
+        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback);
+      }
+
+      return { telemetry, peakPickup, peakWheelspin, peakTireLoad };
+    };
+
+    const prepareLiftedCar = () => {
+      const model = new SimcadeRaceModel({
+        track: findTrack("aurelia"),
+        weather: findWeather("clear"),
+        assist: findAssist("manual")
+      });
+      model.update(1 / 60, { ...idle, launch: true });
+      run(model, 4.8, { throttle: 1, ers: true });
+      run(model, 0.38, { throttle: 0.9, steer: 0.62 });
+      run(model, 0.2, { throttle: 0, steer: 0.62 });
+      return model;
+    };
+
+    const coast = samplePickupWindow(prepareLiftedCar(), 0.54, { throttle: 0, steer: 0.5 });
+    const pickedUp = samplePickupWindow(prepareLiftedCar(), 0.54, { throttle: 0.38, steer: 0.42 });
+
+    expect(pickedUp.peakPickup).toBeGreaterThan(0.05);
+    expect(pickedUp.telemetry.engineBraking).toBeLessThan(coast.telemetry.engineBraking);
+    expect(pickedUp.telemetry.rearAxleLoad).toBeGreaterThan(coast.telemetry.rearAxleLoad);
+    expect(pickedUp.telemetry.liftOffRotationLoad).toBeLessThan(coast.telemetry.liftOffRotationLoad);
+    expect(Math.abs(pickedUp.telemetry.car.yawRate)).toBeLessThan(Math.abs(coast.telemetry.car.yawRate));
+  });
+
+  it("loads the rear tires when throttle is punched in after lift-off", () => {
+    const samplePickupWindow = (model: SimcadeRaceModel, seconds: number, input: Partial<RaceActions>) => {
+      let telemetry = model.telemetry();
+      let peakPickup = 0;
+      let peakWheelspin = 0;
+      let peakTireLoad = 0;
+
+      for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+        telemetry = model.update(1 / 60, { ...idle, ...input });
+        peakPickup = Math.max(peakPickup, telemetry.throttlePickupLoad);
+        peakWheelspin = Math.max(peakWheelspin, telemetry.car.wheelspin);
+        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback);
+      }
+
+      return { telemetry, peakPickup, peakWheelspin, peakTireLoad };
+    };
+
+    const prepareLiftedCar = () => {
+      const model = new SimcadeRaceModel({
+        track: findTrack("aurelia"),
+        weather: findWeather("clear"),
+        assist: findAssist("manual")
+      });
+      model.update(1 / 60, { ...idle, launch: true });
+      run(model, 4.8, { throttle: 1, ers: true });
+      run(model, 0.38, { throttle: 0.9, steer: 0.62 });
+      run(model, 0.2, { throttle: 0, steer: 0.62 });
+      return model;
+    };
+
+    const gradualModel = prepareLiftedCar();
+    samplePickupWindow(gradualModel, 0.28, { throttle: 0.28, steer: 0.44 });
+    const gradual = samplePickupWindow(gradualModel, 0.28, { throttle: 0.5, steer: 0.34 });
+    const punched = samplePickupWindow(prepareLiftedCar(), 0.56, { throttle: 1, steer: 0.55, ers: true });
+
+    expect(punched.peakPickup).toBeGreaterThan(gradual.peakPickup + 0.04);
+    expect(punched.telemetry.driveTorqueLoad).toBeGreaterThan(gradual.telemetry.driveTorqueLoad);
+    expect(punched.peakWheelspin).toBeGreaterThan(gradual.peakWheelspin + 0.005);
+    expect(punched.peakTireLoad).toBeGreaterThan(gradual.peakTireLoad);
+  });
+
   it("uses trail braking to rotate the car without turning it into a lockup", () => {
     const trailModel = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -1978,6 +2059,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.trailBraking).toBe(0);
     expect(telemetry.thresholdBraking).toBe(0);
     expect(telemetry.liftOffRotationLoad).toBe(0);
+    expect(telemetry.throttlePickupLoad).toBe(0);
     expect(telemetry.pedalOverlapLoad).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);

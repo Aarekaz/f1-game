@@ -123,6 +123,7 @@ export type RaceTelemetry = {
   trailBraking: number;
   thresholdBraking: number;
   liftOffRotationLoad: number;
+  throttlePickupLoad: number;
   pedalOverlapLoad: number;
   powerState: string;
   tireTemp: number;
@@ -415,6 +416,7 @@ export class SimcadeRaceModel {
   private trailBraking = 0;
   private thresholdBraking = 0;
   private liftOffRotationLoad = 0;
+  private throttlePickupLoad = 0;
   private pedalOverlapLoad = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
@@ -619,6 +621,7 @@ export class SimcadeRaceModel {
       trailBraking: this.trailBraking,
       thresholdBraking: this.thresholdBraking,
       liftOffRotationLoad: this.liftOffRotationLoad,
+      throttlePickupLoad: this.throttlePickupLoad,
       pedalOverlapLoad: this.pedalOverlapLoad,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
@@ -763,6 +766,7 @@ export class SimcadeRaceModel {
     this.trailBraking = 0;
     this.thresholdBraking = 0;
     this.liftOffRotationLoad = 0;
+    this.throttlePickupLoad = 0;
     this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
@@ -1114,10 +1118,12 @@ export class SimcadeRaceModel {
       dt * (tireGroundContactTarget < this.tireGroundContact ? 13 : 6.5)
     );
     const throttleRelease = clamp((previousThrottle - throttle) * (0.72 + speedRatio * 0.52), 0, 1);
+    const throttleRise = clamp((throttle - previousThrottle) * (0.78 + speedRatio * 0.56), 0, 1);
     const transferTarget = clamp(
       brake * (0.32 + speedRatio * 0.64) +
         throttleRelease * (0.22 + speedRatio * 0.28) +
         this.engineBraking * (0.1 + speedRatio * 0.24) -
+        throttleRise * (0.1 + speedRatio * 0.16) * (1 - brake * 0.72) -
         throttle * (0.14 + speedRatio * 0.16) * (1 - brake * 0.72) -
         this.aeroPlatformLoad * 0.035,
       -0.28,
@@ -1189,8 +1195,27 @@ export class SimcadeRaceModel {
     this.liftOffRotationLoad = approach(
       this.liftOffRotationLoad,
       liftOffRotationTarget,
-      dt * (liftOffRotationTarget > this.liftOffRotationLoad ? 18 : 2.15)
+      dt * (liftOffRotationTarget > this.liftOffRotationLoad ? 18 : 2.15 + throttle * 1.5 + this.throttlePickupLoad * 4.2)
     );
+    const throttlePickupTarget = clamp(
+      throttleRise *
+        speedRatio *
+        (0.42 + throttle * 0.38 + Math.abs(steer) * 0.24 + cornerDemand * 0.16) *
+        (0.38 + this.liftOffRotationLoad * 1.16 + this.engineBraking * 0.42 + Math.max(0, this.longitudinalLoadTransfer) * 0.34) *
+        5.6 *
+        (1 - brake * 0.82) *
+        (1 - this.pedalOverlapLoad * 0.28) *
+        (onTrack ? 1 : 0.5 + this.tireContactGrip * 0.32),
+      0,
+      1
+    );
+    this.throttlePickupLoad = approach(
+      this.throttlePickupLoad,
+      throttlePickupTarget,
+      dt * (throttlePickupTarget > this.throttlePickupLoad ? 15 : 2.35)
+    );
+    const throttlePickupSettle = this.throttlePickupLoad * clamp(1 - throttle * 0.18 - this.wheelspin * 0.34 - this.tireSaturation * 0.18, 0.28, 1);
+    const throttlePickupShock = this.throttlePickupLoad * throttle * clamp(0.62 + this.liftOffRotationLoad * 0.8 + Math.abs(steer) * 0.24, 0.42, 1.35);
     const longitudinalForceDemand =
       throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52) + this.pedalOverlapLoad * (0.22 + speedRatio * 0.3);
     const signedLateralLoadTarget = clamp(
@@ -1218,6 +1243,8 @@ export class SimcadeRaceModel {
         Math.max(0, this.longitudinalLoadTransfer) * 0.12 -
         this.engineBraking * 0.035 -
         trailBrakeInstability * 0.045 +
+        throttlePickupSettle * 0.08 -
+        throttlePickupShock * this.tireSaturation * 0.04 +
         (this.tireContactPatch - 1) * 0.06 -
         this.tirePressureLoad * 0.015,
       0.78,
@@ -1231,6 +1258,7 @@ export class SimcadeRaceModel {
           Math.max(0, -this.longitudinalLoadTransfer) * 0.42 +
           Math.abs(steer) * speedRatio * 0.2 +
           this.tractionBite * 0.2 +
+          this.throttlePickupLoad * 0.16 +
           Math.max(0, 1 - this.tireGripReserve) * 0.22) *
         (1 - brake * 0.82) *
         (1 - this.pedalOverlapLoad * 0.32),
@@ -1476,6 +1504,8 @@ export class SimcadeRaceModel {
             this.tireRelaxation * throttle * 0.08 +
             this.engineBraking * Math.abs(steer) * 0.08 +
             this.driveTorqueLoad * throttle * 0.1 +
+            throttlePickupShock * 0.34 -
+            throttlePickupSettle * 0.08 +
             this.pedalOverlapLoad * 0.28 +
             this.insideRearSlip * 0.58 -
             this.differentialLock * 0.08 +
@@ -1585,7 +1615,7 @@ export class SimcadeRaceModel {
       clamp(0.62 + this.longitudinalGrip * 0.43 - this.tireSaturation * 0.08 - this.tireRelaxation * 0.035, 0.52, 1.06) *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
       rearTractionSupport *
-      clamp(1 + this.differentialLock * 0.035 - this.insideRearSlip * 0.16 - this.driveTorqueLoad * this.tireSaturation * 0.08, 0.78, 1.04) *
+      clamp(1 + throttlePickupSettle * 0.05 + this.differentialLock * 0.035 - this.insideRearSlip * 0.16 - this.driveTorqueLoad * this.tireSaturation * 0.08 - throttlePickupShock * this.tireSaturation * 0.04, 0.78, 1.06) *
       clamp(0.86 + this.tireGroundContact * 0.14, 0.86, 1.04) *
       (1 - this.tireRelaxation * 0.03) *
       (1 - this.pedalOverlapLoad * 0.24) *
@@ -1629,6 +1659,7 @@ export class SimcadeRaceModel {
         this.pedalOverlapLoad * 9 +
         this.tireRelaxation * 5 +
         this.steeringRackLoad * 3 +
+        this.throttlePickupLoad * 3 +
         Math.abs(this.rearTractionRotation) * 4) *
       driverDemand;
     const highSpeedSteeringWindow = clamp((this.speed - 190) / 95, 0, 1);
@@ -2013,6 +2044,7 @@ export class SimcadeRaceModel {
         this.tireGroundContact * 0.16 +
         this.frontAeroLoad * 0.18 +
         this.slipRecovery * 0.18 +
+        throttlePickupSettle * 0.12 +
         Math.abs(this.selfAlignTorque) * 0.12 -
         this.tireSaturation * 0.22 -
         this.lockup * 0.14 -
@@ -2023,6 +2055,7 @@ export class SimcadeRaceModel {
     this.yawRate += yawMoment * yawResponseRate * dt;
     this.yawRate = approach(this.yawRate, targetYawRate, dt * (1.05 + this.yawDamping * 1.35));
     this.yawRate = approach(this.yawRate, 0, dt * this.slipRecovery * (0.58 + speedRatio * 0.42));
+    this.yawRate = approach(this.yawRate, 0, dt * throttlePickupSettle * (0.18 + speedRatio * 0.24));
     this.yawRate = approach(this.yawRate, 0, dt * this.yawDamping * (0.14 + speedRatio * 0.18));
     this.yawRate = clamp(this.yawRate, -0.74, 0.74);
     const yawInertiaLoadTarget = clamp(
@@ -2136,6 +2169,7 @@ export class SimcadeRaceModel {
         this.insideRearSlip * 0.18 +
         this.tirePressureLoad * 0.14 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
+        throttlePickupShock * 0.12 +
         Math.abs(this.rearTractionRotation) * 0.14 +
         this.liftOffRotationLoad * 0.34 +
         Math.max(0, 1 - this.rearBrakeStability) * 0.16 +
@@ -2274,6 +2308,7 @@ export class SimcadeRaceModel {
         this.damperImpulse * 0.12 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
+        this.throttlePickupLoad * 0.1 +
         Math.abs(this.rearTractionRotation) * 0.12 +
         this.liftOffRotationLoad * 0.11 +
         Math.max(0, 1 - this.tireGroundContact) * 0.08,
@@ -2547,6 +2582,7 @@ export class SimcadeRaceModel {
     this.trailBraking = 0;
     this.thresholdBraking = 0;
     this.liftOffRotationLoad = 0;
+    this.throttlePickupLoad = 0;
     this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
@@ -3258,6 +3294,7 @@ export class SimcadeRaceModel {
   private powerState() {
     if (this.shiftCut > 0.32) return "Shift cut";
     if (this.engineBraking > 0.11) return "Engine braking";
+    if (this.throttlePickupLoad > 0.12) return "Throttle pickup";
     if (this.pedalOverlapLoad > 0.18) return "Pedal overlap";
     if (this.trailBraking > 0.08) return "Trail braking";
     if (this.thresholdBraking > 0.16) return "Threshold braking";
