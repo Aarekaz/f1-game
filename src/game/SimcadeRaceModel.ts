@@ -91,6 +91,7 @@ export type RaceTelemetry = {
   axleLoadSaturation: number;
   longitudinalLoadTransfer: number;
   lateralLoadTransfer: number;
+  outsideTireLoad: number;
   brakeBalanceLoad: number;
   frontLockRisk: number;
   rearBrakeStability: number;
@@ -413,6 +414,7 @@ export class SimcadeRaceModel {
   private axleLoadSaturation = 0;
   private longitudinalLoadTransfer = 0;
   private lateralLoadTransfer = 0;
+  private outsideTireLoad = 0;
   private brakeBalanceLoad = 0;
   private frontLockRisk = 0;
   private rearBrakeStability = 1;
@@ -609,6 +611,7 @@ export class SimcadeRaceModel {
       axleLoadSaturation: this.axleLoadSaturation,
       longitudinalLoadTransfer: this.longitudinalLoadTransfer,
       lateralLoadTransfer: this.lateralLoadTransfer,
+      outsideTireLoad: this.outsideTireLoad,
       brakeBalanceLoad: this.brakeBalanceLoad,
       frontLockRisk: this.frontLockRisk,
       rearBrakeStability: this.rearBrakeStability,
@@ -878,6 +881,7 @@ export class SimcadeRaceModel {
     this.axleLoadSaturation = 0;
     this.longitudinalLoadTransfer = 0;
     this.lateralLoadTransfer = 0;
+    this.outsideTireLoad = 0;
     this.brakeBalanceLoad = 0;
     this.frontLockRisk = 0;
     this.rearBrakeStability = 1;
@@ -1340,6 +1344,21 @@ export class SimcadeRaceModel {
     );
     const lateralLoad = Math.abs(this.lateralLoadTransfer);
     const lateralLoadStress = Math.max(0, lateralLoad - 0.3);
+    const outsideTireLoadTarget = onTrack
+      ? clamp(
+          clamp((lateralLoad - 0.08) / 0.34, 0, 1) *
+            (0.64 + speedRatio * 0.36) *
+            (0.74 + Math.abs(rawSteer) * 0.26) *
+            clamp(0.82 + this.tireGroundContact * 0.18, 0.82, 1.04),
+          0,
+          1
+        )
+      : 0;
+    this.outsideTireLoad = approach(
+      this.outsideTireLoad,
+      outsideTireLoadTarget,
+      dt * (outsideTireLoadTarget > this.outsideTireLoad ? 10.5 : 5.8)
+    );
     const frontAxleOverload = clamp((this.frontAxleLoad - 1.15) / 0.18, 0, 1);
     const rearAxleOverload = clamp((this.rearAxleLoad - 1.13) / 0.18, 0, 1);
     const axleLoadSaturationTarget = onTrack
@@ -1347,6 +1366,7 @@ export class SimcadeRaceModel {
           frontAxleOverload * 0.58 +
             rearAxleOverload * 0.42 +
             lateralLoadStress * 0.18 +
+            this.outsideTireLoad * 0.08 +
             Math.max(0, 1 - this.tireGroundContact) * 0.12 +
             this.damperImpulse * 0.08,
           0,
@@ -2560,6 +2580,7 @@ export class SimcadeRaceModel {
         this.tireRelaxation * 0.14 +
         this.tireResponseLoad * 0.12 +
         this.axleLoadSaturation * 0.16 +
+        this.outsideTireLoad * 0.08 +
         this.controlActuationLoad * 0.12 +
         this.pedalPressureLoad * 0.08 +
         steeringRatioLoad * 0.08 +
@@ -2597,6 +2618,7 @@ export class SimcadeRaceModel {
           slipAngleLoad * 0.16 +
           lateralLoadStress * 0.12 +
           this.axleLoadSaturation * 0.12 +
+          this.outsideTireLoad * 0.08 +
           steeringRatioLoad * 0.18 +
           this.roadCamberLoad * 0.1 +
           this.frontAxleLoad * 0.08) *
@@ -2956,6 +2978,7 @@ export class SimcadeRaceModel {
     this.axleLoadSaturation = 0;
     this.longitudinalLoadTransfer = 0;
     this.lateralLoadTransfer = 0;
+    this.outsideTireLoad = 0;
     this.brakeBalanceLoad = 0;
     this.frontLockRisk = 0;
     this.rearBrakeStability = 1;

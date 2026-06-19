@@ -2075,6 +2075,11 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(rightCruise.lateralLoadTransfer)).toBeLessThan(0.12);
     expect(rightLoaded.lateralLoadTransfer).toBeGreaterThan(0.12);
     expect(leftLoaded.lateralLoadTransfer).toBeLessThan(-0.12);
+    expect(rightCruise.outsideTireLoad).toBeLessThan(0.08);
+    expect(rightLoaded.outsideTireLoad).toBeGreaterThan(rightCruise.outsideTireLoad + 0.06);
+    expect(leftLoaded.outsideTireLoad).toBeGreaterThan(rightCruise.outsideTireLoad + 0.06);
+    expect(rightLoaded.tireLoadFeedback).toBeGreaterThan(rightCruise.tireLoadFeedback);
+    expect(rightLoaded.steeringLoadFeedback).toBeGreaterThan(rightCruise.steeringLoadFeedback);
     expect(Math.sign(rightLoaded.car.roll)).not.toBe(Math.sign(leftLoaded.car.roll));
     expect(Math.abs(rightLoaded.car.roll)).toBeGreaterThan(0.015);
     expect(rightLoaded.tireRelaxation).toBeGreaterThan(rightCruise.tireRelaxation);
