@@ -44,6 +44,7 @@ const baseTelemetry = {
   aeroWashout: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
+  floorStrikeLoad: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -281,6 +282,18 @@ describe("raceHapticEffect", () => {
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns floor strikes into chassis scrape texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const struck = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 220,
+      floorStrikeLoad: 0.42
+    });
+
+    expect(struck?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(struck?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns split surface contact into edge texture", () => {

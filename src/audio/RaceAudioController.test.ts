@@ -45,6 +45,7 @@ const baseTelemetry = {
   aeroWashout: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
+  floorStrikeLoad: 0,
   car: {
     slip: 0,
     braking: 0,
@@ -276,6 +277,18 @@ describe("raceAudioMix", () => {
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from floor strikes", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const struck = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 220,
+      floorStrikeLoad: 0.42
+    });
+
+    expect(struck.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(struck.tireFrequency).toBeGreaterThan(clean.tireFrequency);
   });
 
   it("adds tire texture from split surface contact", () => {

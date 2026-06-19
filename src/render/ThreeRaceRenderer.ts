@@ -320,6 +320,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.suspensionVelocity = telemetry.suspensionVelocity.toFixed(3);
     this.renderer.domElement.dataset.damperImpulse = telemetry.damperImpulse.toFixed(3);
     this.renderer.domElement.dataset.aeroPlatformLoad = telemetry.aeroPlatformLoad.toFixed(3);
+    this.renderer.domElement.dataset.floorStrikeLoad = telemetry.floorStrikeLoad.toFixed(3);
     this.renderer.domElement.dataset.frontAeroLoad = telemetry.frontAeroLoad.toFixed(3);
     this.renderer.domElement.dataset.rearAeroLoad = telemetry.rearAeroLoad.toFixed(3);
     this.renderer.domElement.dataset.aeroBalance = telemetry.aeroBalance.toFixed(3);
@@ -423,6 +424,7 @@ export class ThreeRaceRenderer {
       telemetry.suspensionTravel * 0.045 +
       telemetry.roadFeelFeedback * 0.018 +
       telemetry.damperImpulse * 0.014 +
+      telemetry.floorStrikeLoad * -0.026 +
       telemetry.rideSettling * 0.01 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.04 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.012 +
@@ -445,6 +447,7 @@ export class ThreeRaceRenderer {
       telemetry.rideSettling * 0.012 +
       telemetry.roadFeelFeedback * 0.018 +
       telemetry.damperImpulse * 0.012 +
+      telemetry.floorStrikeLoad * -0.018 +
       telemetry.rearAeroLoad * 0.012 -
       telemetry.frontAeroLoad * 0.018 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.024 +
@@ -519,6 +522,7 @@ export class ThreeRaceRenderer {
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
+      floorStrikeLoad: telemetry.floorStrikeLoad,
       roadTextureLoad: telemetry.roadTextureLoad,
       chassisHeave: telemetry.chassisHeave,
       rideSettling: telemetry.rideSettling,
@@ -526,6 +530,7 @@ export class ThreeRaceRenderer {
         telemetry.surfaceRumble +
           telemetry.roadFeelFeedback * 0.34 +
           telemetry.damperImpulse * 0.24 +
+          telemetry.floorStrikeLoad * 0.36 +
           telemetry.roadTextureLoad * 0.3 +
           Math.abs(telemetry.chassisHeave) * 0.34 +
           telemetry.rideSettling * 0.22 +
@@ -600,7 +605,8 @@ export class ThreeRaceRenderer {
       telemetry.car.wheelspin,
       telemetry.car.lockup,
       telemetry.rearTractionRotation,
-      telemetry.aeroWashout
+      telemetry.aeroWashout,
+      telemetry.floorStrikeLoad
     );
     this.updateBrakePressureTrail(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.braking, telemetry.car.lockup);
     this.updateProximityMarkers(carX, carY, carZ, carWorldYaw, telemetry.sideBySide, telemetry.contactRisk);
@@ -933,6 +939,7 @@ export class ThreeRaceRenderer {
         lateralLoadTransfer: rival.heading * -0.12,
         suspensionTravel: 0,
         damperImpulse: 0,
+        floorStrikeLoad: 0,
         roadTextureLoad: 0,
         chassisHeave: 0,
         rideSettling: 0,
@@ -1500,6 +1507,7 @@ export class ThreeRaceRenderer {
       lateralLoadTransfer: number;
       suspensionTravel: number;
       damperImpulse: number;
+      floorStrikeLoad: number;
       roadTextureLoad: number;
       chassisHeave: number;
       rideSettling: number;
@@ -1566,8 +1574,15 @@ export class ThreeRaceRenderer {
     const rideSettling = clamp(state.rideSettling, 0, 1);
     const surfaceKick = clamp(state.surfaceRumble + roadTextureLoad * 0.2 + rideSettling * 0.12, 0, 1);
     const damperImpulse = clamp(state.damperImpulse, 0, 1);
+    const floorStrikeLoad = clamp(state.floorStrikeLoad, 0, 1);
     const suspensionCompression = clamp(
-      state.suspensionTravel + tireLoad * 0.5 + damperImpulse * 0.18 + roadTextureLoad * 0.04 + Math.max(0, chassisHeave) * 0.1 + rideSettling * 0.04,
+      state.suspensionTravel +
+        tireLoad * 0.5 +
+        damperImpulse * 0.18 +
+        floorStrikeLoad * 0.16 +
+        roadTextureLoad * 0.04 +
+        Math.max(0, chassisHeave) * 0.1 +
+        rideSettling * 0.04,
       0,
       1
     );
@@ -1611,6 +1626,7 @@ export class ThreeRaceRenderer {
           steeringImpulse * 0.012 +
           side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
+          floorStrikeLoad * 0.1 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
           Math.max(0, -rearInsideBias) * differentialLock * 0.08 -
           Math.max(0, 1 - tireGroundContact) * 0.28,
@@ -1637,6 +1653,7 @@ export class ThreeRaceRenderer {
         (wheelName.startsWith("rear") ? differentialLock * 0.008 + insideRearSlip * 0.014 : 0) +
         (wheelName.startsWith("front") ? frontLockRisk * 0.014 : rearBrakeLightness * 0.008) +
         yawInertiaLoad * 0.01 +
+        floorStrikeLoad * 0.012 +
         (wheelName.startsWith("front") ? steeringRackLoad * 0.01 + Math.abs(steeringVelocity) * 0.002 + (1.2 - yawDamping) * 0.004 : 0);
       const squash = Math.min(rawSquash, 0.155);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
@@ -1671,6 +1688,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tireContactPatchVisual = tireContactPatch.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
       this.renderer.domElement.dataset.roadTextureVisualLoad = roadTextureLoad.toFixed(3);
+      this.renderer.domElement.dataset.floorStrikeVisualLoad = floorStrikeLoad.toFixed(3);
       this.renderer.domElement.dataset.chassisHeaveVisual = chassisHeave.toFixed(3);
       this.renderer.domElement.dataset.rideSettlingVisual = rideSettling.toFixed(3);
       this.renderer.domElement.dataset.steeringVelocityVisual = steeringVelocity.toFixed(3);
@@ -2379,13 +2397,17 @@ export class ThreeRaceRenderer {
     wheelspin: number,
     lockup: number,
     rearTractionRotation: number,
-    aeroWashout: number
+    aeroWashout: number,
+    floorStrikeLoad: number
   ) {
     const material = this.tireSmoke.userData.material as THREE.MeshBasicMaterial | undefined;
-    const smokeStrength = Math.min(1, slip * 1.2 + wheelspin * 0.65 + lockup * 0.75 + Math.abs(rearTractionRotation) * 0.58 + aeroWashout * 0.16);
+    const smokeStrength = Math.min(
+      1,
+      slip * 1.2 + wheelspin * 0.65 + lockup * 0.75 + Math.abs(rearTractionRotation) * 0.58 + aeroWashout * 0.16 + floorStrikeLoad * 0.22
+    );
     if (material) {
       material.opacity = smokeStrength * 0.22;
-      material.color.set(lockup > wheelspin ? "#fff4e2" : "#eaf0e7");
+      material.color.set(floorStrikeLoad > 0.16 ? "#ffe0b2" : lockup > wheelspin ? "#fff4e2" : "#eaf0e7");
     }
 
     this.tireSmoke.visible = smokeStrength > 0.025;

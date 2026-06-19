@@ -44,6 +44,7 @@ type HapticTelemetry = Pick<
   | "aeroWashout"
   | "suspensionVelocity"
   | "damperImpulse"
+  | "floorStrikeLoad"
 > & {
   car: Pick<RaceTelemetry["car"], "slip" | "braking" | "wheelspin" | "understeer" | "lockup">;
 };
@@ -117,6 +118,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.chassisHeave) * 1.18,
       telemetry.rideSettling * 0.38,
       telemetry.damperImpulse * 0.7,
+      telemetry.floorStrikeLoad * 0.78,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.52,
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
       Math.abs(telemetry.rearTractionRotation) * 0.72,
@@ -132,6 +134,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.chassisHeave) * 0.9 +
       telemetry.rideSettling * 0.42 +
       telemetry.damperImpulse * 0.5 +
+      telemetry.floorStrikeLoad * 0.58 +
       Math.abs(telemetry.suspensionVelocity) * 0.18 +
       telemetry.tirePressureLoad * 0.2 +
       Math.max(0, 1 - telemetry.tireContactPatch) * 0.2 +
@@ -187,6 +190,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.chassisHeave) * 0.26 +
       telemetry.rideSettling * 0.14 +
       telemetry.damperImpulse * 0.18 +
+      telemetry.floorStrikeLoad * 0.22 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.16 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.14 +
       Math.abs(telemetry.rearTractionRotation) * 0.14 +
