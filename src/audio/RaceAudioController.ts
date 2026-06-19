@@ -11,6 +11,7 @@ type AudioTelemetry = Pick<
   | "splitSurfaceLoad"
   | "rainIntensity"
   | "roadWetness"
+  | "hydroplaneLoad"
   | "ers"
   | "gear"
   | "tireLoadFeedback"
@@ -127,6 +128,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.slipRecovery * 0.34,
       Math.max(0, 1 - telemetry.chassisStability) * 0.58,
       telemetry.roadFeelFeedback * 0.54,
+      telemetry.hydroplaneLoad * 0.5,
       telemetry.roadCamberLoad * 0.42,
       telemetry.roadTextureLoad * 0.5,
       Math.abs(telemetry.chassisHeave) * 1.25,
@@ -190,6 +192,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.slipRecovery * 54 +
       Math.max(0, 1 - telemetry.chassisStability) * 105 +
       telemetry.roadFeelFeedback * 70 +
+      telemetry.hydroplaneLoad * 82 +
       telemetry.roadCamberLoad * 62 +
       telemetry.roadTextureLoad * 78 +
       Math.abs(telemetry.chassisHeave) * 220 +
@@ -236,6 +239,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.slipRecovery * 0.007 +
         Math.max(0, 1 - telemetry.chassisStability) * 0.014 +
         telemetry.roadFeelFeedback * 0.012 +
+        telemetry.hydroplaneLoad * 0.011 +
         telemetry.roadCamberLoad * 0.008 +
         telemetry.roadTextureLoad * 0.014 +
         Math.abs(telemetry.chassisHeave) * 0.03 +
@@ -256,7 +260,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
     windFrequency: 520 + speed * 1800,
     windGain: racing ? Math.pow(speed, 1.65) * 0.052 : 0,
     rainFrequency: 1800 + speed * 1800,
-    rainGain: racing ? telemetry.rainIntensity * (0.012 + speed * 0.028 + wetness * 0.01) : telemetry.rainIntensity * 0.006,
+    rainGain: racing ? telemetry.rainIntensity * (0.012 + speed * 0.028 + wetness * 0.01) + telemetry.hydroplaneLoad * 0.006 : telemetry.rainIntensity * 0.006,
     ersFrequency: 760 + speed * 620 + rpm * 220,
     ersGain: ersActive ? 0.014 + speed * 0.018 : 0
   };

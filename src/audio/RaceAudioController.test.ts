@@ -12,6 +12,7 @@ const baseTelemetry = {
   splitSurfaceLoad: 0,
   rainIntensity: 0,
   roadWetness: 0,
+  hydroplaneLoad: 0,
   tireLoadFeedback: 0,
   axleLoadSaturation: 0,
   combinedSlipLoad: 0,
@@ -113,6 +114,21 @@ describe("raceAudioMix", () => {
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from hydroplaning", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 220,
+      rainIntensity: 0.8,
+      roadWetness: 0.9,
+      hydroplaneLoad: 0.42
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+    expect(loaded.rainGain).toBeGreaterThan(clean.rainGain);
   });
 
   it("adds tire texture from steering load feedback", () => {

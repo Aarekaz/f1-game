@@ -8,6 +8,7 @@ const baseTelemetry = {
   surfaceRumble: 0,
   splitSurfaceLoad: 0,
   roadWetness: 0,
+  hydroplaneLoad: 0,
   draft: 0,
   dirtyAir: 0,
   contactRisk: 0,
@@ -80,6 +81,19 @@ describe("raceHapticEffect", () => {
 
     expect(wet?.weakMagnitude).toBeGreaterThan(dry?.weakMagnitude ?? 0);
     expect(wet?.durationMs).toBe(70);
+  });
+
+  it("adds tire rumble when the car hydroplanes", () => {
+    const planted = raceHapticEffect(baseTelemetry);
+    const skating = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 245,
+      roadWetness: 0.9,
+      hydroplaneLoad: 0.46
+    });
+
+    expect(skating?.strongMagnitude).toBeGreaterThan(planted?.strongMagnitude ?? 0);
+    expect(skating?.weakMagnitude).toBeGreaterThan(planted?.weakMagnitude ?? 0);
   });
 
   it("makes kerbs and gravel stronger than clean asphalt", () => {

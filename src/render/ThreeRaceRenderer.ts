@@ -360,6 +360,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rainIntensity = telemetry.rainIntensity.toFixed(2);
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
     this.renderer.domElement.dataset.standingWater = telemetry.standingWater.toFixed(3);
+    this.renderer.domElement.dataset.hydroplaneLoad = telemetry.hydroplaneLoad.toFixed(3);
     this.renderer.domElement.dataset.launchCharge = telemetry.launchCharge.toFixed(2);
     this.renderer.domElement.dataset.launchQuality = telemetry.launchQuality.toFixed(2);
     this.renderer.domElement.dataset.aeroBoostAvailable = String(telemetry.aeroBoostAvailable);
@@ -547,6 +548,7 @@ export class ThreeRaceRenderer {
       powerUndersteerLoad: telemetry.powerUndersteerLoad,
       tireResponseLoad: telemetry.tireResponseLoad,
       longitudinalSlipLoad: telemetry.longitudinalSlipLoad,
+      hydroplaneLoad: telemetry.hydroplaneLoad,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
@@ -558,6 +560,7 @@ export class ThreeRaceRenderer {
       surfaceRumble: clamp(
         telemetry.surfaceRumble +
           telemetry.roadFeelFeedback * 0.34 +
+          telemetry.hydroplaneLoad * 0.16 +
           telemetry.roadCamberLoad * 0.12 +
           telemetry.damperImpulse * 0.24 +
           telemetry.floorStrikeLoad * 0.36 +
@@ -913,7 +916,15 @@ export class ThreeRaceRenderer {
     const cameraFrameGuard = this.applyChaseFrameGuard(carX, carY, carZ, rejoinCameraLift, podMode, telemetry.phase, cameraRoll, roadSpeedFraming);
     this.updateRainStreaks(carX, carY, carZ, telemetry.rainIntensity, speedRatio);
     this.updateLensRain(telemetry.rainIntensity, telemetry.roadWetness, speedRatio);
-    this.updateWaterSpray(carX, carY, carZ, carWorldYaw, clamp(telemetry.roadWetness + telemetry.standingWater * 0.38, 0, 1), speedRatio, telemetry.car.slip);
+    this.updateWaterSpray(
+      carX,
+      carY,
+      carZ,
+      carWorldYaw,
+      clamp(telemetry.roadWetness + telemetry.standingWater * 0.38 + telemetry.hydroplaneLoad * 0.3, 0, 1),
+      speedRatio,
+      telemetry.car.slip
+    );
     this.updateCameraObstructionCulling(carX, carZ);
     this.projectCarVisualAnchor();
     this.renderer.domElement.dataset.cameraWorldX = this.camera.position.x.toFixed(2);
@@ -1000,6 +1011,7 @@ export class ThreeRaceRenderer {
         powerUndersteerLoad: 0,
         tireResponseLoad: 0,
         longitudinalSlipLoad: 0,
+        hydroplaneLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
         suspensionTravel: 0,
         damperImpulse: 0,
@@ -1578,6 +1590,7 @@ export class ThreeRaceRenderer {
       powerUndersteerLoad: number;
       tireResponseLoad: number;
       longitudinalSlipLoad: number;
+      hydroplaneLoad: number;
       lateralLoadTransfer: number;
       suspensionTravel: number;
       damperImpulse: number;
@@ -1608,7 +1621,8 @@ export class ThreeRaceRenderer {
     }
   ) {
     const longitudinalSlipLoad = clamp(state.longitudinalSlipLoad, 0, 1);
-    const spin = -state.distance * 3.2 - state.wheelspin * 1.4 - longitudinalSlipLoad * 0.7;
+    const hydroplaneLoad = clamp(state.hydroplaneLoad, 0, 1);
+    const spin = -state.distance * 3.2 - state.wheelspin * 1.4 - longitudinalSlipLoad * 0.7 - hydroplaneLoad * 0.5;
     const steerAngle = clamp(state.steering, -0.42, 0.42);
     const brakeGlow = clamp(state.braking * clamp(state.speedKph / 180, 0, 1), 0, 1);
     const wheelBlur = clamp((state.speedKph - 72) / 165 + state.wheelspin * 0.3, 0, 1);
@@ -1669,6 +1683,7 @@ export class ThreeRaceRenderer {
         powerUndersteerLoad * 0.09 +
         tireResponseLoad * 0.08 +
         longitudinalSlipLoad * 0.06 +
+        hydroplaneLoad * 0.16 +
         controlActuationLoad * 0.05 +
         pedalPressureLoad * 0.06 +
         roadCamberLoad * 0.04 +
@@ -1749,6 +1764,7 @@ export class ThreeRaceRenderer {
           side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
           floorStrikeLoad * 0.1 -
+          hydroplaneLoad * 0.18 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
           Math.max(0, -rearInsideBias) * differentialLock * 0.08 -
           Math.max(0, 1 - tireGroundContact) * 0.28,
@@ -1778,6 +1794,7 @@ export class ThreeRaceRenderer {
         powerUndersteerLoad * 0.012 +
         tireResponseLoad * 0.008 +
         longitudinalSlipLoad * 0.008 +
+        hydroplaneLoad * 0.006 +
         counterSteerLoad * 0.01 +
         Math.max(0, 1 - chassisStability) * 0.014 -
         slipRecovery * 0.006 +
@@ -1821,6 +1838,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
       this.renderer.domElement.dataset.tireResponseVisualLoad = tireResponseLoad.toFixed(3);
       this.renderer.domElement.dataset.longitudinalSlipVisualLoad = longitudinalSlipLoad.toFixed(3);
+      this.renderer.domElement.dataset.hydroplaneVisualLoad = hydroplaneLoad.toFixed(3);
       this.renderer.domElement.dataset.roadCamberVisualLoad = roadCamberLoad.toFixed(3);
       this.renderer.domElement.dataset.roadTextureVisualLoad = roadTextureLoad.toFixed(3);
       this.renderer.domElement.dataset.floorStrikeVisualLoad = floorStrikeLoad.toFixed(3);

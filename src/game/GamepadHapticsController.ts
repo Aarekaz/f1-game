@@ -8,6 +8,7 @@ type HapticTelemetry = Pick<
   | "surfaceRumble"
   | "splitSurfaceLoad"
   | "roadWetness"
+  | "hydroplaneLoad"
   | "draft"
   | "dirtyAir"
   | "contactRisk"
@@ -102,6 +103,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.car.wheelspin * 0.78,
       telemetry.car.lockup * 0.9,
       telemetry.car.understeer * 0.48,
+      telemetry.hydroplaneLoad * 0.5,
       telemetry.tireLoadFeedback * 0.72,
       telemetry.longitudinalSlipLoad * 0.56,
       telemetry.axleLoadSaturation * 0.62,
@@ -132,6 +134,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadFeelFeedback * 0.46,
       telemetry.roadCamberLoad * 0.44,
       telemetry.roadTextureLoad * 0.48,
+      telemetry.hydroplaneLoad * 0.18,
       Math.abs(telemetry.chassisHeave) * 1.18,
       telemetry.rideSettling * 0.38,
       telemetry.damperImpulse * 0.7,
@@ -221,6 +224,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.slipRecovery * 0.08 +
       Math.max(0, 1 - telemetry.chassisStability) * 0.16 +
       telemetry.roadFeelFeedback * 0.16 +
+      telemetry.hydroplaneLoad * 0.12 +
       telemetry.roadCamberLoad * 0.1 +
       telemetry.roadTextureLoad * 0.18 +
       Math.abs(telemetry.chassisHeave) * 0.26 +
