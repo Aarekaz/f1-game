@@ -54,6 +54,7 @@ const baseTelemetry = {
   powerUndersteerLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
+  aeroBuffetLoad: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
   floorStrikeLoad: 0,
@@ -129,6 +130,18 @@ describe("raceAudioMix", () => {
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
     expect(loaded.rainGain).toBeGreaterThan(clean.rainGain);
+  });
+
+  it("adds tire texture from aero buffet", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 245,
+      aeroBuffetLoad: 0.48
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
   });
 
   it("adds tire texture from steering load feedback", () => {

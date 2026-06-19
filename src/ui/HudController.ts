@@ -395,6 +395,7 @@ export class HudController {
     if (telemetry.damperImpulse > 0.2) return `Damper hit ${(telemetry.damperImpulse * 100).toFixed(0)}%`;
     if (telemetry.roadCamberLoad > 0.12) return `Camber load ${(telemetry.roadCamberLoad * 100).toFixed(0)}%`;
     if (telemetry.roadFeelFeedback > 0.18) return `Road load ${(telemetry.roadFeelFeedback * 100).toFixed(0)}%`;
+    if (telemetry.aeroBuffetLoad > 0.08) return `Aero buffet ${(telemetry.aeroBuffetLoad * 100).toFixed(0)}%`;
     if (telemetry.aeroWashout > 0.18) return `Aero wash ${(telemetry.aeroWashout * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.aeroBalance) > 0.16) return telemetry.aeroBalance > 0 ? "Front aero loaded" : "Rear aero bias";
     if (telemetry.dirtyTirePickup > 0.18 || telemetry.marbles > 0.12) return telemetry.gripState;

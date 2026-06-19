@@ -53,6 +53,7 @@ const baseTelemetry = {
   powerUndersteerLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
+  aeroBuffetLoad: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
   floorStrikeLoad: 0,
@@ -94,6 +95,18 @@ describe("raceHapticEffect", () => {
 
     expect(skating?.strongMagnitude).toBeGreaterThan(planted?.strongMagnitude ?? 0);
     expect(skating?.weakMagnitude).toBeGreaterThan(planted?.weakMagnitude ?? 0);
+  });
+
+  it("adds turbulent rumble from aero buffet", () => {
+    const clean = raceHapticEffect(baseTelemetry);
+    const turbulent = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 250,
+      aeroBuffetLoad: 0.5
+    });
+
+    expect(turbulent?.strongMagnitude).toBeGreaterThan(clean?.strongMagnitude ?? 0);
+    expect(turbulent?.weakMagnitude).toBeGreaterThan(clean?.weakMagnitude ?? 0);
   });
 
   it("makes kerbs and gravel stronger than clean asphalt", () => {

@@ -332,6 +332,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rearAeroLoad = telemetry.rearAeroLoad.toFixed(3);
     this.renderer.domElement.dataset.aeroBalance = telemetry.aeroBalance.toFixed(3);
     this.renderer.domElement.dataset.aeroWashout = telemetry.aeroWashout.toFixed(3);
+    this.renderer.domElement.dataset.aeroBuffetLoad = telemetry.aeroBuffetLoad.toFixed(3);
     this.renderer.domElement.dataset.frontAxleLoad = telemetry.frontAxleLoad.toFixed(3);
     this.renderer.domElement.dataset.rearAxleLoad = telemetry.rearAxleLoad.toFixed(3);
     this.renderer.domElement.dataset.axleLoadSaturation = telemetry.axleLoadSaturation.toFixed(3);
@@ -561,6 +562,7 @@ export class ThreeRaceRenderer {
         telemetry.surfaceRumble +
           telemetry.roadFeelFeedback * 0.34 +
           telemetry.hydroplaneLoad * 0.16 +
+          telemetry.aeroBuffetLoad * 0.12 +
           telemetry.roadCamberLoad * 0.12 +
           telemetry.damperImpulse * 0.24 +
           telemetry.floorStrikeLoad * 0.36 +
@@ -632,12 +634,17 @@ export class ThreeRaceRenderer {
     const carWorldYaw = trackYaw - telemetry.car.heading;
     this.updateCarGroundShadow(carX, carY, carZ, carWorldYaw, telemetry);
     const airBuffet = clamp(
-      telemetry.dirtyAir * 0.48 + telemetry.draft * 0.18 + telemetry.contactRisk * 0.22 + telemetry.shiftCut * 0.08 + telemetry.aeroWashout * 0.18,
+      telemetry.dirtyAir * 0.48 +
+        telemetry.draft * 0.18 +
+        telemetry.contactRisk * 0.22 +
+        telemetry.aeroBuffetLoad * 0.6 +
+        telemetry.shiftCut * 0.08 +
+        telemetry.aeroWashout * 0.18,
       0,
       1
     );
     this.updateSpeedStreaks(carX, carY, carZ, carWorldYaw, speedRatio, telemetry.car.slip, telemetry.car.braking, telemetry.draft, telemetry.dirtyAir);
-    this.updateAirWake(carX, carY, carZ, carWorldYaw, telemetry.draft, telemetry.dirtyAir, speedRatio);
+    this.updateAirWake(carX, carY, carZ, carWorldYaw, telemetry.draft, telemetry.dirtyAir, telemetry.aeroBuffetLoad, speedRatio);
     this.updateTireSmoke(
       carX,
       carY,
@@ -2508,13 +2515,13 @@ export class ThreeRaceRenderer {
     return group;
   }
 
-  private updateAirWake(carX: number, carY: number, carZ: number, heading: number, draft: number, dirtyAir: number, speedRatio: number) {
+  private updateAirWake(carX: number, carY: number, carZ: number, heading: number, draft: number, dirtyAir: number, aeroBuffetLoad: number, speedRatio: number) {
     const material = this.airWake.userData.material as THREE.MeshBasicMaterial | undefined;
-    const strength = clamp(draft * 0.36 + dirtyAir * 0.58, 0, 1);
+    const strength = clamp(draft * 0.36 + dirtyAir * 0.58 + aeroBuffetLoad * 0.5, 0, 1);
     this.airWake.visible = strength > 0.015;
     if (material) {
-      material.opacity = strength * (dirtyAir > draft ? 0.34 : 0.24);
-      material.color.set(dirtyAir > draft ? "#dce2de" : "#b9fff2");
+      material.opacity = strength * (dirtyAir + aeroBuffetLoad > draft ? 0.34 : 0.24);
+      material.color.set(dirtyAir + aeroBuffetLoad > draft ? "#dce2de" : "#b9fff2");
     }
 
     const time = performance.now() * 0.001;
@@ -2524,9 +2531,9 @@ export class ThreeRaceRenderer {
       const baseZ = Number(ribbon.userData.baseZ ?? ribbon.position.z);
       const phase = Number(ribbon.userData.phase ?? 0);
       ribbon.visible = strength > 0.015;
-      ribbon.position.x = baseX + Math.sin(time * 2.1 + phase) * (0.18 + dirtyAir * 0.42);
+      ribbon.position.x = baseX + Math.sin(time * 2.1 + phase) * (0.18 + dirtyAir * 0.42 + aeroBuffetLoad * 0.28);
       ribbon.position.z = baseZ + ((time * (3.8 + speedRatio * 9.5) + phase * 2.2) % 6.2);
-      ribbon.scale.set(0.74 + dirtyAir * 0.9, 1, 0.75 + speedRatio * 1.45 + draft * 0.6);
+      ribbon.scale.set(0.74 + dirtyAir * 0.9 + aeroBuffetLoad * 0.42, 1, 0.75 + speedRatio * 1.45 + draft * 0.6);
       if (ribbon.visible) visibleRibbons += 1;
     }
 

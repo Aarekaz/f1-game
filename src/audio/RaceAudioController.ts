@@ -55,6 +55,7 @@ type AudioTelemetry = Pick<
   | "powerUndersteerLoad"
   | "aeroBalance"
   | "aeroWashout"
+  | "aeroBuffetLoad"
   | "suspensionVelocity"
   | "damperImpulse"
   | "floorStrikeLoad"
@@ -142,6 +143,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.throttlePickupLoad * 0.62,
       telemetry.powerUndersteerLoad * 0.68,
       telemetry.aeroWashout * 0.48,
+      telemetry.aeroBuffetLoad * 0.46,
       Math.abs(telemetry.aeroBalance) * 0.24,
       telemetry.surfaceRumble * 0.62
     )
@@ -207,6 +209,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.throttlePickupLoad * 104 +
       telemetry.powerUndersteerLoad * 132 +
       telemetry.aeroWashout * 80 +
+      telemetry.aeroBuffetLoad * 90 +
       Math.abs(telemetry.aeroBalance) * 38 +
       looseSurface * 90,
     tireGain: racing
@@ -253,6 +256,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.throttlePickupLoad * 0.014 +
         telemetry.powerUndersteerLoad * 0.016 +
         telemetry.aeroWashout * 0.01 +
+        telemetry.aeroBuffetLoad * 0.011 +
         Math.abs(telemetry.aeroBalance) * 0.004 +
         telemetry.surfaceRumble * 0.018 +
         looseSurface * speed * 0.014

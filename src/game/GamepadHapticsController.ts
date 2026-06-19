@@ -53,6 +53,7 @@ type HapticTelemetry = Pick<
   | "powerUndersteerLoad"
   | "aeroBalance"
   | "aeroWashout"
+  | "aeroBuffetLoad"
   | "suspensionVelocity"
   | "damperImpulse"
   | "floorStrikeLoad"
@@ -146,6 +147,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.throttlePickupLoad * 0.66,
       telemetry.powerUndersteerLoad * 0.7,
       telemetry.aeroWashout * 0.5,
+      telemetry.aeroBuffetLoad * 0.52,
       Math.abs(telemetry.aeroBalance) * 0.22,
       telemetry.car.braking * 0.16
     )
@@ -186,11 +188,12 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.slipRecovery * 0.08 +
       Math.max(0, 1 - telemetry.chassisStability) * 0.24 +
       telemetry.aeroWashout * 0.24 +
+      telemetry.aeroBuffetLoad * 0.2 +
       Math.abs(telemetry.aeroBalance) * 0.1 +
       surface * 0.34 +
       telemetry.roadWetness * speed * 0.18
   );
-  const airBuffet = clamp01(telemetry.draft * 0.1 + telemetry.dirtyAir * 0.18 + telemetry.contactRisk * 0.22 + telemetry.aeroWashout * 0.12);
+  const airBuffet = clamp01(telemetry.draft * 0.1 + telemetry.dirtyAir * 0.18 + telemetry.contactRisk * 0.22 + telemetry.aeroWashout * 0.12 + telemetry.aeroBuffetLoad * 0.18);
   const strongMagnitude = clamp01(surface * 0.38 + tractionStress * 0.62 + telemetry.contactRisk * 0.5);
   const weakMagnitude = clamp01(
     speed * 0.07 +
@@ -225,6 +228,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.chassisStability) * 0.16 +
       telemetry.roadFeelFeedback * 0.16 +
       telemetry.hydroplaneLoad * 0.12 +
+      telemetry.aeroBuffetLoad * 0.12 +
       telemetry.roadCamberLoad * 0.1 +
       telemetry.roadTextureLoad * 0.18 +
       Math.abs(telemetry.chassisHeave) * 0.26 +
