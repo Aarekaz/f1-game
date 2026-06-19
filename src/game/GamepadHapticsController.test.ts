@@ -41,6 +41,7 @@ const baseTelemetry = {
   tireGroundContact: 1,
   rearTractionRotation: 0,
   liftOffRotationLoad: 0,
+  throttlePickupLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   suspensionVelocity: 0,
@@ -328,6 +329,17 @@ describe("raceHapticEffect", () => {
 
     expect(rotating?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(rotating?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns throttle pickup into rear bite texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const pickingUp = raceHapticEffect({
+      ...baseTelemetry,
+      throttlePickupLoad: 0.36
+    });
+
+    expect(pickingUp?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(pickingUp?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns light crest contact into fine texture", () => {

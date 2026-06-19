@@ -355,6 +355,7 @@ export class HudController {
     if (telemetry.surfaceName === "Kerb" && telemetry.surfaceRumble > 0.18) return "Kerb vibration";
     if (telemetry.standingWater > 0.22) return `Standing water ${(telemetry.standingWater * 100).toFixed(0)}%`;
     if (telemetry.liftOffRotationLoad > 0.05) return `Lift-off rotation ${(telemetry.liftOffRotationLoad * 100).toFixed(0)}%`;
+    if (telemetry.throttlePickupLoad > 0.05) return `Throttle pickup ${(telemetry.throttlePickupLoad * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Tires hot") return `Tires hot ${(telemetry.tireTemp * 100).toFixed(0)}%`;
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;

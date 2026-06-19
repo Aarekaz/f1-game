@@ -42,6 +42,7 @@ const baseTelemetry = {
   tireGroundContact: 1,
   rearTractionRotation: 0,
   liftOffRotationLoad: 0,
+  throttlePickupLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   suspensionVelocity: 0,
@@ -326,6 +327,18 @@ describe("raceAudioMix", () => {
 
     expect(rotating.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(rotating.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire texture from throttle pickup", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const pickingUp = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      throttlePickupLoad: 0.34
+    });
+
+    expect(pickingUp.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(pickingUp.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture when crest contact gets light", () => {

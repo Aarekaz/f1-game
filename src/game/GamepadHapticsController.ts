@@ -41,6 +41,7 @@ type HapticTelemetry = Pick<
   | "tireGroundContact"
   | "rearTractionRotation"
   | "liftOffRotationLoad"
+  | "throttlePickupLoad"
   | "aeroBalance"
   | "aeroWashout"
   | "suspensionVelocity"
@@ -124,6 +125,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
       Math.abs(telemetry.rearTractionRotation) * 0.72,
       telemetry.liftOffRotationLoad * 0.7,
+      telemetry.throttlePickupLoad * 0.66,
       telemetry.aeroWashout * 0.5,
       Math.abs(telemetry.aeroBalance) * 0.22,
       telemetry.car.braking * 0.16
@@ -144,6 +146,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.splitSurfaceLoad) * 0.38 +
       Math.abs(telemetry.rearTractionRotation) * 0.18 +
       telemetry.liftOffRotationLoad * 0.22 +
+      telemetry.throttlePickupLoad * 0.2 +
       telemetry.brakeBalanceLoad * 0.14 +
       telemetry.frontLockRisk * 0.22 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.2 +
@@ -198,6 +201,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.abs(telemetry.splitSurfaceLoad) * 0.14 +
       Math.abs(telemetry.rearTractionRotation) * 0.14 +
       telemetry.liftOffRotationLoad * 0.13 +
+      telemetry.throttlePickupLoad * 0.12 +
       airBuffet
   );
 
