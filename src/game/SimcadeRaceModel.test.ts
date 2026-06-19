@@ -2173,6 +2173,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tirePressure).toBe(1);
     expect(telemetry.tireContactPatch).toBe(1);
     expect(telemetry.tirePressureLoad).toBe(0);
+    expect(telemetry.tireThermalLoad).toBe(0);
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
     expect(telemetry.tireResponseLoad).toBe(0);
@@ -2483,6 +2484,7 @@ describe("SimcadeRaceModel", () => {
     const abused = run(model, 4.4, { throttle: 1, steer: 1, brake: 0.22 });
 
     expect(abused.tireTemp).toBeGreaterThan(settled.tireTemp);
+    expect(abused.tireThermalLoad).toBeGreaterThan(settled.tireThermalLoad);
     expect(abused.tireWear).toBeGreaterThan(settled.tireWear);
     expect(abused.grip).toBeLessThanOrEqual(1);
     expect(abused.tireState.length).toBeGreaterThan(0);

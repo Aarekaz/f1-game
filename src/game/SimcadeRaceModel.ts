@@ -141,6 +141,7 @@ export type RaceTelemetry = {
   pedalOverlapLoad: number;
   powerState: string;
   tireTemp: number;
+  tireThermalLoad: number;
   tireWear: number;
   tireState: string;
   fuelLoad: number;
@@ -447,6 +448,7 @@ export class SimcadeRaceModel {
   private powerUndersteerLoad = 0;
   private pedalOverlapLoad = 0;
   private tireTemp = 0.52;
+  private tireThermalLoad = 0;
   private tireWear = 0;
   private fuelLoad = 1;
   private brakeTemp = 0.34;
@@ -667,6 +669,7 @@ export class SimcadeRaceModel {
       pedalOverlapLoad: this.pedalOverlapLoad,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
+      tireThermalLoad: this.tireThermalLoad,
       tireWear: this.tireWear,
       tireState: this.tireState(),
       fuelLoad: this.fuelLoad,
@@ -817,6 +820,7 @@ export class SimcadeRaceModel {
     this.differentialLock = 0;
     this.insideRearSlip = 0;
     this.tireTemp = 0.52;
+    this.tireThermalLoad = 0;
     this.tireWear = 0;
     this.fuelLoad = 1;
     this.brakeTemp = 0.34;
@@ -2211,9 +2215,17 @@ export class SimcadeRaceModel {
       dt * (roadFeelFeedbackTarget > this.roadFeelFeedback ? 11.5 : 5.4)
     );
     const weatherGrip = this.evolvedWeatherGrip() * this.tireContactGrip;
-    const tireTempPenalty = this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
+    const tireTempPenalty =
+      this.tireTemp < 0.38 ? (0.38 - this.tireTemp) * 0.5 : this.tireTemp > 0.86 ? (this.tireTemp - 0.86) * 0.85 : 0;
+    const tireHeatSoakPenalty = this.tireHeatStress() * (0.018 + speedRatio * 0.012);
     const tireGripFactor = clamp(
-      1 - tireTempPenalty - this.tireWear * 0.18 + gripContext.rubberedLineGrip - gripContext.marbles * 0.07 - this.dirtyTirePickup * 0.14,
+      1 -
+        tireTempPenalty -
+        tireHeatSoakPenalty -
+        this.tireWear * 0.18 +
+        gripContext.rubberedLineGrip -
+        gripContext.marbles * 0.07 -
+        this.dirtyTirePickup * 0.14,
       0.7,
       1.08
     );
@@ -2498,6 +2510,7 @@ export class SimcadeRaceModel {
         this.insideRearSlip * 0.18 +
         this.insideWheelUnload * 0.035 +
         this.tirePressureLoad * 0.14 +
+        this.tireHeatStress() * 0.08 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
         throttlePickupShock * 0.12 +
         Math.abs(this.rearTractionRotation) * 0.14 +
@@ -2525,6 +2538,7 @@ export class SimcadeRaceModel {
     );
     const tireResponseLoadTarget = clamp(
       this.tireRelaxation * 0.28 +
+        this.tireHeatStress() * 0.08 +
         this.steeringImpulse * 0.3 +
         Math.abs(this.steeringVelocity) * 0.16 +
         this.controlActuationLoad * 0.16 +
@@ -2552,6 +2566,7 @@ export class SimcadeRaceModel {
         this.powerUndersteerLoad * 0.06 -
         this.lockup * 0.12 -
         this.tireSaturation * 0.2 -
+        this.tireHeatStress() * 0.015 -
         this.tireRelaxation * 0.07 -
         slipAngleLoad * 0.16 +
         this.slipRecovery * 0.1 +
@@ -2672,6 +2687,7 @@ export class SimcadeRaceModel {
         lateralLoadStress * 0.16 +
         this.tireRelaxation * 0.14 +
         this.tireResponseLoad * 0.12 +
+        this.tireHeatStress() * 0.05 +
         this.axleLoadSaturation * 0.16 +
         this.outsideTireLoad * 0.08 +
         this.insideWheelUnload * 0.05 +
@@ -3036,6 +3052,7 @@ export class SimcadeRaceModel {
     this.tirePressure = 1;
     this.tireContactPatch = Math.max(this.tireContactPatch, 0.92);
     this.tirePressureLoad = 0;
+    this.tireThermalLoad = Math.min(this.tireThermalLoad, 0.22);
     this.tireRelaxation = 0;
     this.tireResponseLoad = 0;
     this.tireLoadFeedback = 0;
@@ -3311,12 +3328,46 @@ export class SimcadeRaceModel {
 
   private updateTireState(dt: number, speedRatio: number, throttle: number, brake: number, steerDemand: number, surfaceRoughness: number, onTrack: boolean) {
     const roadWetness = this.dynamicRoadWetness();
+    const slideHeat =
+      this.tireSaturation * 0.38 +
+      this.lateralScrub * 0.32 +
+      this.wheelspin * 0.48 +
+      this.lockup * 0.54 +
+      this.longitudinalSlipLoad * 0.22 +
+      this.frontLockRisk * 0.24 +
+      this.insideRearSlip * 0.18 +
+      this.powerUndersteerLoad * 0.16 +
+      this.throttlePickupLoad * 0.12 +
+      this.liftOffRotationLoad * 0.16;
+    const wetCooling =
+      roadWetness * (0.1 + speedRatio * 0.06) +
+      this.standingWater * 0.14 +
+      this.hydroplaneLoad * 0.08 +
+      (1 - throttle) * 0.04;
+    const thermalTarget = onTrack
+      ? clamp(
+          slideHeat +
+            Math.max(0, this.tireTemp - 0.72) * 0.72 +
+            Math.max(0, this.tirePressure - 1.04) * 0.34 +
+            surfaceRoughness * speedRatio * 0.08 -
+            wetCooling,
+          0,
+          1
+        )
+      : clamp(slideHeat * 0.7 + surfaceRoughness * speedRatio * 0.12 - roadWetness * 0.08, 0, 0.72);
+    this.tireThermalLoad = approach(
+      this.tireThermalLoad,
+      thermalTarget,
+      dt * (thermalTarget > this.tireThermalLoad ? 2.7 + speedRatio * 1.1 : 0.62 + roadWetness * 0.42)
+    );
+    const thermalStress = this.tireHeatStress();
     const heatLoad =
       speedRatio * 0.16 +
       steerDemand * speedRatio * 0.22 +
       brake * 0.24 +
       this.wheelspin * 0.34 +
       this.lockup * 0.42 +
+      thermalStress * 0.08 +
       surfaceRoughness * 0.12;
     const cooling = roadWetness * 0.16 + (1 - throttle) * 0.035;
     const targetTemp = clamp(0.42 + heatLoad - cooling, 0.2, 1.08);
@@ -3334,6 +3385,7 @@ export class SimcadeRaceModel {
         this.tireTemp * 0.13 +
         speedRatio * speedRatio * 0.05 +
         loadPressure +
+        thermalStress * 0.012 +
         this.dirtyTirePickup * 0.018 +
         this.tireWear * 0.025 -
         roadWetness * 0.052 -
@@ -3356,6 +3408,7 @@ export class SimcadeRaceModel {
           surfaceRoughness * speedRatio * 0.12 +
           this.roadTextureLoad * speedRatio * 0.08 +
           this.rideSettling * 0.04 +
+          thermalStress * 0.04 +
           this.tireForceLoad * 0.055,
         0,
         1
@@ -3370,6 +3423,7 @@ export class SimcadeRaceModel {
         Math.max(0, this.suspensionLoad - 1) * 0.055 +
         this.aeroPlatformLoad * 0.025 -
         Math.max(0, 1 - this.tireGroundContact) * 0.16 -
+        thermalStress * 0.008 -
         surfaceRoughness * 0.035 -
         this.roadTextureLoad * 0.018 -
         this.rideSettling * 0.012,
@@ -3385,11 +3439,17 @@ export class SimcadeRaceModel {
     const wearRate =
       0.00025 +
       speedRatio * 0.00045 +
+      thermalStress * 0.0007 +
       this.wheelspin * 0.0048 +
       this.lockup * 0.0062 +
       this.understeer * 0.0022 +
       (onTrack ? 0 : 0.002 + surfaceRoughness * 0.0025);
     this.tireWear = clamp(this.tireWear + wearRate * dt, 0, 1);
+  }
+
+  private tireHeatStress() {
+    const peakAbuse = Math.max(this.frontLockRisk, this.insideRearSlip);
+    return Math.max(0, this.tireThermalLoad - 0.72) * clamp((peakAbuse - 0.88) / 0.12, 0, 1);
   }
 
   private updateFuelLoad(dt: number, throttle: number, boost: number, speedRatio: number) {
