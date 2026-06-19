@@ -38,6 +38,7 @@ const baseTelemetry = {
   slipRecovery: 0,
   chassisStability: 1,
   roadFeelFeedback: 0,
+  roadCamberLoad: 0,
   roadTextureLoad: 0,
   chassisHeave: 0,
   rideSettling: 0,
@@ -341,6 +342,18 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       splitSurfaceLoad: -0.56
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns road camber load into banking texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      roadCamberLoad: 0.34
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

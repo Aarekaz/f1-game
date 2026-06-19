@@ -311,6 +311,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.chassisStability = telemetry.chassisStability.toFixed(3);
     this.renderer.domElement.dataset.roadAlignment = telemetry.roadAlignment.toFixed(3);
     this.renderer.domElement.dataset.roadCamber = telemetry.roadCamber.toFixed(3);
+    this.renderer.domElement.dataset.roadCamberLoad = telemetry.roadCamberLoad.toFixed(3);
     this.renderer.domElement.dataset.roadGrade = telemetry.roadGrade.toFixed(3);
     this.renderer.domElement.dataset.roadLoad = telemetry.roadLoad.toFixed(3);
     this.renderer.domElement.dataset.roadCompression = telemetry.roadCompression.toFixed(3);
@@ -475,6 +476,7 @@ export class ThreeRaceRenderer {
       telemetry.lateralLoadTransfer * 0.15 -
       tireLoadVisual * telemetry.car.yawRate * 0.08 +
       telemetry.roadFeelFeedback * Math.sign(telemetry.car.roll || telemetry.roadCamber || 1) * 0.018 +
+      telemetry.roadCamberLoad * Math.sign(telemetry.roadCamber || telemetry.car.roll || 1) * 0.012 +
       telemetry.splitSurfaceLoad * 0.036 +
       telemetry.rearTractionRotation * 0.055 +
       telemetry.liftOffRotationLoad * Math.sign(telemetry.car.steering || telemetry.car.yawRate || 1) * 0.024 +
@@ -545,11 +547,13 @@ export class ThreeRaceRenderer {
       damperImpulse: telemetry.damperImpulse,
       floorStrikeLoad: telemetry.floorStrikeLoad,
       roadTextureLoad: telemetry.roadTextureLoad,
+      roadCamberLoad: telemetry.roadCamberLoad,
       chassisHeave: telemetry.chassisHeave,
       rideSettling: telemetry.rideSettling,
       surfaceRumble: clamp(
         telemetry.surfaceRumble +
           telemetry.roadFeelFeedback * 0.34 +
+          telemetry.roadCamberLoad * 0.12 +
           telemetry.damperImpulse * 0.24 +
           telemetry.floorStrikeLoad * 0.36 +
           telemetry.roadTextureLoad * 0.3 +
@@ -991,6 +995,7 @@ export class ThreeRaceRenderer {
         damperImpulse: 0,
         floorStrikeLoad: 0,
         roadTextureLoad: 0,
+        roadCamberLoad: 0,
         chassisHeave: 0,
         rideSettling: 0,
         surfaceRumble: 0,
@@ -1565,6 +1570,7 @@ export class ThreeRaceRenderer {
       damperImpulse: number;
       floorStrikeLoad: number;
       roadTextureLoad: number;
+      roadCamberLoad: number;
       chassisHeave: number;
       rideSettling: number;
       surfaceRumble: number;
@@ -1634,6 +1640,7 @@ export class ThreeRaceRenderer {
     const powerUndersteerLoad = clamp(state.powerUndersteerLoad, 0, 1);
     const lateralLoad = clamp(state.lateralLoadTransfer, -0.6, 0.6);
     const roadTextureLoad = clamp(state.roadTextureLoad, 0, 1);
+    const roadCamberLoad = clamp(state.roadCamberLoad, 0, 1);
     const chassisHeave = clamp(state.chassisHeave, -0.24, 0.24);
     const rideSettling = clamp(state.rideSettling, 0, 1);
     const surfaceKick = clamp(
@@ -1644,6 +1651,7 @@ export class ThreeRaceRenderer {
         throttlePickupLoad * 0.08 +
         powerUndersteerLoad * 0.09 +
         controlActuationLoad * 0.05 +
+        roadCamberLoad * 0.04 +
         axleLoadSaturation * 0.07,
       0,
       1
@@ -1700,6 +1708,7 @@ export class ThreeRaceRenderer {
           pedalOverlapLoad * 0.1 +
           suspensionCompression * 0.32 +
           roadTextureLoad * 0.04 +
+          roadCamberLoad * 0.04 +
           rideSettling * 0.025 +
           frontLoad -
           side * lateralLoad * 0.55 +
@@ -1727,6 +1736,7 @@ export class ThreeRaceRenderer {
         cornerLoad * 0.115 +
         surfaceKick * 0.018 +
         roadTextureLoad * 0.004 +
+        roadCamberLoad * 0.006 +
         Math.abs(chassisHeave) * 0.016 +
         rideSettling * 0.003 +
         combinedSlipLoad * 0.008 +
@@ -1783,6 +1793,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tirePressureVisual = tirePressure.toFixed(3);
       this.renderer.domElement.dataset.tireContactPatchVisual = tireContactPatch.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
+      this.renderer.domElement.dataset.roadCamberVisualLoad = roadCamberLoad.toFixed(3);
       this.renderer.domElement.dataset.roadTextureVisualLoad = roadTextureLoad.toFixed(3);
       this.renderer.domElement.dataset.floorStrikeVisualLoad = floorStrikeLoad.toFixed(3);
       this.renderer.domElement.dataset.chassisHeaveVisual = chassisHeave.toFixed(3);

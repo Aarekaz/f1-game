@@ -39,6 +39,7 @@ const baseTelemetry = {
   slipRecovery: 0,
   chassisStability: 1,
   roadFeelFeedback: 0,
+  roadCamberLoad: 0,
   roadTextureLoad: 0,
   chassisHeave: 0,
   rideSettling: 0,
@@ -339,6 +340,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       splitSurfaceLoad: 0.58
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from road camber load", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 205,
+      roadCamberLoad: 0.34
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
