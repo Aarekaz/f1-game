@@ -154,6 +154,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP steering rack impulse](readme-assets/screenshots/39-aurelia-steering-rack-impulse.png) |
 
+| Pedal overlap bind |
+| --- |
+| ![Aurelia GP pedal overlap bind](readme-assets/screenshots/40-aurelia-pedal-overlap-bind.png) |
+
 ## What is here
 
 - A Three.js race view with a closed, world-space procedural GP-style circuit.
@@ -177,6 +181,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Trail braking now has its own handling state: partial brake plus steering loads the nose, helps the car rotate, and still carries lockup risk if you overdo it.
 - Threshold braking now rewards measured brake pressure before lockup, so easing off after a panic stop can recover longitudinal grip instead of dragging flat tires forever.
 - Brake-balance stability now separates front lock risk from rear lightness under braking, so panic stops wash wide while trail braking can rotate the car without feeling random.
+- Pedal overlap now creates drivetrain bind when throttle and brake are held together, feeding tire load, brake heat, power delivery, haptics, audio, HUD feedback, and visible chassis load.
 - Differential corner-exit load now tracks drive torque, diff lock, and inside-rear slip, so throttle application can rotate or tighten the rear axle instead of behaving like a simple speed button.
 - Countersteer recovery now turns an opposite-lock catch into slip-angle recovery, chassis stability, tire sound, haptics, HUD feedback, and visible loaded-wheel motion.
 - Tire pressure and contact-patch load now react to heat, aero, suspension, wet cooling, rough contact, and force demand, then feed grip reserve, scrub, audio, haptics, and tire squash together.
