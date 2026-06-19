@@ -157,6 +157,7 @@ export class ThreeRaceRenderer {
   private readonly desiredCameraTarget = new THREE.Vector3();
   private readonly carScreenPosition = new THREE.Vector3();
   private readonly frameGuardTarget = new THREE.Vector3();
+  private readonly frameGuardCameraPosition = new THREE.Vector3();
   private readonly obstructionWorldPosition = new THREE.Vector3();
   private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
   private readonly rivalSprays = new Map<number, THREE.Group>();
@@ -1936,8 +1937,23 @@ export class ThreeRaceRenderer {
     const frameGuard = Math.max(horizontalEscape, bottomEscape);
     if (frameGuard <= 0.001) return 0;
 
-    this.frameGuardTarget.set(carX, carY + 0.9 + rejoinCameraLift * 0.2, carZ);
-    this.cameraTarget.lerp(this.frameGuardTarget, frameGuard * 0.58);
+    const cameraOffsetX = this.cameraPosition.x - carX;
+    const cameraOffsetZ = this.cameraPosition.z - carZ;
+    const cameraDistance = Math.max(0.001, Math.hypot(cameraOffsetX, cameraOffsetZ));
+    const pullBack =
+      horizontalEscape * (1.8 + roadSpeedFraming * 0.8) +
+      bottomEscape * 2.35 +
+      rejoinCameraLift * 0.34;
+    this.frameGuardCameraPosition.set(
+      carX + (cameraOffsetX / cameraDistance) * (cameraDistance + pullBack),
+      Math.max(this.cameraPosition.y, carY + 3.18 + rejoinCameraLift * 0.34 + roadSpeedFraming * 0.36 + bottomEscape * 0.32),
+      carZ + (cameraOffsetZ / cameraDistance) * (cameraDistance + pullBack)
+    );
+    this.cameraPosition.lerp(this.frameGuardCameraPosition, frameGuard * 0.42);
+    this.camera.position.copy(this.cameraPosition);
+
+    this.frameGuardTarget.set(carX, carY + 0.9 + rejoinCameraLift * 0.2 - bottomEscape * 0.42, carZ);
+    this.cameraTarget.lerp(this.frameGuardTarget, frameGuard * 0.76);
     this.camera.lookAt(this.cameraTarget);
     this.camera.rotation.z += cameraRoll;
     this.camera.updateProjectionMatrix();
