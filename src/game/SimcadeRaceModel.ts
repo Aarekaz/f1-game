@@ -88,6 +88,7 @@ export type RaceTelemetry = {
   aeroBalance: number;
   aeroWashout: number;
   aeroBuffetLoad: number;
+  aeroYawStall: number;
   frontAxleLoad: number;
   rearAxleLoad: number;
   axleLoadSaturation: number;
@@ -416,6 +417,7 @@ export class SimcadeRaceModel {
   private aeroBalance = 0;
   private aeroWashout = 0;
   private aeroBuffetLoad = 0;
+  private aeroYawStall = 0;
   private frontAxleLoad = 1;
   private rearAxleLoad = 1;
   private axleLoadSaturation = 0;
@@ -618,6 +620,7 @@ export class SimcadeRaceModel {
       aeroBalance: this.aeroBalance,
       aeroWashout: this.aeroWashout,
       aeroBuffetLoad: this.aeroBuffetLoad,
+      aeroYawStall: this.aeroYawStall,
       frontAxleLoad: this.frontAxleLoad,
       rearAxleLoad: this.rearAxleLoad,
       axleLoadSaturation: this.axleLoadSaturation,
@@ -895,6 +898,7 @@ export class SimcadeRaceModel {
     this.aeroBalance = 0;
     this.aeroWashout = 0;
     this.aeroBuffetLoad = 0;
+    this.aeroYawStall = 0;
     this.frontAxleLoad = 1;
     this.rearAxleLoad = 1;
     this.axleLoadSaturation = 0;
@@ -1149,6 +1153,22 @@ export class SimcadeRaceModel {
       }
     }
     this.downforceLoss = this.frontWingDamage * (0.06 + speedRatio * 0.18);
+    const yawSlipLoad = clamp(
+      clamp((Math.abs(this.slipAngle) - 0.11) / 0.3, 0, 1) * 0.48 +
+        clamp((Math.abs(this.yawRate) - 0.18) / 0.4, 0, 1) * 0.2 +
+        Math.max(0, Math.abs(this.rearTractionRotation) - 0.06) * 0.32 +
+        Math.max(0, this.counterSteerLoad - 0.08) * 0.12 +
+        Math.max(0, this.lateralScrub - 0.18) * 0.18 +
+        this.aeroBuffetLoad * 0.08,
+      0,
+      1
+    );
+    const aeroYawStallTarget = onTrack ? clamp(yawSlipLoad * Math.pow(speedRatio, 1.18), 0, 1) : 0;
+    this.aeroYawStall = approach(
+      this.aeroYawStall,
+      aeroYawStallTarget,
+      dt * (aeroYawStallTarget > this.aeroYawStall ? 8.5 : 4.6)
+    );
     const aeroPlatformTarget = onTrack
       ? speedRatio *
         speedRatio *

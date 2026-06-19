@@ -1494,6 +1494,7 @@ describe("SimcadeRaceModel", () => {
     let peakSlipAngle = 0;
     let peakVelocityYaw = 0;
     let peakScrub = 0;
+    let peakAeroYawStall = settled.aeroYawStall;
     let weakestBite = settled.forwardBite;
     let telemetry = settled;
     for (let elapsed = 0; elapsed < 1.6; elapsed += 1 / 60) {
@@ -1501,12 +1502,14 @@ describe("SimcadeRaceModel", () => {
       peakSlipAngle = Math.max(peakSlipAngle, Math.abs(telemetry.slipAngle));
       peakVelocityYaw = Math.max(peakVelocityYaw, Math.abs(telemetry.velocityYaw));
       peakScrub = Math.max(peakScrub, telemetry.lateralScrub);
+      peakAeroYawStall = Math.max(peakAeroYawStall, telemetry.aeroYawStall);
       weakestBite = Math.min(weakestBite, telemetry.forwardBite);
     }
 
     expect(peakSlipAngle).toBeGreaterThan(0.025);
     expect(peakVelocityYaw).toBeGreaterThan(0.01);
     expect(peakScrub).toBeGreaterThan(0.04);
+    expect(peakAeroYawStall).toBeGreaterThan(settled.aeroYawStall + 0.02);
     expect(weakestBite).toBeLessThan(settled.forwardBite);
     expect(telemetry.car.slip).toBeGreaterThan(settled.car.slip);
   });
@@ -2214,6 +2217,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rearAeroLoad).toBe(0);
     expect(telemetry.aeroBalance).toBe(0);
     expect(telemetry.aeroWashout).toBe(0);
+    expect(telemetry.aeroYawStall).toBe(0);
     expect(telemetry.frontAxleLoad).toBe(1);
     expect(telemetry.rearAxleLoad).toBe(1);
     expect(telemetry.axleLoadSaturation).toBe(0);
