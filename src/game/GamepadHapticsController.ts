@@ -9,6 +9,7 @@ type HapticTelemetry = Pick<
   | "splitSurfaceLoad"
   | "roadWetness"
   | "hydroplaneLoad"
+  | "tireWaterFilm"
   | "draft"
   | "dirtyAir"
   | "contactRisk"
@@ -149,6 +150,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.slipRecovery * 0.34,
       Math.max(0, 1 - telemetry.chassisStability) * 0.6,
       telemetry.roadFeelFeedback * 0.46,
+      telemetry.tireWaterFilm * 0.44,
       telemetry.roadCamberLoad * 0.44,
       telemetry.roadGuidanceLoad * 0.42,
       telemetry.roadTextureLoad * 0.48,
@@ -219,6 +221,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.aeroYawStall * 0.18 +
       Math.abs(telemetry.aeroBalance) * 0.1 +
       surface * 0.34 +
+      telemetry.tireWaterFilm * 0.24 +
       telemetry.roadWetness * speed * 0.18
   );
   const airBuffet = clamp01(telemetry.draft * 0.1 + telemetry.dirtyAir * 0.18 + telemetry.contactRisk * 0.22 + telemetry.aeroWashout * 0.12 + telemetry.aeroBuffetLoad * 0.18);
@@ -262,6 +265,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.chassisStability) * 0.16 +
       telemetry.roadFeelFeedback * 0.16 +
       telemetry.hydroplaneLoad * 0.12 +
+      telemetry.tireWaterFilm * 0.12 +
       telemetry.aeroBuffetLoad * 0.12 +
       telemetry.aeroYawStall * 0.1 +
       telemetry.roadCamberLoad * 0.1 +

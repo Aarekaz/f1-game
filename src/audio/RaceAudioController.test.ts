@@ -13,6 +13,7 @@ const baseTelemetry = {
   rainIntensity: 0,
   roadWetness: 0,
   hydroplaneLoad: 0,
+  tireWaterFilm: 0,
   tireLoadFeedback: 0,
   axleLoadSaturation: 0,
   combinedSlipLoad: 0,
@@ -139,6 +140,19 @@ describe("raceAudioMix", () => {
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
     expect(loaded.rainGain).toBeGreaterThan(clean.rainGain);
+  });
+
+  it("adds tire hiss from water film", () => {
+    const dry = raceAudioMix(baseTelemetry);
+    const wet = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 210,
+      tireWaterFilm: 0.48
+    });
+
+    expect(wet.tireGain).toBeGreaterThan(dry.tireGain);
+    expect(wet.tireFrequency).toBeGreaterThan(dry.tireFrequency);
+    expect(wet.rainGain).toBeGreaterThan(dry.rainGain);
   });
 
   it("adds tire texture from aero buffet", () => {

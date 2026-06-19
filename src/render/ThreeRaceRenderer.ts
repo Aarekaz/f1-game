@@ -369,6 +369,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.roadWetness = telemetry.roadWetness.toFixed(2);
     this.renderer.domElement.dataset.standingWater = telemetry.standingWater.toFixed(3);
     this.renderer.domElement.dataset.hydroplaneLoad = telemetry.hydroplaneLoad.toFixed(3);
+    this.renderer.domElement.dataset.tireWaterFilm = telemetry.tireWaterFilm.toFixed(3);
     this.renderer.domElement.dataset.launchCharge = telemetry.launchCharge.toFixed(2);
     this.renderer.domElement.dataset.launchQuality = telemetry.launchQuality.toFixed(2);
     this.renderer.domElement.dataset.aeroBoostAvailable = String(telemetry.aeroBoostAvailable);
@@ -561,6 +562,7 @@ export class ThreeRaceRenderer {
       tireCarcassFlex: telemetry.tireCarcassFlex,
       longitudinalSlipLoad: telemetry.longitudinalSlipLoad,
       hydroplaneLoad: telemetry.hydroplaneLoad,
+      tireWaterFilm: telemetry.tireWaterFilm,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       outsideTireLoad: telemetry.outsideTireLoad,
       insideWheelUnload: telemetry.insideWheelUnload,
@@ -577,6 +579,7 @@ export class ThreeRaceRenderer {
         telemetry.surfaceRumble +
           telemetry.roadFeelFeedback * 0.34 +
           telemetry.hydroplaneLoad * 0.16 +
+          telemetry.tireWaterFilm * 0.16 +
           telemetry.aeroBuffetLoad * 0.12 +
           telemetry.aeroYawStall * 0.16 +
           telemetry.roadCamberLoad * 0.12 +
@@ -949,7 +952,7 @@ export class ThreeRaceRenderer {
       carY,
       carZ,
       carWorldYaw,
-      clamp(telemetry.roadWetness + telemetry.standingWater * 0.38 + telemetry.hydroplaneLoad * 0.3, 0, 1),
+      clamp(telemetry.roadWetness + telemetry.standingWater * 0.38 + telemetry.hydroplaneLoad * 0.3 + telemetry.tireWaterFilm * 0.18, 0, 1),
       speedRatio,
       telemetry.car.slip
     );
@@ -1042,6 +1045,7 @@ export class ThreeRaceRenderer {
         tireCarcassFlex: 0,
         longitudinalSlipLoad: 0,
         hydroplaneLoad: 0,
+        tireWaterFilm: 0,
         lateralLoadTransfer: rival.heading * -0.12,
         outsideTireLoad: 0,
         insideWheelUnload: 0,
@@ -1628,6 +1632,7 @@ export class ThreeRaceRenderer {
       tireCarcassFlex: number;
       longitudinalSlipLoad: number;
       hydroplaneLoad: number;
+      tireWaterFilm: number;
       lateralLoadTransfer: number;
       outsideTireLoad: number;
       insideWheelUnload: number;
@@ -1664,6 +1669,7 @@ export class ThreeRaceRenderer {
   ) {
     const longitudinalSlipLoad = clamp(state.longitudinalSlipLoad, 0, 1);
     const hydroplaneLoad = clamp(state.hydroplaneLoad, 0, 1);
+    const tireWaterFilm = clamp(state.tireWaterFilm, 0, 1);
     const spin = -state.distance * 3.2 - state.wheelspin * 1.4 - longitudinalSlipLoad * 0.7 - hydroplaneLoad * 0.5;
     const steerAngle = clamp(state.steering, -0.42, 0.42);
     const brakeGlow = clamp(state.braking * clamp(state.speedKph / 180, 0, 1), 0, 1);
@@ -1734,6 +1740,7 @@ export class ThreeRaceRenderer {
         tireCarcassFlex * 0.08 +
         longitudinalSlipLoad * 0.06 +
         hydroplaneLoad * 0.16 +
+        tireWaterFilm * 0.08 +
         outsideTireLoad * 0.1 +
         insideWheelUnload * 0.08 +
         roadGuidanceLoad * 0.1 +
@@ -1829,6 +1836,7 @@ export class ThreeRaceRenderer {
           damperImpulse * 0.08 -
           floorStrikeLoad * 0.1 -
           hydroplaneLoad * 0.18 -
+          tireWaterFilm * 0.08 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
           Math.max(0, -rearInsideBias) * differentialLock * 0.08 -
           Math.max(0, 1 - tireGroundContact) * 0.28,
@@ -1866,6 +1874,7 @@ export class ThreeRaceRenderer {
         tireCarcassFlex * 0.01 +
         longitudinalSlipLoad * 0.008 +
         hydroplaneLoad * 0.006 +
+        tireWaterFilm * 0.007 +
         counterSteerLoad * 0.01 +
         Math.max(0, 1 - chassisStability) * 0.014 -
         slipRecovery * 0.006 +
@@ -1917,6 +1926,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tireCarcassFlexVisual = tireCarcassFlex.toFixed(3);
       this.renderer.domElement.dataset.longitudinalSlipVisualLoad = longitudinalSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.hydroplaneVisualLoad = hydroplaneLoad.toFixed(3);
+      this.renderer.domElement.dataset.tireWaterFilmVisual = tireWaterFilm.toFixed(3);
       this.renderer.domElement.dataset.roadCamberVisualLoad = roadCamberLoad.toFixed(3);
       this.renderer.domElement.dataset.roadGuidanceVisualLoad = roadGuidanceLoad.toFixed(3);
       this.renderer.domElement.dataset.roadTextureVisualLoad = roadTextureLoad.toFixed(3);

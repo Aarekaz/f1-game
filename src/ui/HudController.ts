@@ -354,6 +354,7 @@ export class HudController {
     if (telemetry.surfaceName === "Runoff") return "Runoff";
     if (telemetry.surfaceName === "Kerb" && telemetry.surfaceRumble > 0.18) return "Kerb vibration";
     if (telemetry.hydroplaneLoad > 0.12) return `Hydroplane ${(telemetry.hydroplaneLoad * 100).toFixed(0)}%`;
+    if (telemetry.tireWaterFilm > 0.22) return `Water film ${(telemetry.tireWaterFilm * 100).toFixed(0)}%`;
     if (telemetry.standingWater > 0.22) return `Standing water ${(telemetry.standingWater * 100).toFixed(0)}%`;
     if (telemetry.liftOffRotationLoad > 0.05) return `Lift-off rotation ${(telemetry.liftOffRotationLoad * 100).toFixed(0)}%`;
     if (telemetry.throttlePickupLoad > 0.05) return `Throttle pickup ${(telemetry.throttlePickupLoad * 100).toFixed(0)}%`;

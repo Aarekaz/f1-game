@@ -12,6 +12,7 @@ type AudioTelemetry = Pick<
   | "rainIntensity"
   | "roadWetness"
   | "hydroplaneLoad"
+  | "tireWaterFilm"
   | "ers"
   | "gear"
   | "tireLoadFeedback"
@@ -146,6 +147,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.max(0, 1 - telemetry.chassisStability) * 0.58,
       telemetry.roadFeelFeedback * 0.54,
       telemetry.hydroplaneLoad * 0.5,
+      telemetry.tireWaterFilm * 0.44,
       telemetry.roadCamberLoad * 0.42,
       telemetry.roadGuidanceLoad * 0.4,
       telemetry.roadTextureLoad * 0.5,
@@ -220,6 +222,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.max(0, 1 - telemetry.chassisStability) * 105 +
       telemetry.roadFeelFeedback * 70 +
       telemetry.hydroplaneLoad * 82 +
+      telemetry.tireWaterFilm * 74 +
       telemetry.roadCamberLoad * 62 +
       telemetry.roadGuidanceLoad * 64 +
       telemetry.roadTextureLoad * 78 +
@@ -277,6 +280,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         Math.max(0, 1 - telemetry.chassisStability) * 0.014 +
         telemetry.roadFeelFeedback * 0.012 +
         telemetry.hydroplaneLoad * 0.011 +
+        telemetry.tireWaterFilm * 0.01 +
         telemetry.roadCamberLoad * 0.008 +
         telemetry.roadGuidanceLoad * 0.008 +
         telemetry.roadTextureLoad * 0.014 +
@@ -301,7 +305,9 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
     windFrequency: 520 + speed * 1800 + telemetry.floorSealLoad * 90 + telemetry.aeroYawStall * 70,
     windGain: racing ? Math.pow(speed, 1.65) * (0.052 + telemetry.floorSealLoad * 0.008 + telemetry.aeroYawStall * 0.006) : 0,
     rainFrequency: 1800 + speed * 1800,
-    rainGain: racing ? telemetry.rainIntensity * (0.012 + speed * 0.028 + wetness * 0.01) + telemetry.hydroplaneLoad * 0.006 : telemetry.rainIntensity * 0.006,
+    rainGain: racing
+      ? telemetry.rainIntensity * (0.012 + speed * 0.028 + wetness * 0.01) + telemetry.hydroplaneLoad * 0.006 + telemetry.tireWaterFilm * 0.004
+      : telemetry.rainIntensity * 0.006,
     ersFrequency: 760 + speed * 620 + rpm * 220,
     ersGain: ersActive ? 0.014 + speed * 0.018 : 0
   };

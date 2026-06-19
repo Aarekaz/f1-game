@@ -197,6 +197,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The racing surface now evolves during a run: clean laps build rubber, damp sessions form a drying line, and both feed grip and wet-surface visuals.
 - Visible standing-water patches now share data with the physics model, so wet puddles locally reduce adhesion, add wheelspin/lockup risk, and strengthen spray.
 - Hydroplane load now turns high-speed standing water into a shared tire state, lightening contact while feeding wheelspin, lockup, understeer, tire feedback, audio, haptics, HUD text, spray, and visible wheel load.
+- Tire water film now gives wet rubber a short memory after rain and puddles, feeding grip loss, tire texture, haptics, HUD text, spray, and visible tire load.
 - Running the rubbered line now gives a small grip reward, while wandering offline can pick up marbles and make the tires feel dirty for the next few corners.
 - A fictional timing tower with named rival drivers, team codes, player row, and live gap readouts.
 - Nearby rival cars carry compact in-world driver/team/gap plates, so traffic is readable without staring at the timing tower.

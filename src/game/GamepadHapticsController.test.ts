@@ -9,6 +9,7 @@ const baseTelemetry = {
   splitSurfaceLoad: 0,
   roadWetness: 0,
   hydroplaneLoad: 0,
+  tireWaterFilm: 0,
   draft: 0,
   dirtyAir: 0,
   contactRisk: 0,
@@ -104,6 +105,18 @@ describe("raceHapticEffect", () => {
 
     expect(skating?.strongMagnitude).toBeGreaterThan(planted?.strongMagnitude ?? 0);
     expect(skating?.weakMagnitude).toBeGreaterThan(planted?.weakMagnitude ?? 0);
+  });
+
+  it("adds slick tire texture from water film", () => {
+    const dry = raceHapticEffect(baseTelemetry);
+    const wet = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 220,
+      tireWaterFilm: 0.48
+    });
+
+    expect(wet?.strongMagnitude).toBeGreaterThan(dry?.strongMagnitude ?? 0);
+    expect(wet?.weakMagnitude).toBeGreaterThan(dry?.weakMagnitude ?? 0);
   });
 
   it("adds turbulent rumble from aero buffet", () => {
