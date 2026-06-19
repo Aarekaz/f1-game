@@ -1538,7 +1538,7 @@ export class ThreeRaceRenderer {
     const surfaceKick = clamp(state.surfaceRumble + roadTextureLoad * 0.2 + rideSettling * 0.12, 0, 1);
     const damperImpulse = clamp(state.damperImpulse, 0, 1);
     const suspensionCompression = clamp(
-      state.suspensionTravel + tireLoad * 0.5 + damperImpulse * 0.18 + roadTextureLoad * 0.08 + Math.max(0, chassisHeave) * 0.18 + rideSettling * 0.08,
+      state.suspensionTravel + tireLoad * 0.5 + damperImpulse * 0.18 + roadTextureLoad * 0.04 + Math.max(0, chassisHeave) * 0.1 + rideSettling * 0.04,
       0,
       1
     );
@@ -1562,8 +1562,8 @@ export class ThreeRaceRenderer {
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
           suspensionCompression * 0.32 +
-          roadTextureLoad * 0.08 +
-          rideSettling * 0.05 +
+          roadTextureLoad * 0.04 +
+          rideSettling * 0.025 +
           frontLoad -
           side * lateralLoad * 0.55 +
           side * splitSurfaceLoad * 0.34 -
@@ -1584,9 +1584,9 @@ export class ThreeRaceRenderer {
       const squash =
         cornerLoad * 0.115 +
         surfaceKick * 0.018 +
-        roadTextureLoad * 0.014 +
-        Math.abs(chassisHeave) * 0.035 +
-        rideSettling * 0.01 +
+        roadTextureLoad * 0.004 +
+        Math.abs(chassisHeave) * 0.016 +
+        rideSettling * 0.003 +
         combinedSlipLoad * 0.008 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
         tirePressureLoad * 0.012 +
