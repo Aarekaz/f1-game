@@ -453,6 +453,7 @@ describe("SimcadeRaceModel", () => {
     expect(dryRestart.speedKph).toBeGreaterThan(20);
     expect(wetRestart.speedKph).toBeLessThan(dryRestart.speedKph);
     expect(wetRestart.car.wheelspin).toBeGreaterThan(dryRestart.car.wheelspin);
+    expect(wetRestart.longitudinalSlipLoad).toBeGreaterThan(dryRestart.longitudinalSlipLoad);
   });
 
   it("turns visible standing water into local wet grip loss", () => {
@@ -1576,6 +1577,7 @@ describe("SimcadeRaceModel", () => {
     expect(overlapped.speedKph).toBeLessThan(powered.speedKph);
     expect(overlapped.speedKph).toBeGreaterThan(braked.speedKph);
     expect(overlapped.tireForceLoad).toBeGreaterThan(braked.tireForceLoad);
+    expect(overlapped.longitudinalSlipLoad).toBeGreaterThan(powered.longitudinalSlipLoad);
     expect(overlapped.tireRelaxation).toBeGreaterThan(braked.tireRelaxation);
     expect(overlapped.longitudinalGrip).toBeLessThan(fast.longitudinalGrip);
     expect(overlapped.powerState).toBe("Pedal overlap");
@@ -2122,6 +2124,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.velocityYaw).toBe(0);
     expect(telemetry.forwardBite).toBe(1);
     expect(telemetry.longitudinalGrip).toBe(1);
+    expect(telemetry.longitudinalSlipLoad).toBe(0);
     expect(telemetry.tireContactGrip).toBe(1);
     expect(telemetry.tireRunoffShare).toBe(0);
     expect(telemetry.tireGroundContact).toBe(1);

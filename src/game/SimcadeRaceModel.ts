@@ -38,6 +38,7 @@ export type RaceTelemetry = {
   velocityYaw: number;
   forwardBite: number;
   longitudinalGrip: number;
+  longitudinalSlipLoad: number;
   tireContactGrip: number;
   tireRunoffShare: number;
   tireGroundContact: number;
@@ -357,6 +358,7 @@ export class SimcadeRaceModel {
   private velocityYaw = 0;
   private forwardBite = 1;
   private longitudinalGrip = 1;
+  private longitudinalSlipLoad = 0;
   private tireContactGrip = 1;
   private tireRunoffShare = 0;
   private tireGroundContact = 1;
@@ -550,6 +552,7 @@ export class SimcadeRaceModel {
       velocityYaw: this.velocityYaw,
       forwardBite: this.forwardBite,
       longitudinalGrip: this.longitudinalGrip,
+      longitudinalSlipLoad: this.longitudinalSlipLoad,
       tireContactGrip: this.tireContactGrip,
       tireRunoffShare: this.tireRunoffShare,
       tireGroundContact: this.tireGroundContact,
@@ -814,6 +817,7 @@ export class SimcadeRaceModel {
     this.velocityYaw = 0;
     this.forwardBite = 1;
     this.longitudinalGrip = 1;
+    this.longitudinalSlipLoad = 0;
     this.tireContactGrip = 1;
     this.tireRunoffShare = 0;
     this.tireGroundContact = 1;
@@ -1669,6 +1673,27 @@ export class SimcadeRaceModel {
     this.wheelspin = approach(this.wheelspin, wheelspinTarget, dt * 7.5);
     this.lockup = approach(this.lockup, lockupTarget, dt * 10);
     this.understeer = approach(this.understeer, understeerTarget, dt * 6);
+    const longitudinalSlipLoadTarget = clamp(
+      (this.wheelspin * 0.54 +
+        this.lockup * 0.64 +
+        this.frontLockRisk * brake * 0.22 +
+        Math.max(0, 1 - this.rearBrakeStability) * brake * 0.16 +
+        this.pedalPressureLoad * 0.14 +
+        this.driveTorqueLoad * throttle * 0.12 +
+        this.insideRearSlip * throttle * 0.18 +
+        Math.max(0, 1 - this.longitudinalGrip) * 0.08 +
+        this.standingWater * speedRatio * Math.max(throttle, brake) * 0.16 -
+        thresholdBrakeSupport * 0.08 -
+        throttlePickupSettle * 0.06) *
+        (onTrack ? 0.78 : 0.32),
+      0,
+      1
+    );
+    this.longitudinalSlipLoad = approach(
+      this.longitudinalSlipLoad,
+      longitudinalSlipLoadTarget,
+      dt * (longitudinalSlipLoadTarget > this.longitudinalSlipLoad ? 11.5 : 4.4)
+    );
     const previousSlipAngleLoad = clamp((Math.abs(this.slipAngle) - 0.085) / 0.395, 0, 1);
     const selfAlignTorqueTarget = clamp(
       (-this.slipAngle * (0.62 + speedRatio * 1.25) -
@@ -2291,6 +2316,7 @@ export class SimcadeRaceModel {
         this.driveTorqueLoad * 0.06 +
         this.pedalOverlapLoad * 0.16 +
         this.pedalPressureLoad * 0.14 +
+        this.longitudinalSlipLoad * 0.08 +
         this.insideRearSlip * 0.18 +
         this.tirePressureLoad * 0.14 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
