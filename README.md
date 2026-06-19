@@ -78,6 +78,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 | --- |
 | ![Aurelia GP power-on understeer](readme-assets/screenshots/45-aurelia-power-understeer.png) |
 
+| Road-guidance load |
+| --- |
+| ![Aurelia GP road-guidance load](readme-assets/screenshots/46-aurelia-road-guidance-load.png) |
+
 | Trail-braking turn-in |
 | --- |
 | ![Aurelia GP trail-braking turn-in](readme-assets/screenshots/18-aurelia-trail-braking-turn-in.png) |
