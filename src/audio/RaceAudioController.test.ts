@@ -43,6 +43,7 @@ const baseTelemetry = {
   rearTractionRotation: 0,
   liftOffRotationLoad: 0,
   throttlePickupLoad: 0,
+  powerUndersteerLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   suspensionVelocity: 0,
@@ -339,6 +340,18 @@ describe("raceAudioMix", () => {
 
     expect(pickingUp.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(pickingUp.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire texture from power understeer", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const pushing = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      powerUndersteerLoad: 0.36
+    });
+
+    expect(pushing.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(pushing.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture when crest contact gets light", () => {

@@ -44,6 +44,7 @@ type AudioTelemetry = Pick<
   | "rearTractionRotation"
   | "liftOffRotationLoad"
   | "throttlePickupLoad"
+  | "powerUndersteerLoad"
   | "aeroBalance"
   | "aeroWashout"
   | "suspensionVelocity"
@@ -123,6 +124,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.abs(telemetry.rearTractionRotation) * 0.7,
       telemetry.liftOffRotationLoad * 0.66,
       telemetry.throttlePickupLoad * 0.62,
+      telemetry.powerUndersteerLoad * 0.68,
       telemetry.aeroWashout * 0.48,
       Math.abs(telemetry.aeroBalance) * 0.24,
       telemetry.surfaceRumble * 0.62
@@ -179,6 +181,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.abs(telemetry.rearTractionRotation) * 120 +
       telemetry.liftOffRotationLoad * 112 +
       telemetry.throttlePickupLoad * 104 +
+      telemetry.powerUndersteerLoad * 132 +
       telemetry.aeroWashout * 80 +
       Math.abs(telemetry.aeroBalance) * 38 +
       looseSurface * 90,
@@ -216,6 +219,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         Math.abs(telemetry.rearTractionRotation) * 0.016 +
         telemetry.liftOffRotationLoad * 0.015 +
         telemetry.throttlePickupLoad * 0.014 +
+        telemetry.powerUndersteerLoad * 0.016 +
         telemetry.aeroWashout * 0.01 +
         Math.abs(telemetry.aeroBalance) * 0.004 +
         telemetry.surfaceRumble * 0.018 +

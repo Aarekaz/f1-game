@@ -42,6 +42,7 @@ const baseTelemetry = {
   rearTractionRotation: 0,
   liftOffRotationLoad: 0,
   throttlePickupLoad: 0,
+  powerUndersteerLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   suspensionVelocity: 0,
@@ -340,6 +341,17 @@ describe("raceHapticEffect", () => {
 
     expect(pickingUp?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(pickingUp?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns power understeer into front tire texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const pushing = raceHapticEffect({
+      ...baseTelemetry,
+      powerUndersteerLoad: 0.38
+    });
+
+    expect(pushing?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(pushing?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns light crest contact into fine texture", () => {
