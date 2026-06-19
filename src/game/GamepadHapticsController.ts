@@ -44,6 +44,7 @@ type HapticTelemetry = Pick<
   | "chassisStability"
   | "roadFeelFeedback"
   | "roadCamberLoad"
+  | "roadGuidanceLoad"
   | "roadTextureLoad"
   | "chassisHeave"
   | "rideSettling"
@@ -136,6 +137,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.chassisStability) * 0.6,
       telemetry.roadFeelFeedback * 0.46,
       telemetry.roadCamberLoad * 0.44,
+      telemetry.roadGuidanceLoad * 0.42,
       telemetry.roadTextureLoad * 0.48,
       telemetry.hydroplaneLoad * 0.18,
       Math.abs(telemetry.chassisHeave) * 1.18,
@@ -158,6 +160,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.surfaceRumble * 0.64 +
       telemetry.roadFeelFeedback * 0.48 +
       telemetry.roadCamberLoad * 0.18 +
+      telemetry.roadGuidanceLoad * 0.22 +
       telemetry.roadTextureLoad * 0.58 +
       telemetry.axleLoadSaturation * 0.2 +
       telemetry.outsideTireLoad * 0.2 +
@@ -234,6 +237,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.hydroplaneLoad * 0.12 +
       telemetry.aeroBuffetLoad * 0.12 +
       telemetry.roadCamberLoad * 0.1 +
+      telemetry.roadGuidanceLoad * 0.11 +
       telemetry.roadTextureLoad * 0.18 +
       Math.abs(telemetry.chassisHeave) * 0.26 +
       telemetry.rideSettling * 0.14 +

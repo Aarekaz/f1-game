@@ -394,6 +394,7 @@ export class HudController {
     if (telemetry.rideSettling > 0.16) return `Ride settling ${(telemetry.rideSettling * 100).toFixed(0)}%`;
     if (telemetry.roadTextureLoad > 0.22) return `Road texture ${(telemetry.roadTextureLoad * 100).toFixed(0)}%`;
     if (telemetry.damperImpulse > 0.2) return `Damper hit ${(telemetry.damperImpulse * 100).toFixed(0)}%`;
+    if (telemetry.roadGuidanceLoad > 0.16) return `Road guidance ${(telemetry.roadGuidanceLoad * 100).toFixed(0)}%`;
     if (telemetry.roadCamberLoad > 0.12) return `Camber load ${(telemetry.roadCamberLoad * 100).toFixed(0)}%`;
     if (telemetry.roadFeelFeedback > 0.18) return `Road load ${(telemetry.roadFeelFeedback * 100).toFixed(0)}%`;
     if (telemetry.aeroBuffetLoad > 0.08) return `Aero buffet ${(telemetry.aeroBuffetLoad * 100).toFixed(0)}%`;
