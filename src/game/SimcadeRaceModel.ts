@@ -81,6 +81,7 @@ export type RaceTelemetry = {
   suspensionTravel: number;
   suspensionVelocity: number;
   damperImpulse: number;
+  wheelHopLoad: number;
   aeroPlatformLoad: number;
   floorSealLoad: number;
   floorStrikeLoad: number;
@@ -414,6 +415,7 @@ export class SimcadeRaceModel {
   private suspensionTravel = 0;
   private suspensionVelocity = 0;
   private damperImpulse = 0;
+  private wheelHopLoad = 0;
   private aeroPlatformLoad = 0;
   private floorSealLoad = 0;
   private floorStrikeLoad = 0;
@@ -621,6 +623,7 @@ export class SimcadeRaceModel {
       suspensionTravel: this.suspensionTravel,
       suspensionVelocity: this.suspensionVelocity,
       damperImpulse: this.damperImpulse,
+      wheelHopLoad: this.wheelHopLoad,
       aeroPlatformLoad: this.aeroPlatformLoad,
       floorSealLoad: this.floorSealLoad,
       floorStrikeLoad: this.floorStrikeLoad,
@@ -905,6 +908,7 @@ export class SimcadeRaceModel {
     this.suspensionTravel = 0;
     this.suspensionVelocity = 0;
     this.damperImpulse = 0;
+    this.wheelHopLoad = 0;
     this.aeroPlatformLoad = 0;
     this.floorSealLoad = 0;
     this.floorStrikeLoad = 0;
@@ -2284,11 +2288,25 @@ export class SimcadeRaceModel {
       floorStrikeTarget,
       dt * (floorStrikeTarget > this.floorStrikeLoad ? 16 : 4.2)
     );
+    const wheelHopTarget = clamp(
+      Math.max(0, 1 - this.tireGroundContact) * (0.72 + speedRatio * 0.48) +
+        this.damperImpulse * (0.18 + speedRatio * 0.18) +
+        this.floorStrikeLoad * 0.2 +
+        this.surfaceEdgeLoad * 0.1 +
+        Math.abs(this.splitSurfaceLoad) * 0.08 +
+        this.roadTextureLoad * 0.12 +
+        this.lockup * 0.09 +
+        this.wheelspin * 0.07,
+      0,
+      1
+    );
+    this.wheelHopLoad = approach(this.wheelHopLoad, wheelHopTarget, dt * (wheelHopTarget > this.wheelHopLoad ? 14 : 4.2));
     const roadFeelFeedbackTarget = clamp(
       Math.abs(this.roadCompression) * 2.1 +
         Math.max(0, this.suspensionLoad - 1) * 0.62 +
         Math.abs(this.suspensionTravel) * 0.86 +
         this.damperImpulse * 0.65 +
+        this.wheelHopLoad * 0.22 +
         this.loadTransferImpulse * 0.12 +
         this.floorStrikeLoad * 0.42 +
         Math.max(0, 1 - this.tireGroundContact) * 0.26 +
@@ -2815,6 +2833,7 @@ export class SimcadeRaceModel {
         this.tireResponseLoad * 0.12 +
         this.tireCarcassFlex * 0.16 +
         this.loadTransferImpulse * 0.12 +
+        this.wheelHopLoad * 0.14 +
         this.tireHeatStress() * 0.05 +
         this.axleLoadSaturation * 0.16 +
         this.outsideTireLoad * 0.08 +
@@ -3218,6 +3237,7 @@ export class SimcadeRaceModel {
     this.suspensionTravel = 0;
     this.suspensionVelocity = 0;
     this.damperImpulse = 0;
+    this.wheelHopLoad = 0;
     this.floorSealLoad = 0;
     this.floorStrikeLoad = 0;
     this.frontAeroLoad = 0;

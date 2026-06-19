@@ -1344,6 +1344,7 @@ describe("SimcadeRaceModel", () => {
     run(model, 4.5, { throttle: 1 });
 
     let maxImpulse = 0;
+    let maxWheelHop = 0;
     let reboundVelocity = 0;
     let compressionVelocity = 0;
     let impulseSample = model.telemetry();
@@ -1353,11 +1354,13 @@ describe("SimcadeRaceModel", () => {
         maxImpulse = telemetry.damperImpulse;
         impulseSample = telemetry;
       }
+      maxWheelHop = Math.max(maxWheelHop, telemetry.wheelHopLoad);
       reboundVelocity = Math.min(reboundVelocity, telemetry.suspensionVelocity);
       compressionVelocity = Math.max(compressionVelocity, telemetry.suspensionVelocity);
     }
 
     expect(maxImpulse).toBeGreaterThan(0.035);
+    expect(maxWheelHop).toBeGreaterThan(0.015);
     expect(reboundVelocity).toBeLessThan(-0.01);
     expect(compressionVelocity).toBeGreaterThan(0.01);
     expect(impulseSample.roadFeelFeedback).toBeGreaterThan(0.05);
@@ -1387,6 +1390,7 @@ describe("SimcadeRaceModel", () => {
     expect(peakHeave).toBeGreaterThan(Math.abs(cruise.chassisHeave) + 0.004);
     expect(roughest.roadFeelFeedback).toBeGreaterThan(cruise.roadFeelFeedback);
     expect(roughest.damperImpulse).toBeGreaterThan(cruise.damperImpulse);
+    expect(roughest.wheelHopLoad).toBeGreaterThan(cruise.wheelHopLoad + 0.015);
     expect(roughest.tireGroundContact).toBeLessThan(1.08);
   });
 
@@ -2221,6 +2225,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.suspensionTravel).toBe(0);
     expect(telemetry.suspensionVelocity).toBe(0);
     expect(telemetry.damperImpulse).toBe(0);
+    expect(telemetry.wheelHopLoad).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);
     expect(telemetry.floorSealLoad).toBe(0);
     expect(telemetry.floorStrikeLoad).toBe(0);
