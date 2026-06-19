@@ -885,17 +885,19 @@ describe("SimcadeRaceModel", () => {
     const sampleControlLoad = (model: SimcadeRaceModel, seconds: number, input: Partial<RaceActions>) => {
       let telemetry = model.telemetry();
       let peakControlLoad = 0;
+      let peakPedalPressure = 0;
       let peakTireLoad = 0;
       let peakRackLoad = 0;
 
       for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
         telemetry = model.update(1 / 60, { ...idle, ...input });
         peakControlLoad = Math.max(peakControlLoad, telemetry.controlActuationLoad);
+        peakPedalPressure = Math.max(peakPedalPressure, telemetry.pedalPressureLoad);
         peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback);
         peakRackLoad = Math.max(peakRackLoad, telemetry.steeringRackLoad);
       }
 
-      return { telemetry, peakControlLoad, peakTireLoad, peakRackLoad };
+      return { telemetry, peakControlLoad, peakPedalPressure, peakTireLoad, peakRackLoad };
     };
 
     const smoothModel = new SimcadeRaceModel({
@@ -917,6 +919,7 @@ describe("SimcadeRaceModel", () => {
     const panic = sampleControlLoad(panicModel, 0.45, { brake: 0.82, steer: -0.86 });
 
     expect(panic.peakControlLoad).toBeGreaterThan(smooth.peakControlLoad + 0.05);
+    expect(panic.peakPedalPressure).toBeGreaterThan(smooth.peakPedalPressure + 0.08);
     expect(panic.peakTireLoad).toBeGreaterThan(smooth.peakTireLoad);
     expect(panic.peakRackLoad).toBeGreaterThan(smooth.peakRackLoad);
     expect(panic.telemetry.car.steering).toBeGreaterThan(-0.86);
@@ -1872,11 +1875,19 @@ describe("SimcadeRaceModel", () => {
     });
     model.update(1 / 60, { ...idle, launch: true });
     const fast = run(model, 4.6, { throttle: 1, ers: true });
-    const braking = run(model, 0.9, { brake: 1 });
+    let braking = fast;
+    let peakPedalPressure = 0;
+    for (let elapsed = 0; elapsed < 0.9; elapsed += 1 / 60) {
+      braking = model.update(1 / 60, { ...idle, brake: 1 });
+      peakPedalPressure = Math.max(peakPedalPressure, braking.pedalPressureLoad);
+    }
     const released = run(model, 0.25, {});
+    const settled = run(model, 1.25, { throttle: 0.35 });
 
     expect(braking.longitudinalGrip).toBeLessThan(fast.longitudinalGrip);
     expect(released.longitudinalGrip).toBeLessThan(fast.longitudinalGrip);
+    expect(peakPedalPressure).toBeGreaterThan(0.08);
+    expect(settled.pedalPressureLoad).toBeLessThan(peakPedalPressure);
     expect(released.car.pitch).toBeGreaterThan(0.01);
     expect(released.suspensionTravel).toBeGreaterThan(0.045);
   });
@@ -2129,6 +2140,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.steeringVelocity).toBe(0);
     expect(telemetry.steeringImpulse).toBe(0);
     expect(telemetry.controlActuationLoad).toBe(0);
+    expect(telemetry.pedalPressureLoad).toBe(0);
     expect(telemetry.steeringRatio).toBe(1);
     expect(telemetry.selfAlignTorque).toBe(0);
     expect(telemetry.yawInertiaLoad).toBe(0);

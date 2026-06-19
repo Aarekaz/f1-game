@@ -56,6 +56,7 @@ export type RaceTelemetry = {
   steeringVelocity: number;
   steeringImpulse: number;
   controlActuationLoad: number;
+  pedalPressureLoad: number;
   steeringRatio: number;
   selfAlignTorque: number;
   yawInertiaLoad: number;
@@ -374,6 +375,7 @@ export class SimcadeRaceModel {
   private steeringVelocity = 0;
   private steeringImpulse = 0;
   private controlActuationLoad = 0;
+  private pedalPressureLoad = 0;
   private steeringRatio = 1;
   private selfAlignTorque = 0;
   private yawInertiaLoad = 0;
@@ -566,6 +568,7 @@ export class SimcadeRaceModel {
       steeringVelocity: this.steeringVelocity,
       steeringImpulse: this.steeringImpulse,
       controlActuationLoad: this.controlActuationLoad,
+      pedalPressureLoad: this.pedalPressureLoad,
       steeringRatio: this.steeringRatio,
       selfAlignTorque: this.selfAlignTorque,
       yawInertiaLoad: this.yawInertiaLoad,
@@ -829,6 +832,7 @@ export class SimcadeRaceModel {
     this.steeringVelocity = 0;
     this.steeringImpulse = 0;
     this.controlActuationLoad = 0;
+    this.pedalPressureLoad = 0;
     this.steeringRatio = 1;
     this.selfAlignTorque = 0;
     this.yawInertiaLoad = 0;
@@ -1265,7 +1269,10 @@ export class SimcadeRaceModel {
     const throttlePickupSettle = this.throttlePickupLoad * clamp(1 - throttle * 0.18 - this.wheelspin * 0.34 - this.tireSaturation * 0.18, 0.28, 1);
     const throttlePickupShock = this.throttlePickupLoad * throttle * clamp(0.62 + this.liftOffRotationLoad * 0.8 + Math.abs(steer) * 0.24, 0.42, 1.35);
     const longitudinalForceDemand =
-      throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) + brake * (0.36 + speedRatio * 0.52) + this.pedalOverlapLoad * (0.22 + speedRatio * 0.3);
+      throttle * (0.18 + speedRatio * 0.22 + boost * 0.08) +
+      brake * (0.36 + speedRatio * 0.52) +
+      this.pedalOverlapLoad * (0.22 + speedRatio * 0.3) +
+      this.pedalPressureLoad * (0.035 + speedRatio * 0.08);
     const controlLoadForceDemand = this.controlActuationLoad * (0.035 + speedRatio * 0.075);
     const signedLateralLoadTarget = clamp(
       (steer * speedRatio * speedRatio * (0.34 + cornerDemand * 0.62) +
@@ -1535,6 +1542,7 @@ export class SimcadeRaceModel {
           brake * 0.32 +
           Math.max(0, 1.03 - this.frontAxleLoad) * 0.28 +
           this.pedalOverlapLoad * 0.24 +
+          this.pedalPressureLoad * 0.16 +
           frontAxleOverload * 0.34 +
           this.tireSaturation * 0.3 +
           Math.max(0, 1 - this.tireGripReserve) * 0.48 +
@@ -1555,6 +1563,7 @@ export class SimcadeRaceModel {
         (0.22 +
           Math.max(0, this.longitudinalLoadTransfer) * 0.74 +
           this.pedalOverlapLoad * 0.32 +
+          this.pedalPressureLoad * 0.12 +
           this.frontLockRisk * 0.36 +
           rearLightness * 0.26 +
           this.frontAeroLoad * 0.08 +
@@ -1570,6 +1579,7 @@ export class SimcadeRaceModel {
             Math.abs(steer) * this.trailBraking * 0.44 +
             this.engineBraking * 0.12 +
             this.pedalOverlapLoad * 0.12 +
+            this.pedalPressureLoad * 0.08 +
             this.brakeReleaseShock * 0.18 +
             roadWetness * 0.14) -
         Math.max(0, 1 - rearTractionSupport) * 0.22 -
@@ -1595,6 +1605,7 @@ export class SimcadeRaceModel {
             this.standingWater * throttle * (0.32 + speedRatio * 0.34) +
             this.tireSaturation * throttle * 0.34 +
             this.tireRelaxation * throttle * 0.08 +
+            this.pedalPressureLoad * throttle * 0.08 +
             this.engineBraking * Math.abs(steer) * 0.08 +
             this.driveTorqueLoad * throttle * 0.1 +
             rearAxleOverload * throttle * 0.11 +
@@ -1623,6 +1634,7 @@ export class SimcadeRaceModel {
               this.standingWater * (0.44 + speedRatio * 0.28) +
               this.tireSaturation * 0.42 +
               this.pedalOverlapLoad * 0.22 +
+              this.pedalPressureLoad * 0.16 +
               this.tireRelaxation * 0.08 +
               this.frontLockRisk * 0.95 +
               this.dirtyTirePickup * 0.18) -
@@ -2278,6 +2290,7 @@ export class SimcadeRaceModel {
         this.wheelspin * 0.18 +
         this.driveTorqueLoad * 0.06 +
         this.pedalOverlapLoad * 0.16 +
+        this.pedalPressureLoad * 0.14 +
         this.insideRearSlip * 0.18 +
         this.tirePressureLoad * 0.14 +
         this.differentialLock * Math.abs(rawSteer) * 0.06 +
@@ -2309,6 +2322,7 @@ export class SimcadeRaceModel {
         this.steeringImpulse * 0.3 +
         Math.abs(this.steeringVelocity) * 0.16 +
         this.controlActuationLoad * 0.16 +
+        this.pedalPressureLoad * 0.12 +
         this.combinedSlipLoad * 0.14 +
         lateralLoadStress * 0.12 +
         Math.max(0, 1 - this.tireGroundContact) * 0.16 +
@@ -2440,6 +2454,7 @@ export class SimcadeRaceModel {
         this.tireResponseLoad * 0.12 +
         this.axleLoadSaturation * 0.16 +
         this.controlActuationLoad * 0.12 +
+        this.pedalPressureLoad * 0.08 +
         steeringRatioLoad * 0.08 +
         this.roadCamberLoad * 0.08 +
         this.tirePressureLoad * 0.12 +
@@ -2630,6 +2645,8 @@ export class SimcadeRaceModel {
     );
     const throttleRise = 14 * gripConfidence * (1 - roadWetness * 0.1);
     const throttleFall = 10.5;
+    const previousThrottle = this.controlThrottle;
+    const previousBrake = this.controlBrake;
     this.controlThrottle = approach(
       this.controlThrottle,
       throttleTarget,
@@ -2664,6 +2681,23 @@ export class SimcadeRaceModel {
     const brakeLag = Math.abs(brakeTarget - this.controlBrake);
     const pedalLag = Math.max(throttleLag, brakeLag);
     const pedalCrossover = Math.min(throttleTarget, brakeTarget) * (0.38 + speedRatio * 0.5);
+    const throttlePressureRate = Math.abs(this.controlThrottle - previousThrottle) / Math.max(dt, 1 / 120);
+    const brakePressureRate = Math.abs(this.controlBrake - previousBrake) / Math.max(dt, 1 / 120);
+    const pedalPressureTarget = clamp(
+      brakePressureRate * (0.035 + speedRatio * 0.026) +
+        throttlePressureRate * (0.022 + speedRatio * 0.016) +
+        Math.max(0, brakeLag - 0.1) * (0.22 + speedRatio * 0.16) +
+        Math.max(0, throttleLag - 0.12) * (0.14 + speedRatio * 0.12) +
+        pedalCrossover * 0.24 +
+        brakeTarget * roadWetness * 0.04,
+      0,
+      1
+    );
+    this.pedalPressureLoad = approach(
+      this.pedalPressureLoad,
+      pedalPressureTarget,
+      dt * (pedalPressureTarget > this.pedalPressureLoad ? 13 : 3.8 - roadWetness * 0.35)
+    );
     const reversalLoad = oppositeLock ? clamp(Math.abs(steerTarget - previousSteer) * 0.42, 0, 1) : 0;
     const steeringImpulseTarget = clamp(
       Math.abs(this.steeringVelocity) * (0.42 + speedRatio * 0.34) +
@@ -2780,6 +2814,7 @@ export class SimcadeRaceModel {
     this.steeringVelocity = 0;
     this.steeringImpulse = 0;
     this.controlActuationLoad = 0;
+    this.pedalPressureLoad = 0;
     this.steeringRatio = 1;
     this.selfAlignTorque = 0;
     this.yawInertiaLoad = 0;
