@@ -33,6 +33,9 @@ const baseTelemetry = {
   slipRecovery: 0,
   chassisStability: 1,
   roadFeelFeedback: 0,
+  roadTextureLoad: 0,
+  chassisHeave: 0,
+  rideSettling: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
   aeroBalance: 0,
@@ -213,6 +216,20 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       roadFeelFeedback: 0.62
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from ride settling over road texture", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 210,
+      roadTextureLoad: 0.48,
+      chassisHeave: -0.08,
+      rideSettling: 0.28
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

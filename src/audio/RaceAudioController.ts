@@ -34,6 +34,9 @@ type AudioTelemetry = Pick<
   | "slipRecovery"
   | "chassisStability"
   | "roadFeelFeedback"
+  | "roadTextureLoad"
+  | "chassisHeave"
+  | "rideSettling"
   | "tireGroundContact"
   | "rearTractionRotation"
   | "aeroBalance"
@@ -101,6 +104,9 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.slipRecovery * 0.34,
       Math.max(0, 1 - telemetry.chassisStability) * 0.58,
       telemetry.roadFeelFeedback * 0.54,
+      telemetry.roadTextureLoad * 0.5,
+      Math.abs(telemetry.chassisHeave) * 1.25,
+      telemetry.rideSettling * 0.42,
       telemetry.damperImpulse * 0.68,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.56,
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
@@ -147,6 +153,9 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.slipRecovery * 54 +
       Math.max(0, 1 - telemetry.chassisStability) * 105 +
       telemetry.roadFeelFeedback * 70 +
+      telemetry.roadTextureLoad * 78 +
+      Math.abs(telemetry.chassisHeave) * 220 +
+      telemetry.rideSettling * 64 +
       telemetry.damperImpulse * 135 +
       Math.abs(telemetry.suspensionVelocity) * 80 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 110 +
@@ -176,6 +185,9 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.slipRecovery * 0.007 +
         Math.max(0, 1 - telemetry.chassisStability) * 0.014 +
         telemetry.roadFeelFeedback * 0.012 +
+        telemetry.roadTextureLoad * 0.014 +
+        Math.abs(telemetry.chassisHeave) * 0.03 +
+        telemetry.rideSettling * 0.011 +
         telemetry.damperImpulse * 0.017 +
         Math.max(0, 1 - telemetry.tireGroundContact) * 0.016 +
         Math.abs(telemetry.splitSurfaceLoad) * 0.014 +

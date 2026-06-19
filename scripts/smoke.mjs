@@ -389,6 +389,9 @@ async function checkDesktop(browser) {
     roadLoad: Number(document.querySelector("#game canvas")?.dataset.roadLoad ?? 0),
     roadCompression: Number(document.querySelector("#game canvas")?.dataset.roadCompression ?? 0),
     roadFeelFeedback: Number(document.querySelector("#game canvas")?.dataset.roadFeelFeedback ?? 0),
+    roadTextureLoad: Number(document.querySelector("#game canvas")?.dataset.roadTextureLoad ?? 0),
+    chassisHeave: Number(document.querySelector("#game canvas")?.dataset.chassisHeave ?? 0),
+    rideSettling: Number(document.querySelector("#game canvas")?.dataset.rideSettling ?? 0),
     suspensionLoad: Number(document.querySelector("#game canvas")?.dataset.suspensionLoad ?? 0),
     suspensionTravel: Number(document.querySelector("#game canvas")?.dataset.suspensionTravel ?? 0),
     suspensionVelocity: Number(document.querySelector("#game canvas")?.dataset.suspensionVelocity ?? 0),
@@ -410,6 +413,9 @@ async function checkDesktop(browser) {
     tirePressureVisual: Number(document.querySelector("#game canvas")?.dataset.tirePressureVisual ?? 0),
     tireContactPatchVisual: Number(document.querySelector("#game canvas")?.dataset.tireContactPatchVisual ?? 0),
     tirePressureVisualLoad: Number(document.querySelector("#game canvas")?.dataset.tirePressureVisualLoad ?? 0),
+    roadTextureVisualLoad: Number(document.querySelector("#game canvas")?.dataset.roadTextureVisualLoad ?? 0),
+    chassisHeaveVisual: Number(document.querySelector("#game canvas")?.dataset.chassisHeaveVisual ?? 0),
+    rideSettlingVisual: Number(document.querySelector("#game canvas")?.dataset.rideSettlingVisual ?? 0),
     counterSteerVisualLoad: Number(document.querySelector("#game canvas")?.dataset.counterSteerVisualLoad ?? 0),
     slipRecoveryVisual: Number(document.querySelector("#game canvas")?.dataset.slipRecoveryVisual ?? 0),
     chassisStabilityVisual: Number(document.querySelector("#game canvas")?.dataset.chassisStabilityVisual ?? 0),
@@ -839,6 +845,12 @@ async function checkDesktop(browser) {
   assert(state.roadCompression >= -0.3 && state.roadCompression <= 0.3, `desktop road compression telemetry was invalid: ${state.roadCompression}`);
   assert(state.roadFeelFeedback >= 0 && state.roadFeelFeedback <= 1, `desktop road feel feedback telemetry was invalid: ${state.roadFeelFeedback}`);
   assert(state.roadFeelFeedback > 0.025, `desktop road feel feedback stayed too quiet: ${state.roadFeelFeedback}`);
+  assert(state.roadTextureLoad >= 0 && state.roadTextureLoad <= 1, `desktop road texture telemetry was invalid: ${state.roadTextureLoad}`);
+  assert(state.chassisHeave >= -0.25 && state.chassisHeave <= 0.25, `desktop chassis heave telemetry was invalid: ${state.chassisHeave}`);
+  assert(state.rideSettling >= 0 && state.rideSettling <= 1, `desktop ride settling telemetry was invalid: ${state.rideSettling}`);
+  assert(state.roadTextureVisualLoad >= 0 && state.roadTextureVisualLoad <= 1, `desktop road texture visual load was invalid: ${state.roadTextureVisualLoad}`);
+  assert(state.chassisHeaveVisual >= -0.25 && state.chassisHeaveVisual <= 0.25, `desktop chassis heave visual load was invalid: ${state.chassisHeaveVisual}`);
+  assert(state.rideSettlingVisual >= 0 && state.rideSettlingVisual <= 1, `desktop ride settling visual load was invalid: ${state.rideSettlingVisual}`);
   assert(state.suspensionLoad > 0.45 && state.suspensionLoad < 1.7, `desktop suspension load telemetry was invalid: ${state.suspensionLoad}`);
   assert(state.suspensionTravel > -0.35 && state.suspensionTravel < 0.45, `desktop suspension travel telemetry was invalid: ${state.suspensionTravel}`);
   assert(Number.isFinite(state.chassisPitch), "desktop chassis pitch telemetry was missing");

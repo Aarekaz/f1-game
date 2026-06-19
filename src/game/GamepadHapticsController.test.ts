@@ -32,6 +32,9 @@ const baseTelemetry = {
   slipRecovery: 0,
   chassisStability: 1,
   roadFeelFeedback: 0,
+  roadTextureLoad: 0,
+  chassisHeave: 0,
+  rideSettling: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
   aeroBalance: 0,
@@ -221,6 +224,19 @@ describe("raceHapticEffect", () => {
     const loaded = raceHapticEffect({
       ...baseTelemetry,
       roadFeelFeedback: 0.62
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns ride settling into fine surface texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      roadTextureLoad: 0.46,
+      chassisHeave: 0.07,
+      rideSettling: 0.3
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

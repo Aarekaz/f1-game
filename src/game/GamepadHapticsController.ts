@@ -32,6 +32,9 @@ type HapticTelemetry = Pick<
   | "slipRecovery"
   | "chassisStability"
   | "roadFeelFeedback"
+  | "roadTextureLoad"
+  | "chassisHeave"
+  | "rideSettling"
   | "tireGroundContact"
   | "rearTractionRotation"
   | "aeroBalance"
@@ -104,6 +107,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.slipRecovery * 0.34,
       Math.max(0, 1 - telemetry.chassisStability) * 0.6,
       telemetry.roadFeelFeedback * 0.46,
+      telemetry.roadTextureLoad * 0.48,
+      Math.abs(telemetry.chassisHeave) * 1.18,
+      telemetry.rideSettling * 0.38,
       telemetry.damperImpulse * 0.7,
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.52,
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
@@ -116,6 +122,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
   const roadTexture = clamp01(
       telemetry.surfaceRumble * 0.64 +
       telemetry.roadFeelFeedback * 0.48 +
+      telemetry.roadTextureLoad * 0.58 +
+      Math.abs(telemetry.chassisHeave) * 0.9 +
+      telemetry.rideSettling * 0.42 +
       telemetry.damperImpulse * 0.5 +
       Math.abs(telemetry.suspensionVelocity) * 0.18 +
       telemetry.tirePressureLoad * 0.2 +
@@ -162,6 +171,9 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.slipRecovery * 0.08 +
       Math.max(0, 1 - telemetry.chassisStability) * 0.16 +
       telemetry.roadFeelFeedback * 0.16 +
+      telemetry.roadTextureLoad * 0.18 +
+      Math.abs(telemetry.chassisHeave) * 0.26 +
+      telemetry.rideSettling * 0.14 +
       telemetry.damperImpulse * 0.18 +
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.16 +
       Math.abs(telemetry.splitSurfaceLoad) * 0.14 +
