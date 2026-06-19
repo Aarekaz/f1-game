@@ -64,6 +64,7 @@ export type RaceTelemetry = {
   chassisStability: number;
   roadAlignment: number;
   roadCamber: number;
+  roadCamberLoad: number;
   roadGrade: number;
   roadLoad: number;
   roadCompression: number;
@@ -379,6 +380,7 @@ export class SimcadeRaceModel {
   private slipRecovery = 0;
   private chassisStability = 1;
   private roadAlignment = 1;
+  private roadCamberLoad = 0;
   private roadGrade = 0;
   private roadLoad = 1;
   private roadCompression = 0;
@@ -570,6 +572,7 @@ export class SimcadeRaceModel {
       chassisStability: this.chassisStability,
       roadAlignment: this.roadAlignment,
       roadCamber: surfaceBankAt(carLateral, track),
+      roadCamberLoad: this.roadCamberLoad,
       roadGrade: this.roadGrade,
       roadLoad: this.roadLoad,
       roadCompression: this.roadCompression,
@@ -830,6 +833,7 @@ export class SimcadeRaceModel {
     this.slipRecovery = 0;
     this.chassisStability = 1;
     this.roadAlignment = 1;
+    this.roadCamberLoad = 0;
     this.roadGrade = 0;
     this.roadLoad = 1;
     this.roadCompression = 0;
@@ -1819,6 +1823,19 @@ export class SimcadeRaceModel {
 
     const cornerLoad = Math.abs(track.curve) * speedRatio * (3.2 + track.section.difficulty * 1.2);
     const camberLoad = Math.abs(roadCamber) * (0.16 + speedRatio * 0.2);
+    const roadCamberLoadTarget = clamp(
+      Math.abs(roadCamber) *
+        (0.24 + speedRatio * 1.4) *
+        clamp(0.44 + this.tireGroundContact * 0.42 + this.roadAdhesion * 0.24, 0.35, 1.08) *
+        (onTrack ? 1 : 0.42 + this.tireContactGrip * 0.3),
+      0,
+      1
+    );
+    this.roadCamberLoad = approach(
+      this.roadCamberLoad,
+      roadCamberLoadTarget,
+      dt * (roadCamberLoadTarget > this.roadCamberLoad ? 10.5 : 4.8)
+    );
     const textureExcitationTarget = clamp(
       contactRoughness * speedRatio * 0.42 +
         this.surfaceEdgeLoad * 0.24 +
@@ -1971,6 +1988,7 @@ export class SimcadeRaceModel {
         this.roadTextureLoad * 0.24 +
         Math.abs(this.chassisHeave) * 0.38 +
         this.rideSettling * 0.18 +
+        this.roadCamberLoad * 0.2 +
         Math.abs(roadCamber) * speedRatio * 0.12,
       0,
       1
@@ -2396,6 +2414,7 @@ export class SimcadeRaceModel {
         this.axleLoadSaturation * 0.16 +
         this.controlActuationLoad * 0.12 +
         steeringRatioLoad * 0.08 +
+        this.roadCamberLoad * 0.08 +
         this.tirePressureLoad * 0.12 +
         Math.max(0, 1 - this.tireContactPatch) * 0.08 +
         Math.max(0, 1 - this.chassisStability) * 0.12 -
@@ -2428,6 +2447,7 @@ export class SimcadeRaceModel {
           lateralLoadStress * 0.12 +
           this.axleLoadSaturation * 0.12 +
           steeringRatioLoad * 0.18 +
+          this.roadCamberLoad * 0.1 +
           this.frontAxleLoad * 0.08) *
         (onTrack ? 1 : 0.45 + this.tireContactGrip * 0.35) *
         clamp(1.08 - this.wheelspin * 0.18 - this.lockup * 0.24, 0.54, 1.08) +
@@ -2739,6 +2759,7 @@ export class SimcadeRaceModel {
     this.slipRecovery = 0;
     this.chassisStability = 1;
     this.roadAlignment = Math.max(this.roadAlignment, 0.88);
+    this.roadCamberLoad = 0;
     this.roadLoad = Math.max(this.roadLoad, 0.92);
     this.roadCompression = 0;
     this.roadFeelFeedback = 0;

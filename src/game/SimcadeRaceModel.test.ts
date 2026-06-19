@@ -817,6 +817,8 @@ describe("SimcadeRaceModel", () => {
     }
 
     expect(Math.abs(cleanCamber.roadCamber)).toBeGreaterThan(0.02);
+    expect(cleanCamber.roadCamberLoad).toBeGreaterThan(0.015);
+    expect(cleanCamber.roadFeelFeedback).toBeGreaterThan(0.01);
     expect(Math.abs(cleanCamber.splitSurfaceLoad)).toBeLessThan(0.08);
   });
 
@@ -1232,6 +1234,7 @@ describe("SimcadeRaceModel", () => {
     const after = run(model, 1.2, { throttle: 1 });
 
     expect(Math.abs(before.roadCamber)).toBeGreaterThan(0.02);
+    expect(before.roadCamberLoad).toBeGreaterThan(0.015);
     expect(Math.sign(after.carX - before.carX)).toBe(-bankSign);
     expect(Math.abs(after.car.roll)).toBeGreaterThan(0.005);
   });
@@ -2132,6 +2135,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.chassisStability).toBe(1);
     expect(telemetry.roadAlignment).toBe(1);
     expect(telemetry.roadCamber).toBe(0);
+    expect(telemetry.roadCamberLoad).toBe(0);
     expect(telemetry.roadGrade).toBe(0);
     expect(telemetry.roadLoad).toBe(1);
     expect(telemetry.roadCompression).toBe(0);
