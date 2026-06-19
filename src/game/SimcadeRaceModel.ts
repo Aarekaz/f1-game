@@ -124,6 +124,7 @@ export type RaceTelemetry = {
   thresholdBraking: number;
   liftOffRotationLoad: number;
   throttlePickupLoad: number;
+  powerUndersteerLoad: number;
   pedalOverlapLoad: number;
   powerState: string;
   tireTemp: number;
@@ -417,6 +418,7 @@ export class SimcadeRaceModel {
   private thresholdBraking = 0;
   private liftOffRotationLoad = 0;
   private throttlePickupLoad = 0;
+  private powerUndersteerLoad = 0;
   private pedalOverlapLoad = 0;
   private tireTemp = 0.52;
   private tireWear = 0;
@@ -622,6 +624,7 @@ export class SimcadeRaceModel {
       thresholdBraking: this.thresholdBraking,
       liftOffRotationLoad: this.liftOffRotationLoad,
       throttlePickupLoad: this.throttlePickupLoad,
+      powerUndersteerLoad: this.powerUndersteerLoad,
       pedalOverlapLoad: this.pedalOverlapLoad,
       powerState: this.powerState(),
       tireTemp: this.tireTemp,
@@ -767,6 +770,7 @@ export class SimcadeRaceModel {
     this.thresholdBraking = 0;
     this.liftOffRotationLoad = 0;
     this.throttlePickupLoad = 0;
+    this.powerUndersteerLoad = 0;
     this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
@@ -1234,7 +1238,31 @@ export class SimcadeRaceModel {
     );
     const lateralLoad = Math.abs(this.lateralLoadTransfer);
     const lateralLoadStress = Math.max(0, lateralLoad - 0.3);
-    const frontLoadGrip = clamp(0.9 + this.frontAxleLoad * 0.1 - Math.max(0, this.frontAxleLoad - 1.18) * 0.22, 0.82, 1.06);
+    const powerUndersteerSpeedWindow = clamp((this.speed - 72) / 126, 0, 1);
+    const powerUndersteerTarget = clamp(
+      throttle *
+        Math.abs(steer) *
+        speedRatio *
+        powerUndersteerSpeedWindow *
+        (0.24 + cornerDemand * 0.54 + overspeed * 0.34) *
+        (0.58 + Math.max(0, -this.longitudinalLoadTransfer) * 0.76 + this.throttlePickupLoad * 0.48 + this.tractionBite * 0.22) *
+        (1 - brake * 0.84) *
+        (1 - this.trailBraking * 0.38) *
+        clamp(1.05 - this.frontAeroLoad * 0.18 - Math.max(0, this.longitudinalLoadTransfer) * 0.26, 0.58, 1.05) *
+        (onTrack ? 1 : 0.48 + this.tireContactGrip * 0.34),
+      0,
+      1
+    );
+    this.powerUndersteerLoad = approach(
+      this.powerUndersteerLoad,
+      powerUndersteerTarget,
+      dt * (powerUndersteerTarget > this.powerUndersteerLoad ? 10.5 : 4.2)
+    );
+    const frontLoadGrip = clamp(
+      0.9 + this.frontAxleLoad * 0.1 - Math.max(0, this.frontAxleLoad - 1.18) * 0.22 - this.powerUndersteerLoad * 0.03,
+      0.8,
+      1.06
+    );
     const rearLoadGrip = clamp(0.88 + this.rearAxleLoad * 0.12 - Math.max(0, this.rearAxleLoad - 1.16) * 0.18, 0.82, 1.07);
     const pressureGripFactor = clamp(0.94 + this.tireContactPatch * 0.08 - this.tirePressureLoad * 0.035, 0.9, 1.04);
     const rearTractionSupport = clamp(
@@ -1548,6 +1576,7 @@ export class SimcadeRaceModel {
           this.tireSaturation * 0.52 +
           Math.max(0, 1 - this.tireGroundContact) * 0.18 +
           this.tireRelaxation * 0.1 +
+          this.powerUndersteerLoad * 0.52 +
           Math.abs(this.rearTractionRotation) * 0.08 +
           this.frontLockRisk * 0.36 +
           Math.max(0, -this.aeroBalance) * 0.34 +
@@ -1930,6 +1959,7 @@ export class SimcadeRaceModel {
             bankingSupport -
             wetPenalty -
             dirtyAirPenalty -
+            this.powerUndersteerLoad * (0.015 + speedRatio * 0.018) -
             this.tireRelaxation * 0.035 -
             this.floorStrikeLoad * 0.045,
           0.34,
@@ -2161,6 +2191,7 @@ export class SimcadeRaceModel {
         this.steeringRackLoad * 0.08 +
         this.steeringImpulse * 0.16 +
         Math.abs(this.steeringVelocity) * 0.06 +
+        this.powerUndersteerLoad * 0.18 +
         this.lockup * 0.22 +
         this.frontLockRisk * 0.16 +
         this.wheelspin * 0.18 +
@@ -2196,6 +2227,7 @@ export class SimcadeRaceModel {
     const steeringSlipLimit = clamp(
       this.grip -
         this.understeer * 0.24 -
+        this.powerUndersteerLoad * 0.06 -
         this.lockup * 0.12 -
         this.tireSaturation * 0.2 -
         this.tireRelaxation * 0.07 -
@@ -2247,7 +2279,7 @@ export class SimcadeRaceModel {
       this.roadAdhesion *
       rollingSteerFactor *
       brakeSteeringRelease *
-      clamp(1 - this.steeringRackLoad * 0.03 - this.steeringImpulse * 0.008, 0.94, 1);
+      clamp(1 - this.powerUndersteerLoad * 0.035 - this.steeringRackLoad * 0.03 - this.steeringImpulse * 0.008, 0.92, 1);
     const lateralIntent =
       Math.sin(this.heading) * metersPerSecond * chassisTravelBlend +
       steeringSideForce +
@@ -2308,6 +2340,7 @@ export class SimcadeRaceModel {
         this.damperImpulse * 0.12 +
         this.surfaceEdgeLoad * 0.08 +
         Math.abs(this.splitSurfaceLoad) * 0.12 +
+        this.powerUndersteerLoad * 0.12 +
         this.throttlePickupLoad * 0.1 +
         Math.abs(this.rearTractionRotation) * 0.12 +
         this.liftOffRotationLoad * 0.11 +
@@ -2583,6 +2616,7 @@ export class SimcadeRaceModel {
     this.thresholdBraking = 0;
     this.liftOffRotationLoad = 0;
     this.throttlePickupLoad = 0;
+    this.powerUndersteerLoad = 0;
     this.pedalOverlapLoad = 0;
     this.rearTractionRotation = 0;
     this.driveTorqueLoad = 0;
@@ -3295,6 +3329,7 @@ export class SimcadeRaceModel {
     if (this.shiftCut > 0.32) return "Shift cut";
     if (this.engineBraking > 0.11) return "Engine braking";
     if (this.throttlePickupLoad > 0.12) return "Throttle pickup";
+    if (this.powerUndersteerLoad > 0.12) return "Power understeer";
     if (this.pedalOverlapLoad > 0.18) return "Pedal overlap";
     if (this.trailBraking > 0.08) return "Trail braking";
     if (this.thresholdBraking > 0.16) return "Threshold braking";

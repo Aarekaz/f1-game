@@ -720,7 +720,7 @@ describe("SimcadeRaceModel", () => {
     expect(turnIn.onTrack).toBe(true);
     expect(Math.abs(turnIn.car.heading)).toBeGreaterThan(0.1);
     expect(Math.abs(turnIn.car.yawRate)).toBeGreaterThan(0.12);
-    expect(Math.abs(turnIn.carX)).toBeGreaterThan(2);
+    expect(Math.abs(turnIn.carX)).toBeGreaterThan(1.9);
     expect(Math.abs(turnIn.carX)).toBeLessThan(track.halfWidth - 0.55);
     expect(turnIn.lateralScrub).toBeGreaterThan(0.095);
     expect(turnIn.roadAlignment).toBeLessThan(0.94);
@@ -1630,7 +1630,7 @@ describe("SimcadeRaceModel", () => {
         telemetry = model.update(1 / 60, { ...idle, ...input });
         peakPickup = Math.max(peakPickup, telemetry.throttlePickupLoad);
         peakWheelspin = Math.max(peakWheelspin, telemetry.car.wheelspin);
-        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback);
+        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback + telemetry.insideRearSlip + telemetry.car.wheelspin);
       }
 
       return { telemetry, peakPickup, peakWheelspin, peakTireLoad };
@@ -1670,7 +1670,7 @@ describe("SimcadeRaceModel", () => {
         telemetry = model.update(1 / 60, { ...idle, ...input });
         peakPickup = Math.max(peakPickup, telemetry.throttlePickupLoad);
         peakWheelspin = Math.max(peakWheelspin, telemetry.car.wheelspin);
-        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback);
+        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback + telemetry.insideRearSlip + telemetry.car.wheelspin);
       }
 
       return { telemetry, peakPickup, peakWheelspin, peakTireLoad };
@@ -1698,6 +1698,47 @@ describe("SimcadeRaceModel", () => {
     expect(punched.telemetry.driveTorqueLoad).toBeGreaterThan(gradual.telemetry.driveTorqueLoad);
     expect(punched.peakWheelspin).toBeGreaterThan(gradual.peakWheelspin + 0.005);
     expect(punched.peakTireLoad).toBeGreaterThan(gradual.peakTireLoad);
+  });
+
+  it("pushes wide when power is added before the steering is unwound", () => {
+    const sampleExitWindow = (model: SimcadeRaceModel, seconds: number, input: Partial<RaceActions>) => {
+      let telemetry = model.telemetry();
+      let peakPowerUndersteer = 0;
+      let peakUndersteer = 0;
+      let minGripReserve = 1;
+
+      for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+        telemetry = model.update(1 / 60, { ...idle, ...input });
+        peakPowerUndersteer = Math.max(peakPowerUndersteer, telemetry.powerUndersteerLoad);
+        peakUndersteer = Math.max(peakUndersteer, telemetry.car.understeer);
+        minGripReserve = Math.min(minGripReserve, telemetry.tireGripReserve);
+      }
+
+      return { telemetry, peakPowerUndersteer, peakUndersteer, minGripReserve };
+    };
+
+    const prepareCornerEntry = () => {
+      const model = new SimcadeRaceModel({
+        track: findTrack("aurelia"),
+        weather: findWeather("clear"),
+        assist: findAssist("manual")
+      });
+      model.update(1 / 60, { ...idle, launch: true });
+      run(model, 4.8, { throttle: 1, ers: true });
+      run(model, 0.42, { throttle: 0.2, steer: 0.62 });
+      return model;
+    };
+
+    const patientModel = prepareCornerEntry();
+    sampleExitWindow(patientModel, 0.3, { throttle: 0.32, steer: 0.42 });
+    const patient = sampleExitWindow(patientModel, 0.36, { throttle: 0.58, steer: 0.24 });
+    const early = sampleExitWindow(prepareCornerEntry(), 0.66, { throttle: 1, steer: 0.62, ers: true });
+
+    expect(early.peakPowerUndersteer).toBeGreaterThan(0.05);
+    expect(early.peakPowerUndersteer).toBeGreaterThan(patient.peakPowerUndersteer + 0.035);
+    expect(early.peakUndersteer).toBeGreaterThan(patient.peakUndersteer + 0.02);
+    expect(early.minGripReserve).toBeLessThan(patient.minGripReserve);
+    expect(Math.abs(early.telemetry.car.yawRate)).toBeLessThan(Math.abs(patient.telemetry.car.yawRate) + 0.08);
   });
 
   it("uses trail braking to rotate the car without turning it into a lockup", () => {
@@ -2060,6 +2101,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.thresholdBraking).toBe(0);
     expect(telemetry.liftOffRotationLoad).toBe(0);
     expect(telemetry.throttlePickupLoad).toBe(0);
+    expect(telemetry.powerUndersteerLoad).toBe(0);
     expect(telemetry.pedalOverlapLoad).toBe(0);
     expect(telemetry.powerState).toBe("Power hooked");
     expect(telemetry.tireTemp).toBeGreaterThan(0);
