@@ -301,6 +301,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.steeringRackLoad = telemetry.steeringRackLoad.toFixed(3);
     this.renderer.domElement.dataset.steeringVelocity = telemetry.steeringVelocity.toFixed(3);
     this.renderer.domElement.dataset.steeringImpulse = telemetry.steeringImpulse.toFixed(3);
+    this.renderer.domElement.dataset.controlActuationLoad = telemetry.controlActuationLoad.toFixed(3);
     this.renderer.domElement.dataset.selfAlignTorque = telemetry.selfAlignTorque.toFixed(3);
     this.renderer.domElement.dataset.yawInertiaLoad = telemetry.yawInertiaLoad.toFixed(3);
     this.renderer.domElement.dataset.yawDamping = telemetry.yawDamping.toFixed(3);
@@ -564,6 +565,7 @@ export class ThreeRaceRenderer {
           telemetry.slipRecovery * 0.18 +
           Math.max(0, 1 - telemetry.chassisStability) * 0.22 +
           telemetry.steeringImpulse * 0.24 +
+          telemetry.controlActuationLoad * 0.12 +
           Math.abs(telemetry.steeringVelocity) * 0.12 +
           telemetry.tirePressureLoad * 0.2 +
           telemetry.pedalOverlapLoad * 0.18 +
@@ -584,6 +586,7 @@ export class ThreeRaceRenderer {
       steeringRackLoad: telemetry.steeringRackLoad,
       steeringVelocity: telemetry.steeringVelocity,
       steeringImpulse: telemetry.steeringImpulse,
+      controlActuationLoad: telemetry.controlActuationLoad,
       selfAlignTorque: telemetry.selfAlignTorque,
       yawInertiaLoad: telemetry.yawInertiaLoad,
       yawDamping: telemetry.yawDamping,
@@ -999,6 +1002,7 @@ export class ThreeRaceRenderer {
         steeringRackLoad: 0,
         steeringVelocity: 0,
         steeringImpulse: 0,
+        controlActuationLoad: 0,
         selfAlignTorque: 0,
         yawInertiaLoad: 0,
         yawDamping: 1,
@@ -1571,6 +1575,7 @@ export class ThreeRaceRenderer {
       steeringRackLoad: number;
       steeringVelocity: number;
       steeringImpulse: number;
+      controlActuationLoad: number;
       selfAlignTorque: number;
       yawInertiaLoad: number;
       yawDamping: number;
@@ -1594,6 +1599,7 @@ export class ThreeRaceRenderer {
     const steeringRackLoad = clamp(state.steeringRackLoad, 0, 1);
     const steeringVelocity = clamp(state.steeringVelocity, -1, 1);
     const steeringImpulse = clamp(state.steeringImpulse, 0, 1);
+    const controlActuationLoad = clamp(state.controlActuationLoad, 0, 1);
     const selfAlignTorque = clamp(state.selfAlignTorque, -1, 1);
     const yawInertiaLoad = clamp(state.yawInertiaLoad, 0, 1);
     const yawDamping = clamp(state.yawDamping, 0.2, 1.2);
@@ -1632,6 +1638,7 @@ export class ThreeRaceRenderer {
         liftOffRotationLoad * 0.08 +
         throttlePickupLoad * 0.08 +
         powerUndersteerLoad * 0.09 +
+        controlActuationLoad * 0.05 +
         axleLoadSaturation * 0.07,
       0,
       1
@@ -1681,6 +1688,7 @@ export class ThreeRaceRenderer {
       const cornerLoad = clamp(
           tireLoad * 0.58 +
           axleLoadSaturation * 0.08 +
+          controlActuationLoad * 0.05 +
           combinedSlipLoad * 0.16 +
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
@@ -1718,6 +1726,7 @@ export class ThreeRaceRenderer {
         rideSettling * 0.003 +
         combinedSlipLoad * 0.008 +
         axleLoadSaturation * 0.01 +
+        controlActuationLoad * 0.006 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
         tirePressureLoad * 0.012 +
         Math.max(0, 1 - tireContactPatch) * 0.018 +
@@ -1775,6 +1784,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.rideSettlingVisual = rideSettling.toFixed(3);
       this.renderer.domElement.dataset.steeringVelocityVisual = steeringVelocity.toFixed(3);
       this.renderer.domElement.dataset.steeringImpulseVisual = steeringImpulse.toFixed(3);
+      this.renderer.domElement.dataset.controlActuationVisualLoad = controlActuationLoad.toFixed(3);
       this.renderer.domElement.dataset.counterSteerVisualLoad = counterSteerLoad.toFixed(3);
       this.renderer.domElement.dataset.slipRecoveryVisual = slipRecovery.toFixed(3);
       this.renderer.domElement.dataset.chassisStabilityVisual = chassisStability.toFixed(3);

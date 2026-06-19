@@ -29,6 +29,7 @@ const baseTelemetry = {
   steeringRackLoad: 0,
   steeringVelocity: 0,
   steeringImpulse: 0,
+  controlActuationLoad: 0,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
@@ -230,6 +231,17 @@ describe("raceHapticEffect", () => {
       ...baseTelemetry,
       steeringVelocity: 0.48,
       steeringImpulse: 0.36
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns control actuation load into quick input texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      controlActuationLoad: 0.42
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

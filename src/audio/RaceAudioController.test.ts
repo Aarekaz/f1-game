@@ -30,6 +30,7 @@ const baseTelemetry = {
   steeringRackLoad: 0,
   steeringVelocity: 0,
   steeringImpulse: 0,
+  controlActuationLoad: 0,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
@@ -223,6 +224,18 @@ describe("raceAudioMix", () => {
       speedKph: 205,
       steeringVelocity: -0.46,
       steeringImpulse: 0.38
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from control actuation load", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 195,
+      controlActuationLoad: 0.42
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
