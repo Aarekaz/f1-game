@@ -46,6 +46,7 @@ const baseTelemetry = {
   chassisHeave: 0,
   rideSettling: 0,
   tireGroundContact: 1,
+  longitudinalSlipLoad: 0,
   rearTractionRotation: 0,
   liftOffRotationLoad: 0,
   throttlePickupLoad: 0,
@@ -378,6 +379,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 210,
       pedalPressureLoad: 0.46
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from longitudinal slip", () => {
+    const clean = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 205,
+      longitudinalSlipLoad: 0.5
     });
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);

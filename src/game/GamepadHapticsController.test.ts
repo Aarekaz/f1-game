@@ -45,6 +45,7 @@ const baseTelemetry = {
   chassisHeave: 0,
   rideSettling: 0,
   tireGroundContact: 1,
+  longitudinalSlipLoad: 0,
   rearTractionRotation: 0,
   liftOffRotationLoad: 0,
   throttlePickupLoad: 0,
@@ -380,6 +381,18 @@ describe("raceHapticEffect", () => {
       ...baseTelemetry,
       speedKph: 210,
       pedalPressureLoad: 0.46
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns longitudinal slip into tire texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      longitudinalSlipLoad: 0.5
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

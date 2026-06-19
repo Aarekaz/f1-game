@@ -14,6 +14,7 @@ type AudioTelemetry = Pick<
   | "ers"
   | "gear"
   | "tireLoadFeedback"
+  | "longitudinalSlipLoad"
   | "axleLoadSaturation"
   | "combinedSlipLoad"
   | "tireGripReserve"
@@ -99,6 +100,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.car.lockup * 0.9,
       telemetry.car.understeer * 0.5,
       telemetry.tireLoadFeedback * 0.84,
+      telemetry.longitudinalSlipLoad * 0.58,
       telemetry.axleLoadSaturation * 0.58,
       telemetry.combinedSlipLoad * 0.56,
       Math.max(0, 1 - telemetry.tireGripReserve) * 0.48,
@@ -159,6 +161,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       260 +
       speed * 740 +
       telemetry.tireLoadFeedback * 160 +
+      telemetry.longitudinalSlipLoad * 105 +
       telemetry.axleLoadSaturation * 96 +
       telemetry.combinedSlipLoad * 82 +
       Math.max(0, 1 - telemetry.tireGripReserve) * 68 +
@@ -206,6 +209,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
     tireGain: racing
       ? slip * 0.055 +
         telemetry.tireLoadFeedback * 0.018 +
+        telemetry.longitudinalSlipLoad * 0.013 +
         telemetry.axleLoadSaturation * 0.012 +
         telemetry.combinedSlipLoad * 0.01 +
         Math.max(0, 1 - telemetry.tireGripReserve) * 0.008 +

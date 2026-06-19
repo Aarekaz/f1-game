@@ -285,6 +285,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.velocityYaw = telemetry.velocityYaw.toFixed(3);
     this.renderer.domElement.dataset.forwardBite = telemetry.forwardBite.toFixed(3);
     this.renderer.domElement.dataset.longitudinalGrip = telemetry.longitudinalGrip.toFixed(3);
+    this.renderer.domElement.dataset.longitudinalSlipLoad = telemetry.longitudinalSlipLoad.toFixed(3);
     this.renderer.domElement.dataset.tireContactGrip = telemetry.tireContactGrip.toFixed(3);
     this.renderer.domElement.dataset.tireRunoffShare = telemetry.tireRunoffShare.toFixed(3);
     this.renderer.domElement.dataset.tireGroundContact = telemetry.tireGroundContact.toFixed(3);
@@ -545,6 +546,7 @@ export class ThreeRaceRenderer {
       throttlePickupLoad: telemetry.throttlePickupLoad,
       powerUndersteerLoad: telemetry.powerUndersteerLoad,
       tireResponseLoad: telemetry.tireResponseLoad,
+      longitudinalSlipLoad: telemetry.longitudinalSlipLoad,
       lateralLoadTransfer: telemetry.lateralLoadTransfer,
       suspensionTravel: telemetry.suspensionTravel,
       damperImpulse: telemetry.damperImpulse,
@@ -997,6 +999,7 @@ export class ThreeRaceRenderer {
         throttlePickupLoad: 0,
         powerUndersteerLoad: 0,
         tireResponseLoad: 0,
+        longitudinalSlipLoad: 0,
         lateralLoadTransfer: rival.heading * -0.12,
         suspensionTravel: 0,
         damperImpulse: 0,
@@ -1574,6 +1577,7 @@ export class ThreeRaceRenderer {
       throttlePickupLoad: number;
       powerUndersteerLoad: number;
       tireResponseLoad: number;
+      longitudinalSlipLoad: number;
       lateralLoadTransfer: number;
       suspensionTravel: number;
       damperImpulse: number;
@@ -1603,7 +1607,8 @@ export class ThreeRaceRenderer {
       instrument: boolean;
     }
   ) {
-    const spin = -state.distance * 3.2 - state.wheelspin * 1.4;
+    const longitudinalSlipLoad = clamp(state.longitudinalSlipLoad, 0, 1);
+    const spin = -state.distance * 3.2 - state.wheelspin * 1.4 - longitudinalSlipLoad * 0.7;
     const steerAngle = clamp(state.steering, -0.42, 0.42);
     const brakeGlow = clamp(state.braking * clamp(state.speedKph / 180, 0, 1), 0, 1);
     const wheelBlur = clamp((state.speedKph - 72) / 165 + state.wheelspin * 0.3, 0, 1);
@@ -1663,6 +1668,7 @@ export class ThreeRaceRenderer {
         throttlePickupLoad * 0.08 +
         powerUndersteerLoad * 0.09 +
         tireResponseLoad * 0.08 +
+        longitudinalSlipLoad * 0.06 +
         controlActuationLoad * 0.05 +
         pedalPressureLoad * 0.06 +
         roadCamberLoad * 0.04 +
@@ -1717,6 +1723,7 @@ export class ThreeRaceRenderer {
           axleLoadSaturation * 0.08 +
           controlActuationLoad * 0.05 +
           pedalPressureLoad * 0.05 +
+          longitudinalSlipLoad * 0.06 +
           combinedSlipLoad * 0.16 +
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
@@ -1770,6 +1777,7 @@ export class ThreeRaceRenderer {
         throttlePickupLoad * 0.01 +
         powerUndersteerLoad * 0.012 +
         tireResponseLoad * 0.008 +
+        longitudinalSlipLoad * 0.008 +
         counterSteerLoad * 0.01 +
         Math.max(0, 1 - chassisStability) * 0.014 -
         slipRecovery * 0.006 +
@@ -1812,6 +1820,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tireContactPatchVisual = tireContactPatch.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisualLoad = tirePressureLoad.toFixed(3);
       this.renderer.domElement.dataset.tireResponseVisualLoad = tireResponseLoad.toFixed(3);
+      this.renderer.domElement.dataset.longitudinalSlipVisualLoad = longitudinalSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.roadCamberVisualLoad = roadCamberLoad.toFixed(3);
       this.renderer.domElement.dataset.roadTextureVisualLoad = roadTextureLoad.toFixed(3);
       this.renderer.domElement.dataset.floorStrikeVisualLoad = floorStrikeLoad.toFixed(3);
