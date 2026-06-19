@@ -1595,7 +1595,7 @@ export class ThreeRaceRenderer {
           slipRecovery * 0.08 +
           tirePressureLoad * 0.1 -
           Math.max(0, 1 - tireContactPatch) * 0.16 +
-          steeringImpulse * 0.08 +
+          steeringImpulse * 0.012 +
           side * Math.sign(state.steering || selfAlignTorque || 1) * yawInertiaLoad * 0.18 +
           damperImpulse * 0.08 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.24 +
@@ -1604,7 +1604,7 @@ export class ThreeRaceRenderer {
         0,
         1
       );
-      const squash =
+      const rawSquash =
         cornerLoad * 0.115 +
         surfaceKick * 0.018 +
         roadTextureLoad * 0.004 +
@@ -1623,8 +1623,8 @@ export class ThreeRaceRenderer {
         (wheelName.startsWith("rear") ? differentialLock * 0.008 + insideRearSlip * 0.014 : 0) +
         (wheelName.startsWith("front") ? frontLockRisk * 0.014 : rearBrakeLightness * 0.008) +
         yawInertiaLoad * 0.01 +
-        steeringImpulse * 0.008 +
-        (wheelName.startsWith("front") ? steeringRackLoad * 0.012 + Math.abs(steeringVelocity) * 0.008 + (1.2 - yawDamping) * 0.004 : 0);
+        (wheelName.startsWith("front") ? steeringRackLoad * 0.01 + Math.abs(steeringVelocity) * 0.002 + (1.2 - yawDamping) * 0.004 : 0);
+      const squash = Math.min(rawSquash, 0.155);
       maxWheelSquash = Math.max(maxWheelSquash, squash);
       loadedSideBias += side * cornerLoad;
       wheel.rotation.x = spin - (wheelName.startsWith("rear") ? insideRearSlip * (0.55 + Math.max(0, rearInsideBias) * 0.65) : 0);
@@ -2246,7 +2246,15 @@ export class ThreeRaceRenderer {
     dirtyAir: number
   ) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
-    const speedCue = clamp(Math.max(0, speedRatio - 0.4) * 0.54 + slip * 0.1 + braking * 0.045 + draft * 0.18 + dirtyAir * 0.1, 0, 0.42);
+    const speedCue = clamp(
+      Math.max(speedRatio > 0.52 ? 0.09 : 0, Math.max(0, speedRatio - 0.4) * 0.54) +
+        slip * 0.1 +
+        braking * 0.045 +
+        draft * 0.18 +
+        dirtyAir * 0.1,
+      0,
+      0.42
+    );
     if (material) {
       material.opacity = speedCue;
       material.color.set(dirtyAir > 0.2 ? "#d8e0df" : draft > 0.03 ? "#c5fff4" : braking > 0.25 ? "#ffd7c8" : "#f6fff1");
