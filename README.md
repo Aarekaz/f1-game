@@ -237,6 +237,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Vertical tire contact now drops over light crests and recovers under compression/downforce, feeding traction, braking, steering authority, tire noise, haptics, camera float, and chassis motion.
 - Suspension damper impulses now track compression and rebound speed, feeding tire contact, grip, road feel, haptics, tire audio, camera lift, and car body pitch.
 - Floor-seal load now separates clean high-speed ground effect from disrupted ride height, feeding aero texture, haptics, HUD text, renderer telemetry, and a lower planted car stance.
+- Aero yaw stall now catches crossed-up high-speed moments as a shared aero state, feeding HUD text, wind/tire texture, haptics, renderer telemetry, and subtle wing motion.
 - Floor strikes now catch high-speed platform bottoming over kerbs and rough compression, adding drag, aero washout, tire chatter, haptics, HUD feedback, and a lower loaded car stance.
 - Aero balance now splits downforce across front and rear load, with ride height, traffic wash, wing damage, and surface disruption changing high-speed steering, braking, camera motion, sound, and rumble.
 - Aero buffet now turns close dirty air and side-by-side traffic into a shared turbulence signal, feeding steering settle, yaw damping, tire/road feedback, camera motion, wake ribbons, audio, haptics, HUD text, and renderer telemetry.

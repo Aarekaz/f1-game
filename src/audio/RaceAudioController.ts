@@ -62,6 +62,7 @@ type AudioTelemetry = Pick<
   | "aeroBalance"
   | "aeroWashout"
   | "aeroBuffetLoad"
+  | "aeroYawStall"
   | "suspensionVelocity"
   | "damperImpulse"
   | "floorStrikeLoad"
@@ -157,6 +158,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.floorSealLoad * 0.18,
       telemetry.aeroWashout * 0.48,
       telemetry.aeroBuffetLoad * 0.46,
+      telemetry.aeroYawStall * 0.36,
       Math.abs(telemetry.aeroBalance) * 0.24,
       telemetry.surfaceRumble * 0.62
     )
@@ -229,6 +231,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       telemetry.floorSealLoad * 36 +
       telemetry.aeroWashout * 80 +
       telemetry.aeroBuffetLoad * 90 +
+      telemetry.aeroYawStall * 74 +
       Math.abs(telemetry.aeroBalance) * 38 +
       looseSurface * 90,
     tireGain: racing
@@ -282,12 +285,13 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         telemetry.floorSealLoad * 0.004 +
         telemetry.aeroWashout * 0.01 +
         telemetry.aeroBuffetLoad * 0.011 +
+        telemetry.aeroYawStall * 0.008 +
         Math.abs(telemetry.aeroBalance) * 0.004 +
         telemetry.surfaceRumble * 0.018 +
         looseSurface * speed * 0.014
       : 0,
-    windFrequency: 520 + speed * 1800 + telemetry.floorSealLoad * 90,
-    windGain: racing ? Math.pow(speed, 1.65) * (0.052 + telemetry.floorSealLoad * 0.008) : 0,
+    windFrequency: 520 + speed * 1800 + telemetry.floorSealLoad * 90 + telemetry.aeroYawStall * 70,
+    windGain: racing ? Math.pow(speed, 1.65) * (0.052 + telemetry.floorSealLoad * 0.008 + telemetry.aeroYawStall * 0.006) : 0,
     rainFrequency: 1800 + speed * 1800,
     rainGain: racing ? telemetry.rainIntensity * (0.012 + speed * 0.028 + wetness * 0.01) + telemetry.hydroplaneLoad * 0.006 : telemetry.rainIntensity * 0.006,
     ersFrequency: 760 + speed * 620 + rpm * 220,

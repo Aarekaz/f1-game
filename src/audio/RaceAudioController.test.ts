@@ -61,6 +61,7 @@ const baseTelemetry = {
   aeroBalance: 0,
   aeroWashout: 0,
   aeroBuffetLoad: 0,
+  aeroYawStall: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
   floorStrikeLoad: 0,
@@ -539,6 +540,20 @@ describe("raceAudioMix", () => {
 
     expect(washed.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(washed.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds wind and tire texture from aero yaw stall", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const yawed = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 230,
+      aeroYawStall: 0.48
+    });
+
+    expect(yawed.windGain).toBeGreaterThan(tidy.windGain);
+    expect(yawed.windFrequency).toBeGreaterThan(tidy.windFrequency);
+    expect(yawed.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+    expect(yawed.tireGain).toBeGreaterThan(tidy.tireGain);
   });
 
   it("adds wind and tire texture from floor seal load", () => {

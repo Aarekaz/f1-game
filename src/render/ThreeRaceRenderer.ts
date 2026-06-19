@@ -336,6 +336,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.aeroBalance = telemetry.aeroBalance.toFixed(3);
     this.renderer.domElement.dataset.aeroWashout = telemetry.aeroWashout.toFixed(3);
     this.renderer.domElement.dataset.aeroBuffetLoad = telemetry.aeroBuffetLoad.toFixed(3);
+    this.renderer.domElement.dataset.aeroYawStall = telemetry.aeroYawStall.toFixed(3);
     this.renderer.domElement.dataset.frontAxleLoad = telemetry.frontAxleLoad.toFixed(3);
     this.renderer.domElement.dataset.rearAxleLoad = telemetry.rearAxleLoad.toFixed(3);
     this.renderer.domElement.dataset.axleLoadSaturation = telemetry.axleLoadSaturation.toFixed(3);
@@ -573,6 +574,7 @@ export class ThreeRaceRenderer {
           telemetry.roadFeelFeedback * 0.34 +
           telemetry.hydroplaneLoad * 0.16 +
           telemetry.aeroBuffetLoad * 0.12 +
+          telemetry.aeroYawStall * 0.16 +
           telemetry.roadCamberLoad * 0.12 +
           telemetry.roadGuidanceLoad * 0.14 +
           telemetry.damperImpulse * 0.24 +
@@ -612,6 +614,7 @@ export class ThreeRaceRenderer {
       rearAeroLoad: telemetry.rearAeroLoad,
       aeroBalance: telemetry.aeroBalance,
       aeroWashout: telemetry.aeroWashout,
+      aeroYawStall: telemetry.aeroYawStall,
       steeringRackLoad: telemetry.steeringRackLoad,
       steeringVelocity: telemetry.steeringVelocity,
       steeringImpulse: telemetry.steeringImpulse,
@@ -1051,6 +1054,7 @@ export class ThreeRaceRenderer {
         rearAeroLoad: clamp(rival.speedKph / 320, 0, 1) * 0.2,
         aeroBalance: 0,
         aeroWashout: 0,
+        aeroYawStall: 0,
         steeringRackLoad: 0,
         steeringVelocity: 0,
         steeringImpulse: 0,
@@ -1634,6 +1638,7 @@ export class ThreeRaceRenderer {
       rearAeroLoad: number;
       aeroBalance: number;
       aeroWashout: number;
+      aeroYawStall: number;
       steeringRackLoad: number;
       steeringVelocity: number;
       steeringImpulse: number;
@@ -1662,6 +1667,7 @@ export class ThreeRaceRenderer {
     const rearAeroLoad = clamp(state.rearAeroLoad, 0, 1.2);
     const aeroBalance = clamp(state.aeroBalance, -0.6, 0.6);
     const aeroWashout = clamp(state.aeroWashout, 0, 1);
+    const aeroYawStall = clamp(state.aeroYawStall, 0, 1);
     const steeringRackLoad = clamp(state.steeringRackLoad, 0, 1);
     const steeringVelocity = clamp(state.steeringVelocity, -1, 1);
     const steeringImpulse = clamp(state.steeringImpulse, 0, 1);
@@ -1860,14 +1866,15 @@ export class ThreeRaceRenderer {
     loadedSideBias = clamp(loadedSideBias / 4, -1, 1);
 
     if (rearFlap) {
-      rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13 + aeroOpen * 0.24 + aeroWashout * 0.08 - rearAeroLoad * 0.035;
-      rearFlap.position.y = 0.14 - floorSealLoad * 0.018 + aeroWashout * 0.012;
+      rearFlap.rotation.x = -0.12 - state.throttle * 0.05 + state.braking * 0.13 + aeroOpen * 0.24 + aeroWashout * 0.08 + aeroYawStall * 0.055 - rearAeroLoad * 0.035;
+      rearFlap.rotation.z = Math.sin(state.distance * 0.09) * aeroYawStall * 0.035;
+      rearFlap.position.y = 0.14 - floorSealLoad * 0.018 + aeroWashout * 0.012 + aeroYawStall * 0.006;
     }
 
     if (frontWing) {
       frontWing.position.y = 0.16 - frontWingDamage * 0.055 - Math.max(0, aeroBalance) * 0.025 - floorSealLoad * 0.012;
-      frontWing.rotation.x = frontWingDamage * 0.13 - frontAeroLoad * 0.025 + aeroWashout * 0.04;
-      frontWing.rotation.z = Math.sin(state.distance * 0.07) * frontWingDamage * 0.035 + aeroBalance * 0.035;
+      frontWing.rotation.x = frontWingDamage * 0.13 - frontAeroLoad * 0.025 + aeroWashout * 0.04 + aeroYawStall * 0.035;
+      frontWing.rotation.z = Math.sin(state.distance * 0.07) * frontWingDamage * 0.035 + aeroBalance * 0.035 + Math.sin(state.distance * 0.1) * aeroYawStall * 0.025;
       frontWing.scale.x = 1 - frontWingDamage * 0.075;
     }
 
@@ -1879,6 +1886,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
       this.renderer.domElement.dataset.axleLoadSaturationVisual = axleLoadSaturation.toFixed(3);
       this.renderer.domElement.dataset.floorSealVisualLoad = floorSealLoad.toFixed(3);
+      this.renderer.domElement.dataset.aeroYawStallVisualLoad = aeroYawStall.toFixed(3);
       this.renderer.domElement.dataset.outsideTireVisualLoad = outsideTireLoad.toFixed(3);
       this.renderer.domElement.dataset.insideWheelUnloadVisual = insideWheelUnload.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);

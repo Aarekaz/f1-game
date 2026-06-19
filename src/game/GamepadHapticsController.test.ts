@@ -60,6 +60,7 @@ const baseTelemetry = {
   aeroBalance: 0,
   aeroWashout: 0,
   aeroBuffetLoad: 0,
+  aeroYawStall: 0,
   suspensionVelocity: 0,
   damperImpulse: 0,
   floorStrikeLoad: 0,
@@ -534,6 +535,18 @@ describe("raceHapticEffect", () => {
 
     expect(washed?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(washed?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns aero yaw stall into high-speed texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const yawed = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 245,
+      aeroYawStall: 0.48
+    });
+
+    expect(yawed?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(yawed?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 
   it("turns floor seal into planted aero texture", () => {

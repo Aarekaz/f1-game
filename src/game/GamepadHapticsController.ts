@@ -60,6 +60,7 @@ type HapticTelemetry = Pick<
   | "aeroBalance"
   | "aeroWashout"
   | "aeroBuffetLoad"
+  | "aeroYawStall"
   | "suspensionVelocity"
   | "damperImpulse"
   | "floorStrikeLoad"
@@ -161,6 +162,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.floorSealLoad * 0.2,
       telemetry.aeroWashout * 0.5,
       telemetry.aeroBuffetLoad * 0.52,
+      telemetry.aeroYawStall * 0.42,
       Math.abs(telemetry.aeroBalance) * 0.22,
       telemetry.car.braking * 0.16
     )
@@ -208,6 +210,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.chassisStability) * 0.24 +
       telemetry.aeroWashout * 0.24 +
       telemetry.aeroBuffetLoad * 0.2 +
+      telemetry.aeroYawStall * 0.18 +
       Math.abs(telemetry.aeroBalance) * 0.1 +
       surface * 0.34 +
       telemetry.roadWetness * speed * 0.18
@@ -252,6 +255,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.roadFeelFeedback * 0.16 +
       telemetry.hydroplaneLoad * 0.12 +
       telemetry.aeroBuffetLoad * 0.12 +
+      telemetry.aeroYawStall * 0.1 +
       telemetry.roadCamberLoad * 0.1 +
       telemetry.roadGuidanceLoad * 0.11 +
       telemetry.roadTextureLoad * 0.18 +
