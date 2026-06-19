@@ -13,6 +13,7 @@ const baseTelemetry = {
   rainIntensity: 0,
   roadWetness: 0,
   tireLoadFeedback: 0,
+  axleLoadSaturation: 0,
   combinedSlipLoad: 0,
   tireGripReserve: 1,
   tirePressure: 1,
@@ -131,6 +132,18 @@ describe("raceAudioMix", () => {
 
     expect(loaded.tireGain).toBeGreaterThan(clean.tireGain);
     expect(loaded.tireFrequency).toBeGreaterThan(clean.tireFrequency);
+  });
+
+  it("adds tire texture from axle load saturation", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 205,
+      axleLoadSaturation: 0.38
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture from pressure load", () => {

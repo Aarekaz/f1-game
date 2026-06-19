@@ -328,6 +328,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.aeroWashout = telemetry.aeroWashout.toFixed(3);
     this.renderer.domElement.dataset.frontAxleLoad = telemetry.frontAxleLoad.toFixed(3);
     this.renderer.domElement.dataset.rearAxleLoad = telemetry.rearAxleLoad.toFixed(3);
+    this.renderer.domElement.dataset.axleLoadSaturation = telemetry.axleLoadSaturation.toFixed(3);
     this.renderer.domElement.dataset.longitudinalLoadTransfer = telemetry.longitudinalLoadTransfer.toFixed(3);
     this.renderer.domElement.dataset.lateralLoadTransfer = telemetry.lateralLoadTransfer.toFixed(3);
     this.renderer.domElement.dataset.chassisPitch = telemetry.car.pitch.toFixed(3);
@@ -515,6 +516,7 @@ export class ThreeRaceRenderer {
       throttle: telemetry.car.throttle,
       wheelspin: telemetry.car.wheelspin,
       tireLoadFeedback: telemetry.tireLoadFeedback,
+      axleLoadSaturation: telemetry.axleLoadSaturation,
       combinedSlipLoad: telemetry.combinedSlipLoad,
       tireGripReserve: telemetry.tireGripReserve,
       tirePressure: telemetry.tirePressure,
@@ -549,6 +551,7 @@ export class ThreeRaceRenderer {
           telemetry.damperImpulse * 0.24 +
           telemetry.floorStrikeLoad * 0.36 +
           telemetry.roadTextureLoad * 0.3 +
+          telemetry.axleLoadSaturation * 0.18 +
           Math.abs(telemetry.chassisHeave) * 0.34 +
           telemetry.rideSettling * 0.22 +
           Math.max(0, 1 - telemetry.tireGroundContact) * 0.26 +
@@ -956,6 +959,7 @@ export class ThreeRaceRenderer {
         throttle: 0.72,
         wheelspin: 0,
         tireLoadFeedback: clamp(rival.speedKph / 320, 0, 1) * 0.28,
+        axleLoadSaturation: 0,
         combinedSlipLoad: 0,
         tireGripReserve: 1,
         tirePressure: 1,
@@ -1527,6 +1531,7 @@ export class ThreeRaceRenderer {
       throttle: number;
       wheelspin: number;
       tireLoadFeedback: number;
+      axleLoadSaturation: number;
       combinedSlipLoad: number;
       tireGripReserve: number;
       tirePressure: number;
@@ -1594,6 +1599,7 @@ export class ThreeRaceRenderer {
     const yawDamping = clamp(state.yawDamping, 0.2, 1.2);
     const frontWingDamage = clamp(state.frontWingDamage, 0, 1);
     const tireLoad = clamp(state.tireLoadFeedback, 0, 1);
+    const axleLoadSaturation = clamp(state.axleLoadSaturation, 0, 1);
     const combinedSlipLoad = clamp(state.combinedSlipLoad, 0, 1);
     const tireGripReserve = clamp(state.tireGripReserve, 0.52, 1.04);
     const tirePressure = clamp(state.tirePressure, 0.86, 1.18);
@@ -1625,7 +1631,8 @@ export class ThreeRaceRenderer {
         rideSettling * 0.12 +
         liftOffRotationLoad * 0.08 +
         throttlePickupLoad * 0.08 +
-        powerUndersteerLoad * 0.09,
+        powerUndersteerLoad * 0.09 +
+        axleLoadSaturation * 0.07,
       0,
       1
     );
@@ -1672,7 +1679,8 @@ export class ThreeRaceRenderer {
           rearBrakeLightness * 0.08 -
           Math.max(0, rearInsideBias) * insideRearSlip * 0.16;
       const cornerLoad = clamp(
-        tireLoad * 0.58 +
+          tireLoad * 0.58 +
+          axleLoadSaturation * 0.08 +
           combinedSlipLoad * 0.16 +
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
@@ -1709,6 +1717,7 @@ export class ThreeRaceRenderer {
         Math.abs(chassisHeave) * 0.016 +
         rideSettling * 0.003 +
         combinedSlipLoad * 0.008 +
+        axleLoadSaturation * 0.01 +
         Math.max(0, 1 - tireGripReserve) * 0.012 +
         tirePressureLoad * 0.012 +
         Math.max(0, 1 - tireContactPatch) * 0.018 +
@@ -1754,6 +1763,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tireVisualSquash = maxWheelSquash.toFixed(3);
       this.renderer.domElement.dataset.loadedWheelBias = loadedSideBias.toFixed(3);
       this.renderer.domElement.dataset.chassisVisualLoad = suspensionCompression.toFixed(3);
+      this.renderer.domElement.dataset.axleLoadSaturationVisual = axleLoadSaturation.toFixed(3);
       this.renderer.domElement.dataset.combinedSlipVisualLoad = combinedSlipLoad.toFixed(3);
       this.renderer.domElement.dataset.tireGripReserveVisual = tireGripReserve.toFixed(3);
       this.renderer.domElement.dataset.tirePressureVisual = tirePressure.toFixed(3);

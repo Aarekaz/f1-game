@@ -364,6 +364,7 @@ export class HudController {
     if (telemetry.frontLockRisk > 0.18) return `Front lock risk ${(telemetry.frontLockRisk * 100).toFixed(0)}%`;
     if (telemetry.rearBrakeStability < 0.9 && telemetry.brakeBalanceLoad > 0.06) return `Rear light ${((1 - telemetry.rearBrakeStability) * 100).toFixed(0)}%`;
     if (telemetry.brakeBalanceLoad > 0.24) return `Brake balance ${(telemetry.brakeBalanceLoad * 100).toFixed(0)}%`;
+    if (telemetry.axleLoadSaturation > 0.18) return `Axle load ${(telemetry.axleLoadSaturation * 100).toFixed(0)}%`;
     if (telemetry.combinedSlipLoad > 0.28) return `Combined slip ${(telemetry.combinedSlipLoad * 100).toFixed(0)}%`;
     if (telemetry.tireGripReserve < 0.78) return `Grip reserve ${(telemetry.tireGripReserve * 100).toFixed(0)}%`;
     if (telemetry.tirePressureLoad > 0.18) return `Tire pressure ${(telemetry.tirePressure * 100).toFixed(0)}%`;
