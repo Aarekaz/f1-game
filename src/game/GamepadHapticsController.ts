@@ -54,6 +54,7 @@ type HapticTelemetry = Pick<
   | "liftOffRotationLoad"
   | "throttlePickupLoad"
   | "powerUndersteerLoad"
+  | "floorSealLoad"
   | "aeroBalance"
   | "aeroWashout"
   | "aeroBuffetLoad"
@@ -152,6 +153,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.liftOffRotationLoad * 0.7,
       telemetry.throttlePickupLoad * 0.66,
       telemetry.powerUndersteerLoad * 0.7,
+      telemetry.floorSealLoad * 0.2,
       telemetry.aeroWashout * 0.5,
       telemetry.aeroBuffetLoad * 0.52,
       Math.abs(telemetry.aeroBalance) * 0.22,
@@ -181,6 +183,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.liftOffRotationLoad * 0.22 +
       telemetry.throttlePickupLoad * 0.2 +
       telemetry.powerUndersteerLoad * 0.24 +
+      telemetry.floorSealLoad * 0.12 +
       telemetry.brakeBalanceLoad * 0.14 +
       telemetry.frontLockRisk * 0.22 +
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.2 +
@@ -253,6 +256,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       telemetry.liftOffRotationLoad * 0.13 +
       telemetry.throttlePickupLoad * 0.12 +
       telemetry.powerUndersteerLoad * 0.14 +
+      telemetry.floorSealLoad * 0.08 +
       airBuffet
   );
 

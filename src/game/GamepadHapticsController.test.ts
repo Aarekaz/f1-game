@@ -54,6 +54,7 @@ const baseTelemetry = {
   liftOffRotationLoad: 0,
   throttlePickupLoad: 0,
   powerUndersteerLoad: 0,
+  floorSealLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   aeroBuffetLoad: 0,
@@ -531,5 +532,17 @@ describe("raceHapticEffect", () => {
 
     expect(washed?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
     expect(washed?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns floor seal into planted aero texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const sealed = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 245,
+      floorSealLoad: 0.46
+    });
+
+    expect(sealed?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(sealed?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
   });
 });

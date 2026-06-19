@@ -55,6 +55,7 @@ const baseTelemetry = {
   liftOffRotationLoad: 0,
   throttlePickupLoad: 0,
   powerUndersteerLoad: 0,
+  floorSealLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   aeroBuffetLoad: 0,
@@ -536,6 +537,19 @@ describe("raceAudioMix", () => {
 
     expect(washed.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(washed.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds wind and tire texture from floor seal load", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const sealed = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 230,
+      floorSealLoad: 0.46
+    });
+
+    expect(sealed.windGain).toBeGreaterThan(tidy.windGain);
+    expect(sealed.windFrequency).toBeGreaterThan(tidy.windFrequency);
+    expect(sealed.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("exposes ERS whine only when deployment is plausible", () => {

@@ -398,6 +398,7 @@ export class HudController {
     if (telemetry.roadGuidanceLoad > 0.16) return `Road guidance ${(telemetry.roadGuidanceLoad * 100).toFixed(0)}%`;
     if (telemetry.roadCamberLoad > 0.12) return `Camber load ${(telemetry.roadCamberLoad * 100).toFixed(0)}%`;
     if (telemetry.roadFeelFeedback > 0.18) return `Road load ${(telemetry.roadFeelFeedback * 100).toFixed(0)}%`;
+    if (telemetry.floorSealLoad > 0.18) return `Floor seal ${(telemetry.floorSealLoad * 100).toFixed(0)}%`;
     if (telemetry.aeroBuffetLoad > 0.08) return `Aero buffet ${(telemetry.aeroBuffetLoad * 100).toFixed(0)}%`;
     if (telemetry.aeroWashout > 0.18) return `Aero wash ${(telemetry.aeroWashout * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.aeroBalance) > 0.16) return telemetry.aeroBalance > 0 ? "Front aero loaded" : "Rear aero bias";
