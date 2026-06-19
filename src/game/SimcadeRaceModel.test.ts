@@ -879,6 +879,47 @@ describe("SimcadeRaceModel", () => {
     expect(committedTurn.tireForceLoad).toBeGreaterThan(firstTurn.tireForceLoad);
   });
 
+  it("turns actuator lag into transient tire load for panic inputs", () => {
+    const sampleControlLoad = (model: SimcadeRaceModel, seconds: number, input: Partial<RaceActions>) => {
+      let telemetry = model.telemetry();
+      let peakControlLoad = 0;
+      let peakTireLoad = 0;
+      let peakRackLoad = 0;
+
+      for (let elapsed = 0; elapsed < seconds; elapsed += 1 / 60) {
+        telemetry = model.update(1 / 60, { ...idle, ...input });
+        peakControlLoad = Math.max(peakControlLoad, telemetry.controlActuationLoad);
+        peakTireLoad = Math.max(peakTireLoad, telemetry.tireLoadFeedback);
+        peakRackLoad = Math.max(peakRackLoad, telemetry.steeringRackLoad);
+      }
+
+      return { telemetry, peakControlLoad, peakTireLoad, peakRackLoad };
+    };
+
+    const smoothModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    smoothModel.update(1 / 60, { ...idle, launch: true });
+    run(smoothModel, 4.8, { throttle: 1, ers: true });
+    const smooth = sampleControlLoad(smoothModel, 0.45, { throttle: 0.42, steer: 0.18 });
+
+    const panicModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    panicModel.update(1 / 60, { ...idle, launch: true });
+    run(panicModel, 4.8, { throttle: 1, ers: true });
+    const panic = sampleControlLoad(panicModel, 0.45, { brake: 0.82, steer: -0.86 });
+
+    expect(panic.peakControlLoad).toBeGreaterThan(smooth.peakControlLoad + 0.05);
+    expect(panic.peakTireLoad).toBeGreaterThan(smooth.peakTireLoad);
+    expect(panic.peakRackLoad).toBeGreaterThan(smooth.peakRackLoad);
+    expect(panic.telemetry.car.steering).toBeGreaterThan(-0.86);
+  });
+
   it("loads the steering rack when the driver throws abrupt opposite lock", () => {
     const model = new SimcadeRaceModel({
       track: findTrack("aurelia"),
@@ -2057,6 +2098,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.steeringRackLoad).toBe(0);
     expect(telemetry.steeringVelocity).toBe(0);
     expect(telemetry.steeringImpulse).toBe(0);
+    expect(telemetry.controlActuationLoad).toBe(0);
     expect(telemetry.selfAlignTorque).toBe(0);
     expect(telemetry.yawInertiaLoad).toBe(0);
     expect(telemetry.yawDamping).toBe(1);
@@ -2241,7 +2283,7 @@ describe("SimcadeRaceModel", () => {
       assist: findAssist("balanced")
     });
     model.update(1 / 60, { ...idle, launch: true });
-    const telemetry = runGuided(model, 16);
+    const telemetry = runGuided(model, 16.2);
 
     expect(telemetry.lastSector).not.toBeNull();
     expect(telemetry.lastSectorTime).toBeGreaterThan(0);
