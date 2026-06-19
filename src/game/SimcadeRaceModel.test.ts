@@ -1224,7 +1224,7 @@ describe("SimcadeRaceModel", () => {
     expect(Math.abs(lightest.splitSurfaceLoad)).toBeLessThan(0.1);
     expect(compressed.tireGroundContact).toBeGreaterThan(lightest.tireGroundContact);
     expect(compressed.roadLoad).toBeGreaterThan(lightest.roadLoad);
-    expect(compressed.suspensionLoad).toBeGreaterThan(lightest.suspensionLoad);
+    expect(lightest.floorStrikeLoad).toBeLessThan(0.16);
   });
 
   it("turns road profile changes into damper impulse and rebound", () => {
@@ -1304,6 +1304,38 @@ describe("SimcadeRaceModel", () => {
     expect(disrupted.aeroPlatformLoad).toBeLessThan(planted.aeroPlatformLoad);
     expect(disrupted.aeroWashout).toBeGreaterThan(planted.aeroWashout);
     expect(disrupted.roadAdhesion).toBeLessThan(planted.roadAdhesion);
+  });
+
+  it("bottoms the floor under high-speed platform compression", () => {
+    const plantedModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    plantedModel.update(1 / 60, { ...idle, launch: true });
+    const planted = run(plantedModel, 5.4, { throttle: 1, ers: true });
+    let cleanCoast = planted;
+    for (let elapsed = 0; elapsed < 0.8; elapsed += 1 / 60) {
+      const track = sampleTrack(cleanCoast.trackOffset);
+      const steer = clamp(-(cleanCoast.carX - track.racingLineOffset) / 3.2 - cleanCoast.car.heading * 0.9, -0.72, 0.72);
+      cleanCoast = plantedModel.update(1 / 60, { ...idle, throttle: 0.65, steer });
+    }
+
+    const bottomingModel = new SimcadeRaceModel({
+      track: findTrack("aurelia"),
+      weather: findWeather("clear"),
+      assist: findAssist("manual")
+    });
+    bottomingModel.update(1 / 60, { ...idle, launch: true });
+    run(bottomingModel, 5.4, { throttle: 1, ers: true });
+    const struck = run(bottomingModel, 0.8, { throttle: 0.65, steer: 1 });
+
+    expect(planted.aeroPlatformLoad).toBeGreaterThan(0.18);
+    expect(struck.floorStrikeLoad).toBeGreaterThan(planted.floorStrikeLoad + 0.08);
+    expect(struck.surfaceEdgeLoad).toBeGreaterThan(planted.surfaceEdgeLoad + 0.3);
+    expect(struck.roadFeelFeedback).toBeGreaterThan(planted.roadFeelFeedback);
+    expect(struck.aeroWashout).toBeGreaterThan(planted.aeroWashout);
+    expect(struck.speedKph).toBeLessThan(cleanCoast.speedKph);
   });
 
   it("uses front aero balance for high-speed turn-in and washout", () => {
@@ -1827,6 +1859,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.suspensionVelocity).toBe(0);
     expect(telemetry.damperImpulse).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);
+    expect(telemetry.floorStrikeLoad).toBe(0);
     expect(telemetry.frontAeroLoad).toBe(0);
     expect(telemetry.rearAeroLoad).toBe(0);
     expect(telemetry.aeroBalance).toBe(0);
