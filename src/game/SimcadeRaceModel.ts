@@ -49,6 +49,7 @@ export type RaceTelemetry = {
   tirePressureLoad: number;
   tireSaturation: number;
   tireRelaxation: number;
+  tireResponseLoad: number;
   tireLoadFeedback: number;
   steeringLoadFeedback: number;
   steeringRackLoad: number;
@@ -366,6 +367,7 @@ export class SimcadeRaceModel {
   private tirePressureLoad = 0;
   private tireSaturation = 0;
   private tireRelaxation = 0;
+  private tireResponseLoad = 0;
   private tireLoadFeedback = 0;
   private steeringLoadFeedback = 0;
   private steeringRackLoad = 0;
@@ -557,6 +559,7 @@ export class SimcadeRaceModel {
       tirePressureLoad: this.tirePressureLoad,
       tireSaturation: this.tireSaturation,
       tireRelaxation: this.tireRelaxation,
+      tireResponseLoad: this.tireResponseLoad,
       tireLoadFeedback: this.tireLoadFeedback,
       steeringLoadFeedback: this.steeringLoadFeedback,
       steeringRackLoad: this.steeringRackLoad,
@@ -819,6 +822,7 @@ export class SimcadeRaceModel {
     this.tirePressureLoad = 0;
     this.tireSaturation = 0;
     this.tireRelaxation = 0;
+    this.tireResponseLoad = 0;
     this.tireLoadFeedback = 0;
     this.steeringLoadFeedback = 0;
     this.steeringRackLoad = 0;
@@ -2300,6 +2304,25 @@ export class SimcadeRaceModel {
       tireRelaxationTarget,
       dt * (tireRelaxationTarget > this.tireRelaxation ? 8.8 + speedRatio * 2.2 : 2.45 - roadWetness * 0.55)
     );
+    const tireResponseLoadTarget = clamp(
+      this.tireRelaxation * 0.28 +
+        this.steeringImpulse * 0.3 +
+        Math.abs(this.steeringVelocity) * 0.16 +
+        this.controlActuationLoad * 0.16 +
+        this.combinedSlipLoad * 0.14 +
+        lateralLoadStress * 0.12 +
+        Math.max(0, 1 - this.tireGroundContact) * 0.16 +
+        roadWetness * speedRatio * 0.08 -
+        this.slipRecovery * 0.18 -
+        Math.max(0, this.chassisStability - 1) * 0.08,
+      0,
+      1
+    );
+    this.tireResponseLoad = approach(
+      this.tireResponseLoad,
+      tireResponseLoadTarget,
+      dt * (tireResponseLoadTarget > this.tireResponseLoad ? 10.5 + speedRatio * 2 : 3.2 - roadWetness * 0.45)
+    );
 
     const steeringSlipLimit = clamp(
       this.grip -
@@ -2347,6 +2370,7 @@ export class SimcadeRaceModel {
     const steeringSaturationPush =
       Math.sign(rawSteer) * clamp((Math.abs(rawSteer) - 0.82) / 0.18, 0, 1) * speedRatio * (4.2 + speedRatio * 4.8) * rollingSteerFactor * brakeSteeringRelease;
     const chassisTravelBlend = (0.36 + this.roadAdhesion * 0.18) * (onTrack ? 1 : 0.58 + this.tireContactGrip * 0.28);
+    const tireResponseGrip = clamp(1 - this.tireResponseLoad * (0.06 + speedRatio * 0.07) + this.frontAeroLoad * 0.025, 0.84, 1.04);
     const steeringSideForce =
       steer *
       (0.86 + speedRatio * 1.18) *
@@ -2354,6 +2378,7 @@ export class SimcadeRaceModel {
       steeringLoad *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
       this.roadAdhesion *
+      tireResponseGrip *
       rollingSteerFactor *
       brakeSteeringRelease *
       clamp(1 - this.powerUndersteerLoad * 0.035 - this.steeringRackLoad * 0.03 - this.steeringImpulse * 0.008, 0.92, 1);
@@ -2374,6 +2399,7 @@ export class SimcadeRaceModel {
     const lateralAccelLimit =
       (7.4 + speedRatio * 10.6) *
       this.roadAdhesion *
+      tireResponseGrip *
       clamp(0.94 + this.tireGripReserve * 0.08, 0.88, 1.02) *
       clamp(0.92 + this.chassisStability * 0.08 + this.slipRecovery * 0.04, 0.82, 1.04) *
       (onTrack ? 1 : 0.5 + this.tireContactGrip * 0.34);
@@ -2411,6 +2437,7 @@ export class SimcadeRaceModel {
         slipAngleLoad * 0.22 +
         lateralLoadStress * 0.16 +
         this.tireRelaxation * 0.14 +
+        this.tireResponseLoad * 0.12 +
         this.axleLoadSaturation * 0.16 +
         this.controlActuationLoad * 0.12 +
         steeringRatioLoad * 0.08 +
@@ -2443,6 +2470,7 @@ export class SimcadeRaceModel {
           this.combinedSlipLoad * 0.1 +
           this.tireSaturation * 0.22 +
           this.tireLoadFeedback * 0.2 +
+          this.tireResponseLoad * 0.14 +
           slipAngleLoad * 0.16 +
           lateralLoadStress * 0.12 +
           this.axleLoadSaturation * 0.12 +
@@ -2745,6 +2773,7 @@ export class SimcadeRaceModel {
     this.tireContactPatch = Math.max(this.tireContactPatch, 0.92);
     this.tirePressureLoad = 0;
     this.tireRelaxation = 0;
+    this.tireResponseLoad = 0;
     this.tireLoadFeedback = 0;
     this.steeringLoadFeedback = 0;
     this.steeringRackLoad = 0;

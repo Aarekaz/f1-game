@@ -963,8 +963,10 @@ describe("SimcadeRaceModel", () => {
     expect(opposite.steeringImpulse).toBeGreaterThan(right.steeringImpulse);
     expect(opposite.steeringRackLoad).toBeGreaterThan(0.45);
     expect(opposite.steeringLoadFeedback).toBeGreaterThan(0.2);
+    expect(opposite.tireResponseLoad).toBeGreaterThan(0.08);
     expect(opposite.car.steering).toBeGreaterThan(-0.82);
     expect(settled.steeringImpulse).toBeLessThan(opposite.steeringImpulse);
+    expect(settled.tireResponseLoad).toBeLessThan(opposite.tireResponseLoad);
     expect(settled.tireRelaxation).toBeLessThan(1);
   });
 
@@ -2120,6 +2122,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.tirePressureLoad).toBe(0);
     expect(telemetry.tireSaturation).toBe(0);
     expect(telemetry.tireRelaxation).toBe(0);
+    expect(telemetry.tireResponseLoad).toBe(0);
     expect(telemetry.tireLoadFeedback).toBe(0);
     expect(telemetry.steeringLoadFeedback).toBe(0);
     expect(telemetry.steeringRackLoad).toBe(0);
