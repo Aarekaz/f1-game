@@ -40,6 +40,7 @@ const baseTelemetry = {
   rideSettling: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
+  liftOffRotationLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   suspensionVelocity: 0,
@@ -312,6 +313,17 @@ describe("raceHapticEffect", () => {
     const rotating = raceHapticEffect({
       ...baseTelemetry,
       rearTractionRotation: -0.34
+    });
+
+    expect(rotating?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(rotating?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns lift-off rotation into catch texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const rotating = raceHapticEffect({
+      ...baseTelemetry,
+      liftOffRotationLoad: 0.38
     });
 
     expect(rotating?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

@@ -41,6 +41,7 @@ const baseTelemetry = {
   rideSettling: 0,
   tireGroundContact: 1,
   rearTractionRotation: 0,
+  liftOffRotationLoad: 0,
   aeroBalance: 0,
   aeroWashout: 0,
   suspensionVelocity: 0,
@@ -309,6 +310,18 @@ describe("raceAudioMix", () => {
       ...baseTelemetry,
       speedKph: 190,
       rearTractionRotation: 0.32
+    });
+
+    expect(rotating.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(rotating.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire texture from lift-off rotation", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const rotating = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      liftOffRotationLoad: 0.36
     });
 
     expect(rotating.tireGain).toBeGreaterThan(tidy.tireGain);

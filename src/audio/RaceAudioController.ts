@@ -42,6 +42,7 @@ type AudioTelemetry = Pick<
   | "rideSettling"
   | "tireGroundContact"
   | "rearTractionRotation"
+  | "liftOffRotationLoad"
   | "aeroBalance"
   | "aeroWashout"
   | "suspensionVelocity"
@@ -119,6 +120,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.max(0, 1 - telemetry.tireGroundContact) * 0.56,
       Math.abs(telemetry.splitSurfaceLoad) * 0.5,
       Math.abs(telemetry.rearTractionRotation) * 0.7,
+      telemetry.liftOffRotationLoad * 0.66,
       telemetry.aeroWashout * 0.48,
       Math.abs(telemetry.aeroBalance) * 0.24,
       telemetry.surfaceRumble * 0.62
@@ -173,6 +175,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
       Math.max(0, 1 - telemetry.tireGroundContact) * 110 +
       Math.abs(telemetry.splitSurfaceLoad) * 95 +
       Math.abs(telemetry.rearTractionRotation) * 120 +
+      telemetry.liftOffRotationLoad * 112 +
       telemetry.aeroWashout * 80 +
       Math.abs(telemetry.aeroBalance) * 38 +
       looseSurface * 90,
@@ -208,6 +211,7 @@ export function raceAudioMix(telemetry: AudioTelemetry): RaceAudioMix {
         Math.max(0, 1 - telemetry.tireGroundContact) * 0.016 +
         Math.abs(telemetry.splitSurfaceLoad) * 0.014 +
         Math.abs(telemetry.rearTractionRotation) * 0.016 +
+        telemetry.liftOffRotationLoad * 0.015 +
         telemetry.aeroWashout * 0.01 +
         Math.abs(telemetry.aeroBalance) * 0.004 +
         telemetry.surfaceRumble * 0.018 +
