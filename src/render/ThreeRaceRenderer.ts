@@ -2453,9 +2453,9 @@ export class ThreeRaceRenderer {
     dirtyAir: number
   ) {
     const material = this.speedStreaks.userData.material as THREE.MeshBasicMaterial | undefined;
-    const motionCue = Math.max(0, speedRatio - 0.4) * 0.54;
+    const motionCue = Math.max(0, speedRatio - 0.35) * 0.58;
     const speedCue = clamp(
-      Math.max(motionCue > 0 ? 0.092 : 0, motionCue) +
+      Math.max(motionCue > 0 ? 0.11 : 0, motionCue) +
         slip * 0.1 +
         braking * 0.045 +
         draft * 0.18 +
