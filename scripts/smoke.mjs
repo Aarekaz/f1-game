@@ -899,7 +899,7 @@ async function checkDesktop(browser) {
   assert(Number.isFinite(state.defensiveRivals), "desktop defensive-rival telemetry was missing");
   assert(Number.isFinite(state.nearestRivalGap), "desktop nearest-rival gap telemetry was missing");
   assert(state.racecraftState.length > 0, "desktop racecraft state was missing");
-  assert(/air|aero|rack|self-align|rival|wheel|contact|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
+  assert(/air|aero|rack|self-align|rival|wheel|contact|floor|defensive|overtakes|slipstream|rhythm|zone|untidy|reset|kerb|runoff|gravel|wing|brake|shift|traction|power|marbles|tires|line/i.test(state.streak), `desktop racecraft HUD was missing: ${state.streak}`);
   assert(state.rainIntensity > 0.8, `desktop rain intensity did not reach renderer, rain=${state.rainIntensity}`);
   assert(state.roadWetness > 0.8, `desktop road wetness did not reach renderer, wetness=${state.roadWetness}`);
   assert(state.launchCharge > 0.5, `desktop launch charge did not build during countdown, charge=${state.launchCharge}`);
