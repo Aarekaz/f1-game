@@ -81,6 +81,7 @@ export type RaceTelemetry = {
   suspensionVelocity: number;
   damperImpulse: number;
   aeroPlatformLoad: number;
+  floorSealLoad: number;
   floorStrikeLoad: number;
   frontAeroLoad: number;
   rearAeroLoad: number;
@@ -406,6 +407,7 @@ export class SimcadeRaceModel {
   private suspensionVelocity = 0;
   private damperImpulse = 0;
   private aeroPlatformLoad = 0;
+  private floorSealLoad = 0;
   private floorStrikeLoad = 0;
   private frontAeroLoad = 0;
   private rearAeroLoad = 0;
@@ -605,6 +607,7 @@ export class SimcadeRaceModel {
       suspensionVelocity: this.suspensionVelocity,
       damperImpulse: this.damperImpulse,
       aeroPlatformLoad: this.aeroPlatformLoad,
+      floorSealLoad: this.floorSealLoad,
       floorStrikeLoad: this.floorStrikeLoad,
       frontAeroLoad: this.frontAeroLoad,
       rearAeroLoad: this.rearAeroLoad,
@@ -877,6 +880,7 @@ export class SimcadeRaceModel {
     this.suspensionVelocity = 0;
     this.damperImpulse = 0;
     this.aeroPlatformLoad = 0;
+    this.floorSealLoad = 0;
     this.floorStrikeLoad = 0;
     this.frontAeroLoad = 0;
     this.rearAeroLoad = 0;
@@ -1152,6 +1156,30 @@ export class SimcadeRaceModel {
       this.aeroPlatformLoad,
       aeroPlatformTarget,
       dt * (aeroPlatformTarget > this.aeroPlatformLoad ? 5.5 : 10)
+    );
+    const sealDisruption = clamp(
+      this.surfaceEdgeLoad * 0.24 +
+        this.tireRunoffShare * 0.22 +
+        Math.max(0, 1 - this.tireGroundContact) * 0.3 +
+        this.damperImpulse * 0.2 +
+        this.floorStrikeLoad * 0.34 +
+        this.roadTextureLoad * 0.08 +
+        this.rideSettling * 0.08 +
+        Math.abs(this.suspensionVelocity) * 0.08 +
+        this.insideWheelUnload * 0.1 +
+        this.standingWater * 0.18 +
+        this.hydroplaneLoad * 0.12 +
+        this.dirtyAir * 0.12,
+      0,
+      1
+    );
+    const floorSealTarget = onTrack
+      ? clamp(this.aeroPlatformLoad * (0.64 + speedRatio * 0.36) * (1 - sealDisruption), 0, 1)
+      : 0;
+    this.floorSealLoad = approach(
+      this.floorSealLoad,
+      floorSealTarget,
+      dt * (floorSealTarget > this.floorSealLoad ? 6.5 : 12.5)
     );
     const rideHeightAeroLoss = clamp(
       Math.max(0, 1 - this.tireGroundContact) * 0.58 +
@@ -3038,6 +3066,7 @@ export class SimcadeRaceModel {
     this.suspensionTravel = 0;
     this.suspensionVelocity = 0;
     this.damperImpulse = 0;
+    this.floorSealLoad = 0;
     this.floorStrikeLoad = 0;
     this.frontAeroLoad = 0;
     this.rearAeroLoad = 0;

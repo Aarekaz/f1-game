@@ -1398,12 +1398,14 @@ describe("SimcadeRaceModel", () => {
 
     expect(planted.speedKph).toBeGreaterThan(130);
     expect(planted.aeroPlatformLoad).toBeGreaterThan(0.18);
+    expect(planted.floorSealLoad).toBeGreaterThan(0.1);
     expect(planted.frontAeroLoad).toBeGreaterThan(0.08);
     expect(planted.rearAeroLoad).toBeGreaterThan(0.08);
     expect(Math.abs(planted.aeroBalance)).toBeLessThan(0.35);
     expect(planted.suspensionLoad).toBeGreaterThan(1.02);
     expect(disrupted.tireRunoffShare + disrupted.surfaceEdgeLoad).toBeGreaterThan(0.1);
     expect(disrupted.aeroPlatformLoad).toBeLessThan(planted.aeroPlatformLoad);
+    expect(disrupted.floorSealLoad).toBeLessThan(planted.floorSealLoad);
     expect(disrupted.aeroWashout).toBeGreaterThan(planted.aeroWashout);
     expect(disrupted.roadAdhesion).toBeLessThan(planted.roadAdhesion);
   });
@@ -1433,6 +1435,7 @@ describe("SimcadeRaceModel", () => {
     const struck = run(bottomingModel, 0.8, { throttle: 0.65, steer: 1 });
 
     expect(planted.aeroPlatformLoad).toBeGreaterThan(0.18);
+    expect(planted.floorSealLoad).toBeGreaterThan(0.1);
     expect(struck.floorStrikeLoad).toBeGreaterThan(planted.floorStrikeLoad + 0.08);
     expect(struck.surfaceEdgeLoad).toBeGreaterThan(planted.surfaceEdgeLoad + 0.3);
     expect(struck.roadFeelFeedback).toBeGreaterThan(planted.roadFeelFeedback);
@@ -2203,6 +2206,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.suspensionVelocity).toBe(0);
     expect(telemetry.damperImpulse).toBe(0);
     expect(telemetry.aeroPlatformLoad).toBe(0);
+    expect(telemetry.floorSealLoad).toBe(0);
     expect(telemetry.floorStrikeLoad).toBe(0);
     expect(telemetry.frontAeroLoad).toBe(0);
     expect(telemetry.rearAeroLoad).toBe(0);
