@@ -362,6 +362,7 @@ export class HudController {
     if (telemetry.tireState === "Cold tires") return "Cold tires";
     if (telemetry.tireState === "Worn tires") return `Tire wear ${(telemetry.tireWear * 100).toFixed(0)}%`;
     if (telemetry.pedalOverlapLoad > 0.18) return `Pedal overlap ${(telemetry.pedalOverlapLoad * 100).toFixed(0)}%`;
+    if (telemetry.drivetrainCompliance > 0.18) return `Drivetrain ${(telemetry.drivetrainCompliance * 100).toFixed(0)}%`;
     if (telemetry.frontLockRisk > 0.18) return `Front lock risk ${(telemetry.frontLockRisk * 100).toFixed(0)}%`;
     if (telemetry.rearBrakeStability < 0.9 && telemetry.brakeBalanceLoad > 0.06) return `Rear light ${((1 - telemetry.rearBrakeStability) * 100).toFixed(0)}%`;
     if (telemetry.brakeBalanceLoad > 0.24) return `Brake balance ${(telemetry.brakeBalanceLoad * 100).toFixed(0)}%`;

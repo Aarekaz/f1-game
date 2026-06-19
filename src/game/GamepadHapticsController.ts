@@ -30,6 +30,7 @@ type HapticTelemetry = Pick<
   | "brakeBite"
   | "driveTorqueLoad"
   | "pedalOverlapLoad"
+  | "drivetrainCompliance"
   | "differentialLock"
   | "insideRearSlip"
   | "steeringLoadFeedback"
@@ -130,6 +131,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.68,
       telemetry.driveTorqueLoad * 0.34,
       telemetry.pedalOverlapLoad * 0.66,
+      telemetry.drivetrainCompliance * 0.48,
       telemetry.differentialLock * 0.46,
       telemetry.insideRearSlip * 0.76,
       telemetry.steeringLoadFeedback * 0.58,
@@ -198,6 +200,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.2 +
       telemetry.driveTorqueLoad * 0.1 +
       telemetry.pedalOverlapLoad * 0.24 +
+      telemetry.drivetrainCompliance * 0.18 +
       telemetry.differentialLock * 0.14 +
       telemetry.insideRearSlip * 0.24 +
       Math.abs(telemetry.steeringVelocity) * 0.16 +
@@ -237,6 +240,7 @@ export function raceHapticEffect(telemetry: HapticTelemetry): RaceHapticEffect |
       Math.max(0, 1 - telemetry.rearBrakeStability) * 0.14 +
       telemetry.driveTorqueLoad * 0.08 +
       telemetry.pedalOverlapLoad * 0.16 +
+      telemetry.drivetrainCompliance * 0.13 +
       telemetry.differentialLock * 0.1 +
       telemetry.insideRearSlip * 0.16 +
       telemetry.steeringLoadFeedback * 0.18 +

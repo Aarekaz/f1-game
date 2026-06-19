@@ -211,6 +211,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Brake-balance stability now separates front lock risk from rear lightness under braking, so panic stops wash wide while trail braking can rotate the car without feeling random.
 - Brake bite now turns brake temperature and fade into a shared stopping-force state, feeding threshold braking, lockup risk, HUD text, tire audio, haptics, and renderer telemetry.
 - Pedal overlap now creates drivetrain bind when throttle and brake are held together, feeding tire load, brake heat, power delivery, haptics, audio, HUD feedback, and visible chassis load.
+- Drivetrain compliance now links shift cuts, throttle pickup, diff lock, inside-rear slip, and pedal overlap into one torque texture for HUD, audio, haptics, and renderer telemetry.
 - Differential corner-exit load now tracks drive torque, diff lock, and inside-rear slip, so throttle application can rotate or tighten the rear axle instead of behaving like a simple speed button.
 - Countersteer recovery now turns an opposite-lock catch into slip-angle recovery, chassis stability, tire sound, haptics, HUD feedback, and visible loaded-wheel motion.
 - Tire pressure and contact-patch load now react to heat, aero, suspension, wet cooling, rough contact, and force demand, then feed grip reserve, scrub, audio, haptics, and tire squash together.

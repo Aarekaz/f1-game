@@ -386,6 +386,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.throttlePickupLoad = telemetry.throttlePickupLoad.toFixed(3);
     this.renderer.domElement.dataset.powerUndersteerLoad = telemetry.powerUndersteerLoad.toFixed(3);
     this.renderer.domElement.dataset.pedalOverlapLoad = telemetry.pedalOverlapLoad.toFixed(3);
+    this.renderer.domElement.dataset.drivetrainCompliance = telemetry.drivetrainCompliance.toFixed(3);
     this.renderer.domElement.dataset.brakeBalanceLoad = telemetry.brakeBalanceLoad.toFixed(3);
     this.renderer.domElement.dataset.frontLockRisk = telemetry.frontLockRisk.toFixed(3);
     this.renderer.domElement.dataset.rearBrakeStability = telemetry.rearBrakeStability.toFixed(3);
@@ -546,6 +547,7 @@ export class ThreeRaceRenderer {
       rearBrakeStability: telemetry.rearBrakeStability,
       driveTorqueLoad: telemetry.driveTorqueLoad,
       pedalOverlapLoad: telemetry.pedalOverlapLoad,
+      drivetrainCompliance: telemetry.drivetrainCompliance,
       differentialLock: telemetry.differentialLock,
       insideRearSlip: telemetry.insideRearSlip,
       tireGroundContact: telemetry.tireGroundContact,
@@ -600,6 +602,7 @@ export class ThreeRaceRenderer {
           Math.abs(telemetry.steeringVelocity) * 0.12 +
           telemetry.tirePressureLoad * 0.2 +
           telemetry.pedalOverlapLoad * 0.18 +
+          telemetry.drivetrainCompliance * 0.18 +
           telemetry.frontLockRisk * 0.3 +
           Math.max(0, 1 - telemetry.rearBrakeStability) * 0.22 +
           telemetry.insideRearSlip * 0.28 +
@@ -1023,6 +1026,7 @@ export class ThreeRaceRenderer {
         rearBrakeStability: 1,
         driveTorqueLoad: 0,
         pedalOverlapLoad: 0,
+        drivetrainCompliance: 0,
         differentialLock: 0,
         insideRearSlip: 0,
         tireGroundContact: 1,
@@ -1607,6 +1611,7 @@ export class ThreeRaceRenderer {
       rearBrakeStability: number;
       driveTorqueLoad: number;
       pedalOverlapLoad: number;
+      drivetrainCompliance: number;
       differentialLock: number;
       insideRearSlip: number;
       tireGroundContact: number;
@@ -1693,6 +1698,7 @@ export class ThreeRaceRenderer {
     const rearBrakeLightness = clamp(1 - state.rearBrakeStability, 0, 1);
     const driveTorqueLoad = clamp(state.driveTorqueLoad, 0, 1);
     const pedalOverlapLoad = clamp(state.pedalOverlapLoad, 0, 1);
+    const drivetrainCompliance = clamp(state.drivetrainCompliance, 0, 1);
     const differentialLock = clamp(state.differentialLock, 0, 1);
     const insideRearSlip = clamp(state.insideRearSlip, 0, 1);
     const tireGroundContact = clamp(state.tireGroundContact, 0, 1.08);
@@ -1717,6 +1723,7 @@ export class ThreeRaceRenderer {
         liftOffRotationLoad * 0.08 +
         throttlePickupLoad * 0.08 +
         powerUndersteerLoad * 0.09 +
+        drivetrainCompliance * 0.08 +
         tireResponseLoad * 0.08 +
         longitudinalSlipLoad * 0.06 +
         hydroplaneLoad * 0.16 +
@@ -1769,6 +1776,7 @@ export class ThreeRaceRenderer {
         : state.throttle * 0.08 +
           driveTorqueLoad * 0.08 -
           pedalOverlapLoad * 0.06 +
+          drivetrainCompliance * 0.04 +
           rearAeroLoad * 0.1 -
           liftOffRotationLoad * 0.08 -
           throttlePickupLoad * 0.04 -
@@ -1789,6 +1797,7 @@ export class ThreeRaceRenderer {
           brakeBalanceLoad * 0.12 +
           driveTorqueLoad * 0.08 +
           pedalOverlapLoad * 0.1 +
+          drivetrainCompliance * 0.08 +
           suspensionCompression * 0.32 +
           roadTextureLoad * 0.04 +
           roadCamberLoad * 0.04 +
@@ -1841,6 +1850,7 @@ export class ThreeRaceRenderer {
         brakeBalanceLoad * 0.01 +
         driveTorqueLoad * 0.006 +
         pedalOverlapLoad * 0.006 +
+        drivetrainCompliance * 0.008 +
         liftOffRotationLoad * 0.01 +
         throttlePickupLoad * 0.01 +
         powerUndersteerLoad * 0.012 +
@@ -1919,6 +1929,7 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.powerUndersteerVisualLoad = powerUndersteerLoad.toFixed(3);
       this.renderer.domElement.dataset.driveTorqueVisualLoad = driveTorqueLoad.toFixed(3);
       this.renderer.domElement.dataset.pedalOverlapVisualLoad = pedalOverlapLoad.toFixed(3);
+      this.renderer.domElement.dataset.drivetrainComplianceVisualLoad = drivetrainCompliance.toFixed(3);
       this.renderer.domElement.dataset.differentialLockVisual = differentialLock.toFixed(3);
       this.renderer.domElement.dataset.insideRearSlipVisual = insideRearSlip.toFixed(3);
       this.renderer.domElement.dataset.frontAeroVisualLoad = frontAeroLoad.toFixed(3);

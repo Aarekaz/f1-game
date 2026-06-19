@@ -29,6 +29,7 @@ const baseTelemetry = {
   brakeBite: 0.9,
   driveTorqueLoad: 0,
   pedalOverlapLoad: 0,
+  drivetrainCompliance: 0,
   differentialLock: 0,
   insideRearSlip: 0,
   steeringLoadFeedback: 0,
@@ -270,6 +271,18 @@ describe("raceHapticEffect", () => {
       speedKph: 205,
       pedalOverlapLoad: 0.42,
       car: { ...baseTelemetry.car, braking: 0.52 }
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns drivetrain compliance into torque texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      speedKph: 205,
+      drivetrainCompliance: 0.5
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

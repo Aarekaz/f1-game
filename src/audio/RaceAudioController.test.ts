@@ -30,6 +30,7 @@ const baseTelemetry = {
   brakeBite: 0.9,
   driveTorqueLoad: 0,
   pedalOverlapLoad: 0,
+  drivetrainCompliance: 0,
   differentialLock: 0,
   insideRearSlip: 0,
   steeringLoadFeedback: 0,
@@ -503,6 +504,18 @@ describe("raceAudioMix", () => {
 
     expect(pickingUp.tireGain).toBeGreaterThan(tidy.tireGain);
     expect(pickingUp.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
+  });
+
+  it("adds tire texture from drivetrain compliance", () => {
+    const tidy = raceAudioMix(baseTelemetry);
+    const loaded = raceAudioMix({
+      ...baseTelemetry,
+      speedKph: 190,
+      drivetrainCompliance: 0.5
+    });
+
+    expect(loaded.tireGain).toBeGreaterThan(tidy.tireGain);
+    expect(loaded.tireFrequency).toBeGreaterThan(tidy.tireFrequency);
   });
 
   it("adds tire texture from power understeer", () => {
