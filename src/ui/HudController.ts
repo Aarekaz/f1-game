@@ -370,6 +370,7 @@ export class HudController {
     if (telemetry.slipRecovery > 0.1) return `Slip recovery ${(telemetry.slipRecovery * 100).toFixed(0)}%`;
     if (telemetry.chassisStability < 0.82) return `Chassis ${(telemetry.chassisStability * 100).toFixed(0)}%`;
     if (telemetry.yawInertiaLoad > 0.18) return `Yaw inertia ${(telemetry.yawInertiaLoad * 100).toFixed(0)}%`;
+    if (telemetry.steeringImpulse > 0.18) return `Rack impulse ${(telemetry.steeringImpulse * 100).toFixed(0)}%`;
     if (telemetry.steeringRackLoad > 0.22) return `Rack load ${(telemetry.steeringRackLoad * 100).toFixed(0)}%`;
     if (Math.abs(telemetry.selfAlignTorque) > 0.18) return "Self-aligning";
     if (telemetry.steeringLoadFeedback > 0.2) return `Steering load ${(telemetry.steeringLoadFeedback * 100).toFixed(0)}%`;

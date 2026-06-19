@@ -25,6 +25,8 @@ const baseTelemetry = {
   insideRearSlip: 0,
   steeringLoadFeedback: 0,
   steeringRackLoad: 0,
+  steeringVelocity: 0,
+  steeringImpulse: 0,
   selfAlignTorque: 0,
   yawInertiaLoad: 0,
   yawDamping: 1,
@@ -186,6 +188,18 @@ describe("raceHapticEffect", () => {
       ...baseTelemetry,
       steeringRackLoad: 0.56,
       selfAlignTorque: -0.3
+    });
+
+    expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);
+    expect(loaded?.weakMagnitude).toBeGreaterThan(tidy?.weakMagnitude ?? 0);
+  });
+
+  it("turns steering rack impulse into quick wheel texture", () => {
+    const tidy = raceHapticEffect(baseTelemetry);
+    const loaded = raceHapticEffect({
+      ...baseTelemetry,
+      steeringVelocity: 0.48,
+      steeringImpulse: 0.36
     });
 
     expect(loaded?.strongMagnitude).toBeGreaterThan(tidy?.strongMagnitude ?? 0);

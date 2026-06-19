@@ -377,6 +377,8 @@ async function checkDesktop(browser) {
     tireLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.tireLoadFeedback ?? 0),
     steeringLoadFeedback: Number(document.querySelector("#game canvas")?.dataset.steeringLoadFeedback ?? 0),
     steeringRackLoad: Number(document.querySelector("#game canvas")?.dataset.steeringRackLoad ?? 0),
+    steeringVelocity: Number(document.querySelector("#game canvas")?.dataset.steeringVelocity ?? 0),
+    steeringImpulse: Number(document.querySelector("#game canvas")?.dataset.steeringImpulse ?? 0),
     selfAlignTorque: Number(document.querySelector("#game canvas")?.dataset.selfAlignTorque ?? 0),
     yawInertiaLoad: Number(document.querySelector("#game canvas")?.dataset.yawInertiaLoad ?? 0),
     yawDamping: Number(document.querySelector("#game canvas")?.dataset.yawDamping ?? 0),
@@ -416,6 +418,8 @@ async function checkDesktop(browser) {
     roadTextureVisualLoad: Number(document.querySelector("#game canvas")?.dataset.roadTextureVisualLoad ?? 0),
     chassisHeaveVisual: Number(document.querySelector("#game canvas")?.dataset.chassisHeaveVisual ?? 0),
     rideSettlingVisual: Number(document.querySelector("#game canvas")?.dataset.rideSettlingVisual ?? 0),
+    steeringVelocityVisual: Number(document.querySelector("#game canvas")?.dataset.steeringVelocityVisual ?? 0),
+    steeringImpulseVisual: Number(document.querySelector("#game canvas")?.dataset.steeringImpulseVisual ?? 0),
     counterSteerVisualLoad: Number(document.querySelector("#game canvas")?.dataset.counterSteerVisualLoad ?? 0),
     slipRecoveryVisual: Number(document.querySelector("#game canvas")?.dataset.slipRecoveryVisual ?? 0),
     chassisStabilityVisual: Number(document.querySelector("#game canvas")?.dataset.chassisStabilityVisual ?? 0),
@@ -823,8 +827,12 @@ async function checkDesktop(browser) {
   assert(state.steeringLoadFeedback >= 0 && state.steeringLoadFeedback <= 1, `desktop steering load feedback telemetry was invalid: ${state.steeringLoadFeedback}`);
   assert(state.steeringLoadFeedback > 0.12, `desktop steering load feedback stayed too quiet: ${state.steeringLoadFeedback}`);
   assert(state.steeringRackLoad >= 0 && state.steeringRackLoad <= 1, `desktop steering rack load telemetry was invalid: ${state.steeringRackLoad}`);
+  assert(state.steeringVelocity >= -1 && state.steeringVelocity <= 1, `desktop steering velocity telemetry was invalid: ${state.steeringVelocity}`);
+  assert(state.steeringImpulse >= 0 && state.steeringImpulse <= 1, `desktop steering impulse telemetry was invalid: ${state.steeringImpulse}`);
   assert(Number.isFinite(state.selfAlignTorque) && Math.abs(state.selfAlignTorque) <= 1, `desktop self-align torque telemetry was invalid: ${state.selfAlignTorque}`);
   assert(Number.isFinite(state.steeringRackVisualLoad) && state.steeringRackVisualLoad >= 0, "desktop steering rack visual load was missing");
+  assert(state.steeringVelocityVisual >= -1 && state.steeringVelocityVisual <= 1, `desktop steering velocity visual load was invalid: ${state.steeringVelocityVisual}`);
+  assert(state.steeringImpulseVisual >= 0 && state.steeringImpulseVisual <= 1, `desktop steering impulse visual load was invalid: ${state.steeringImpulseVisual}`);
   assert(state.yawInertiaLoad >= 0 && state.yawInertiaLoad <= 1, `desktop yaw inertia load telemetry was invalid: ${state.yawInertiaLoad}`);
   assert(state.yawDamping >= 0.2 && state.yawDamping <= 1.2, `desktop yaw damping telemetry was invalid: ${state.yawDamping}`);
   assert(state.counterSteerLoad >= 0 && state.counterSteerLoad <= 1, `desktop countersteer telemetry was invalid: ${state.counterSteerLoad}`);
