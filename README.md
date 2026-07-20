@@ -321,10 +321,10 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - Standing starts and post-stop restarts now build through available traction, so wet asphalt crawls away with wheelspin instead of launching like dry pavement.
 - Full-lock restarts now scrub front grip and give up launch drive, so throttle plus maximum steering feels like overloaded tires instead of a sideways snap.
 - Wheel-to-wheel contact can now leave persistent front-wing damage, costing downforce and making the car harder to place until the run ends.
-- A richer fictional formula car with a sculpted monocoque, cockpit/driver details, tire sidewalls, aero inlets, spinning wheels, wheel-speed blur, brake glow, and active rear-wing movement.
+- A free CC0 open-wheel car asset with a fictional no-branding livery, stable real-world scale, dynamic contact shadow, rain light, and ERS glow effects.
 - The car now carries a soft dynamic contact shadow, which helps it feel planted on the circuit instead of floating above the procedural surface.
 - Local personal bests per fictional track and weather pairing.
-- A first external asset pass using a small CC0 Kenney Racing Kit subset.
+- A small CC0 asset library: Kenney Racing Kit scenery plus an external open-wheel car model used as fictional Apex Formula equipment.
 - Engine, ERS, and tire-scrub audio generated with browser Web Audio.
 - ERS deployment is visible on the car through a cyan rear glow and sidepod energy traces, so boost has visual feedback as well as speed and audio.
 - A fictional aero-boost flap opens on fast straights during committed ERS runs, trimming drag and making the rear wing visibly come alive.
@@ -382,6 +382,6 @@ The main rule is simple: game state lives in `src/game`, rendering lives in `src
 
 ## Current direction
 
-The next big improvement is a cleaner GLB/glTF asset pipeline for objects that should stop being procedural, especially higher-fidelity venue dressing and car/circuit materials.
+The next big improvement is a better chase-camera composition pass, followed by a more coherent visual language for circuit materials and venue dressing.
 
-For now, the game uses a mix of procedural geometry and a small CC0 asset subset. That is intentional: it keeps the game fast to iterate on while the handling, camera, HUD, sound, and track language settle.
+For now, the game uses a mix of procedural track geometry and a small CC0 asset subset. That keeps the game fast to iterate on while the handling, camera, HUD, sound, and track language settle.

@@ -135,7 +135,8 @@ export class ThreeRaceRenderer {
   private readonly assets = new RacingAssetLibrary();
   private readonly hemi = new THREE.HemisphereLight("#dcefff", "#14210f", 1.7);
   private readonly sun = new THREE.DirectionalLight("#ffffff", 2.7);
-  private readonly car = buildFormulaCarProxy();
+  private readonly car = new THREE.Group();
+  private readonly fallbackCar = buildFormulaCarProxy();
   private circuit = buildGpCircuit();
   private readonly tracksideAssets = new THREE.Group();
   private horizon = this.buildHorizon();
@@ -183,7 +184,9 @@ export class ThreeRaceRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.domElement.className = "race-canvas";
-    this.renderer.domElement.dataset.assetCar = "apex-procedural-f25";
+    this.car.name = "apex-formula-car";
+    this.car.add(this.fallbackCar);
+    this.renderer.domElement.dataset.assetCar = "procedural-fallback";
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.renderer.domElement.dataset.renderPipeline = "srgb-aces-soft-shadows";
     this.renderer.domElement.dataset.renderToneMapping = "aces";
@@ -1149,7 +1152,7 @@ export class ThreeRaceRenderer {
       depthWrite: false,
       side: THREE.DoubleSide
     });
-    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 6.8), material);
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 5.7), material);
     shadow.name = "formula-car-ground-contact-shadow";
     shadow.rotation.x = -Math.PI / 2;
     shadow.renderOrder = 3;
@@ -2041,6 +2044,63 @@ export class ThreeRaceRenderer {
       this.renderer.domElement.dataset.tracksideAssets = "kenney";
     } catch {
       this.renderer.domElement.dataset.tracksideAssets = "procedural-only";
+    }
+
+    try {
+      const formulaCar = await this.assets.createFormulaCar();
+      this.addFormulaCarEffects(formulaCar);
+      this.car.add(formulaCar);
+      this.fallbackCar.visible = false;
+      this.renderer.domElement.dataset.assetCar = "apex-open-wheel-cc0";
+    } catch {
+      this.renderer.domElement.dataset.assetCar = "procedural-fallback";
+    }
+  }
+
+  private addFormulaCarEffects(root: THREE.Object3D) {
+    const rainLightMaterial = new THREE.MeshStandardMaterial({
+      color: "#ff2648",
+      emissive: "#ff1436",
+      emissiveIntensity: 1.8,
+      roughness: 0.18,
+      metalness: 0.08
+    });
+    const rainLight = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.05), rainLightMaterial);
+    rainLight.name = "rear-rain-light";
+    rainLight.position.set(0, 0.46, 2.62);
+    root.add(rainLight);
+
+    const rainGlowMaterial = new THREE.MeshBasicMaterial({
+      color: "#ff1238",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const rainGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.22), rainGlowMaterial);
+    rainGlow.name = "rear-rain-light-glow";
+    rainGlow.position.set(0, 0.46, 2.65);
+    rainGlow.renderOrder = 6;
+    root.add(rainGlow);
+
+    const ersMaterial = new THREE.MeshBasicMaterial({
+      color: "#69f7ff",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const ersGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.22), ersMaterial);
+    ersGlow.name = "ers-deploy-glow";
+    ersGlow.position.set(0, 0.26, 2.5);
+    ersGlow.renderOrder = 5;
+    root.add(ersGlow);
+
+    for (const side of [-1, 1]) {
+      const flow = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.72), ersMaterial.clone());
+      flow.name = `ers-flow-${side < 0 ? "left" : "right"}`;
+      flow.position.set(side * 0.78, 0.23, 1.66);
+      root.add(flow);
     }
   }
 

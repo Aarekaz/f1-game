@@ -3,13 +3,15 @@ import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 
 const KENNEY_OBJ_ROOT = "/assets/kenney-racing-kit/obj/";
+const FORMULA_OBJ_ROOT = "/assets/apex-formula/";
 
-type AssetName = "raceCarRed" | "grandStand" | "lightPostLarge";
+type AssetName = "raceCarRed" | "grandStand" | "lightPostLarge" | "formulaCar";
 
 const assetScales: Record<AssetName, number> = {
   raceCarRed: 3.05,
   grandStand: 3.9,
-  lightPostLarge: 4.2
+  lightPostLarge: 4.2,
+  formulaCar: 1
 };
 
 function cloneObjectWithMaterials(source: THREE.Object3D) {
@@ -95,6 +97,15 @@ export class RacingAssetLibrary {
     });
   }
 
+  createFormulaCar() {
+    return this.createAsset("formulaCar").then((car) => {
+      car.name = "apex-open-wheel-car";
+      normalizeFormulaCar(car);
+      normalizeFormulaMaterials(car);
+      return car;
+    });
+  }
+
   createGrandstand() {
     return this.createAsset("grandStand").then((stand) => {
       stand.name = "kenney-grandstand";
@@ -119,6 +130,12 @@ export class RacingAssetLibrary {
   private loadTemplate(name: AssetName) {
     const cached = this.templates.get(name);
     if (cached) return cached;
+
+    if (name === "formulaCar") {
+      const loaded = this.loadFormulaTemplate();
+      this.templates.set(name, loaded);
+      return loaded;
+    }
 
     const loaded = new Promise<THREE.Object3D>((resolve, reject) => {
       const mtlLoader = new MTLLoader(this.manager).setPath(KENNEY_OBJ_ROOT);
@@ -152,4 +169,62 @@ export class RacingAssetLibrary {
     this.templates.set(name, loaded);
     return loaded;
   }
+
+  private loadFormulaTemplate() {
+    return new Promise<THREE.Object3D>((resolve, reject) => {
+      const mtlLoader = new MTLLoader(this.manager).setPath(FORMULA_OBJ_ROOT);
+      mtlLoader.load(
+        "apex-formula.mtl",
+        (materials) => {
+          materials.preload();
+          const objLoader = new OBJLoader(this.manager).setPath(FORMULA_OBJ_ROOT);
+          objLoader.setMaterials(materials);
+          objLoader.load(
+            "apex-formula.obj",
+            (object) => {
+              object.scale.setScalar(assetScales.formulaCar);
+              object.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  child.castShadow = true;
+                  child.receiveShadow = true;
+                }
+              });
+              resolve(object);
+            },
+            undefined,
+            reject
+          );
+        },
+        undefined,
+        reject
+      );
+    });
+  }
+}
+
+function normalizeFormulaCar(root: THREE.Object3D) {
+  const bounds = new THREE.Box3().setFromObject(root);
+  const center = bounds.getCenter(new THREE.Vector3());
+  root.position.x -= center.x;
+  root.position.z -= center.z;
+  root.position.y += 0.11 - bounds.min.y;
+}
+
+function normalizeFormulaMaterials(root: THREE.Object3D) {
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
+    const materials = sourceMaterials.map((source) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: "#ffffff",
+        map: "map" in source && source.map instanceof THREE.Texture ? source.map : null,
+        roughness: 0.38,
+        metalness: 0.16,
+        side: THREE.DoubleSide
+      });
+      if (material.map) material.map.colorSpace = THREE.SRGBColorSpace;
+      return material;
+    });
+    object.material = Array.isArray(object.material) ? materials : materials[0];
+  });
 }
