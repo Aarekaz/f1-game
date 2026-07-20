@@ -131,7 +131,7 @@ function clamp(value: number, min: number, max: number) {
 export class ThreeRaceRenderer {
   private readonly renderer;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1800);
+  private readonly camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1800);
   private readonly assets = new RacingAssetLibrary();
   private readonly hemi = new THREE.HemisphereLight("#dcefff", "#14210f", 1.7);
   private readonly sun = new THREE.DirectionalLight("#ffffff", 2.7);
@@ -807,7 +807,7 @@ export class ThreeRaceRenderer {
       ? (telemetry.surfaceName === "Gravel" ? 1.45 : 1.08) + speedRatio * 0.58 + telemetry.surfaceRumble * 0.28 + rejoinFocus * 0.76
       : 0;
     const fovTarget =
-      (podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 42 + speedRatio * 5.2 + telemetry.car.braking * 1.35) +
+      (podMode ? 47 + speedRatio * 4 + telemetry.car.braking * 1.4 : 48 + speedRatio * 6.4 + telemetry.car.braking * 1.35) +
       Math.abs(apexDirection) * (podMode ? 1.2 : 2.4) +
       roadSpeedFraming * 1.8 +
       rejoinCameraLift * 1.1 +
@@ -821,7 +821,7 @@ export class ThreeRaceRenderer {
     this.camera.fov = fovTarget;
 
     const lookAhead =
-      (podMode ? 24 + speedRatio * 32 : 10 + speedRatio * 18) +
+      (podMode ? 24 + speedRatio * 32 : 18 + speedRatio * 24) +
       Math.abs(apexDirection) * (podMode ? 8 : 16) +
       roadSpeedFraming * (9.5 + speedRatio * 10) +
       portraitView * (10 + speedRatio * 12) +
@@ -845,8 +845,8 @@ export class ThreeRaceRenderer {
     const rejoinCameraLag = rejoinCameraLift * (1.8 + speedRatio * 0.8);
     const cameraLag = podMode
       ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
-      : 4.35 +
-        speedRatio * 2.4 +
+      : 8.4 +
+        speedRatio * 2.9 +
         telemetry.car.throttle * 0.25 -
         telemetry.car.braking * 0.95 +
         powertrainLurch * 0.7 +
@@ -895,7 +895,7 @@ export class ThreeRaceRenderer {
       this.desiredCameraPosition.set(
         cameraPoint.x,
         carY +
-          (podMode ? 1.34 : 3.08) -
+          (podMode ? 1.34 : 4.2) -
           telemetry.car.braking * (podMode ? 0.06 : 0.14) +
           telemetry.car.slip * (podMode ? 0.08 : 0.18) +
           speedRatio * (podMode ? 0.12 : 0.1) +
@@ -916,7 +916,7 @@ export class ThreeRaceRenderer {
       this.desiredCameraTarget.set(
         targetPoint.x + Math.sin(now * 0.025) * airBuffet * (podMode ? 0.06 : 0.14),
         carY +
-          (podMode ? 0.82 : 0.78) +
+          (podMode ? 0.82 : 0.9) +
           cameraStructureLift * 0.18 +
           rejoinCameraLift * 0.34 +
           roadSpeedFraming * 0.22 +

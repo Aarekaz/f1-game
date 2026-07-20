@@ -250,7 +250,7 @@ This is not trying to be a licensed Formula 1 sim. The goal is a web game that f
 - The formula car now visibly leans, pitches, steers, and squashes its loaded tires from the same physics signals, so grip loss reads through the car instead of only the HUD.
 - The pod camera adds a lightweight cockpit frame with halo, nose, mirrors, and a steering wheel so the alternate camera feels like a formula-car view.
 - The chase camera looks through the upcoming racing line with subtle corner roll, so fast bends read earlier instead of feeling like a fixed rear mount.
-- The default chase camera sits closer in clean air, keeping the car present in frame while still opening up for rejoin moments.
+- The default chase camera uses a road-first distance and lower look target, keeping the full car readable without letting it swallow the circuit.
 - The chase camera now has a small inertial rig, so acceleration, braking, aero load, and lateral slip tug the view instead of leaving the car screen-pinned.
 - The chase camera now has road-frame drift, letting slip angle and lateral load move the car inside the view while the road stays readable as the reference.
 - The chase camera now opens up with speed, tire load, traffic, and braking zones, giving the road more room when the car is moving quickly through a pack.
