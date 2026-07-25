@@ -105,6 +105,7 @@ export class RacingAssetLibrary {
       if (color) tintFormulaCar(car, color);
       car.userData.assetCar = "apex-open-wheel-cc0";
       car.userData.teamColor = color ?? null;
+      car.userData.restingY = car.position.y;
       return car;
     });
   }

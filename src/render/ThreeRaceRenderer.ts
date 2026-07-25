@@ -1807,6 +1807,43 @@ export class ThreeRaceRenderer {
       0,
       1
     );
+    const assetHeave = clamp(
+      chassisHeave * 0.24 +
+        suspensionCompression * 0.028 +
+        surfaceKick * 0.012 -
+        floorStrikeLoad * 0.018,
+      -0.075,
+      0.075
+    );
+    const assetPitch = clamp(
+      state.braking * 0.028 -
+        state.throttle * clamp(state.speedKph / 310, 0, 1) * 0.012 +
+        floorStrikeLoad * 0.024 -
+        suspensionCompression * 0.01,
+      -0.045,
+      0.055
+    );
+    const assetRoll = clamp(
+      -lateralLoad * 0.09 +
+        steerAngle * 0.018 +
+        outsideTireLoad * Math.sign(lateralLoad || state.steering || 1) * 0.014,
+      -0.065,
+      0.065
+    );
+    const assetYaw = clamp(steerAngle * 0.026 + aeroYawStall * 0.018, -0.035, 0.035);
+    root.traverse((object) => {
+      if (object.userData.assetCar !== "apex-open-wheel-cc0") return;
+      const restingY = Number(object.userData.restingY ?? object.position.y);
+      object.position.y = restingY + assetHeave;
+      object.rotation.x = assetPitch;
+      object.rotation.y = assetYaw;
+      object.rotation.z = assetRoll;
+    });
+    if (state.instrument) {
+      this.renderer.domElement.dataset.assetCarHeave = assetHeave.toFixed(3);
+      this.renderer.domElement.dataset.assetCarPitch = assetPitch.toFixed(3);
+      this.renderer.domElement.dataset.assetCarRoll = assetRoll.toFixed(3);
+    }
     const rearFlap = root.getObjectByName("rear-wing-upper-plane");
     const frontWing = root.getObjectByName("front-wing");
     let maxWheelSquash = 0;
