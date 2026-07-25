@@ -160,7 +160,7 @@ export class ThreeRaceRenderer {
   private readonly frameGuardTarget = new THREE.Vector3();
   private readonly frameGuardCameraPosition = new THREE.Vector3();
   private readonly obstructionWorldPosition = new THREE.Vector3();
-  private readonly rivals = new Map<number, ReturnType<typeof buildFormulaCarProxy>>();
+  private readonly rivals = new Map<number, THREE.Object3D>();
   private readonly rivalSprays = new Map<number, THREE.Group>();
   private readonly rivalLabels = new Map<number, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
   private readonly handleResize = () => this.resize();
@@ -173,6 +173,7 @@ export class ThreeRaceRenderer {
   private cameraVerticalInertia = 0;
   private cameraRoadFrameDrift = 0;
   private cameraSpeedDeltaKphPerSecond = 0;
+  private formulaCarAssetReady = false;
 
   constructor(private readonly parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -1120,6 +1121,9 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.rivalLabelsVisible = String(visibleRivalLabels);
     this.renderer.domElement.dataset.rivalLabelSample = rivalLabelSample;
     this.renderer.domElement.dataset.rivalLabelMaxScale = largestRivalLabelScale.toFixed(2);
+    this.renderer.domElement.dataset.rivalAssetCars = String(
+      [...this.rivals.values()].filter((rival) => rival.userData.assetCar === "apex-open-wheel-cc0").length
+    );
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -1137,9 +1141,27 @@ export class ThreeRaceRenderer {
   private addRival(id: number, color: string) {
     const mesh = buildFormulaCarProxy(color);
     mesh.name = `rival-${id}`;
+    mesh.userData.teamColor = color;
     this.rivals.set(id, mesh);
     this.scene.add(mesh);
+    if (this.formulaCarAssetReady) void this.upgradeRivalToFormulaCar(id, mesh, color);
     return mesh;
+  }
+
+  private async upgradeRivalToFormulaCar(id: number, fallback: THREE.Object3D, color: string) {
+    try {
+      const formulaCar = await this.assets.createFormulaCar(color);
+      this.addFormulaCarEffects(formulaCar);
+      formulaCar.name = `rival-${id}`;
+
+      if (this.rivals.get(id) !== fallback) return;
+      this.scene.remove(fallback);
+      disposeObject3D(fallback);
+      this.rivals.set(id, formulaCar);
+      this.scene.add(formulaCar);
+    } catch {
+      // Keep the procedural rival if the optional model cannot load.
+    }
   }
 
   private buildCarGroundShadow() {
@@ -1607,7 +1629,7 @@ export class ThreeRaceRenderer {
   }
 
   private animateFormulaCar(
-    root: ReturnType<typeof buildFormulaCarProxy>,
+    root: THREE.Object3D,
     state: {
       distance: number;
       speedKph: number;
@@ -2051,6 +2073,10 @@ export class ThreeRaceRenderer {
       this.addFormulaCarEffects(formulaCar);
       this.car.add(formulaCar);
       this.fallbackCar.visible = false;
+      this.formulaCarAssetReady = true;
+      for (const [id, rival] of this.rivals) {
+        void this.upgradeRivalToFormulaCar(id, rival, String(rival.userData.teamColor ?? "#e72436"));
+      }
       this.renderer.domElement.dataset.assetCar = "apex-open-wheel-cc0";
     } catch {
       this.renderer.domElement.dataset.assetCar = "procedural-fallback";
