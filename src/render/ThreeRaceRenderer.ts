@@ -2121,6 +2121,22 @@ export class ThreeRaceRenderer {
   }
 
   private addFormulaCarEffects(root: THREE.Object3D) {
+    const brakeMaterial = new THREE.MeshStandardMaterial({
+      color: "#ff253d",
+      emissive: "#ff102c",
+      emissiveIntensity: 0,
+      roughness: 0.24,
+      metalness: 0.06,
+      transparent: true,
+      opacity: 0.18
+    });
+    for (const side of [-1, 1]) {
+      const brakeLight = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.055, 0.035), brakeMaterial.clone());
+      brakeLight.name = `asset-${side < 0 ? "left" : "right"}-brake-glow`;
+      brakeLight.position.set(side * 0.42, 0.47, 2.58);
+      root.add(brakeLight);
+    }
+
     const rainLightMaterial = new THREE.MeshStandardMaterial({
       color: "#ff2648",
       emissive: "#ff1436",
