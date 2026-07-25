@@ -80,6 +80,7 @@ export class HudController {
   private assistChip = optionalElement("assist-chip");
   private seriesTargetChip = optionalElement("series-target-chip");
   private sessionTrack = optionalElement("session-track");
+  private sessionDriver = optionalElement("session-driver");
   private sessionWeather = optionalElement("session-weather");
   private sectionName = optionalElement("section-name");
   private sectionMeta = optionalElement("section-meta");
@@ -103,6 +104,7 @@ export class HudController {
   private splitDelta = optionalElement("split-delta");
   private streak = optionalElement("streak");
   private resultTitle = requireElement("result-title");
+  private resultIdentity = optionalElement("result-identity");
   private resultTotal = requireElement("result-total");
   private resultBest = requireElement("result-best");
   private resultOvertakes = optionalElement("result-overtakes");
@@ -435,6 +437,16 @@ export class HudController {
 
     if (this.sessionWeather) {
       this.sessionWeather.textContent = `${telemetry.weatherName} / ${telemetry.assistName.replace(" Assist", "")}`;
+    }
+
+    if (this.sessionDriver) {
+      this.sessionDriver.textContent = `${telemetry.playerName} / ${telemetry.playerTeam}`;
+      this.sessionDriver.style.setProperty("--team-accent", telemetry.playerAccent);
+    }
+
+    if (this.resultIdentity) {
+      this.resultIdentity.textContent = `${telemetry.playerName} / ${telemetry.playerTeamName}`;
+      this.resultIdentity.style.setProperty("--team-accent", telemetry.playerAccent);
     }
   }
 

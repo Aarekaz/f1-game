@@ -110,6 +110,10 @@ export class RacingAssetLibrary {
     });
   }
 
+  setFormulaCarTeamColor(root: THREE.Object3D, color: string) {
+    tintFormulaCar(root, color);
+  }
+
   createGrandstand() {
     return this.createAsset("grandStand").then((stand) => {
       stand.name = "kenney-grandstand";
@@ -227,6 +231,7 @@ function normalizeFormulaMaterials(root: THREE.Object3D) {
         side: THREE.DoubleSide
       });
       if (material.map) material.map.colorSpace = THREE.SRGBColorSpace;
+      material.userData.baseLiveryColor = material.color.clone();
       return material;
     });
     object.material = Array.isArray(object.material) ? materials : materials[0];
@@ -240,6 +245,8 @@ function tintFormulaCar(root: THREE.Object3D, color: string) {
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+      const baseColor = material.userData.baseLiveryColor;
+      if (baseColor instanceof THREE.Color) material.color.copy(baseColor);
       material.color.lerp(teamColor, 0.28);
       material.needsUpdate = true;
     }

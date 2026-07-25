@@ -11,7 +11,7 @@ import {
   trackWorldTangentAt,
   TRACK_LOOP_LENGTH
 } from "../game/trackPath";
-import type { SessionConfig } from "../world/FictionalGpWorld";
+import { DEFAULT_PLAYER, type SessionConfig } from "../world/FictionalGpWorld";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
 import { RacingAssetLibrary } from "./RacingAssetLibrary";
@@ -21,7 +21,7 @@ type CameraMode = "chase" | "pod";
 const RACING_LINE_SEGMENTS = 30;
 const RACING_LINE_CHEVRON_BARS = 2;
 
-function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }) {
+function disposeObject3D(root: { traverse: (callback: (object: unknown) => void) => void }, disposeTextures = true) {
   const materials = new Set<{ dispose: () => void }>();
   const textures = new Set<{ dispose: () => void }>();
 
@@ -43,7 +43,7 @@ function disposeObject3D(root: { traverse: (callback: (object: unknown) => void)
 
   for (const material of materials) {
     const mapped = material as { map?: { dispose: () => void } | null };
-    if (mapped.map) textures.add(mapped.map);
+    if (disposeTextures && mapped.map) textures.add(mapped.map);
     material.dispose();
   }
 
@@ -174,6 +174,8 @@ export class ThreeRaceRenderer {
   private cameraRoadFrameDrift = 0;
   private cameraSpeedDeltaKphPerSecond = 0;
   private formulaCarAssetReady = false;
+  private playerTeamColor = DEFAULT_PLAYER.team.colors[0];
+  private playerFormulaCar: THREE.Object3D | null = null;
 
   constructor(private readonly parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -242,6 +244,8 @@ export class ThreeRaceRenderer {
   }
 
   configure(session: SessionConfig) {
+    this.playerTeamColor = session.player?.team.colors[0] ?? DEFAULT_PLAYER.team.colors[0];
+    if (this.playerFormulaCar) this.assets.setFormulaCarTeamColor(this.playerFormulaCar, this.playerTeamColor);
     setActiveTrackLayout(session.track.id);
     this.scene.remove(this.circuit);
     disposeObject3D(this.circuit);
@@ -1014,6 +1018,9 @@ export class ThreeRaceRenderer {
       }
 
       const mesh = existing ?? this.addRival(rival.id, rival.color);
+      if (existing && existing.userData.teamColor !== rival.color && !existing.userData.rivalUpgradePending) {
+        void this.upgradeRivalToFormulaCar(rival.id, existing, rival.color);
+      }
       const rivalPoint = trackWorldPointAt(rival.z, rivalLateral);
       const rivalWorldYaw = trackWorldHeadingAt(rival.z) - rival.heading;
       mesh.visible = true;
@@ -1149,6 +1156,7 @@ export class ThreeRaceRenderer {
   }
 
   private async upgradeRivalToFormulaCar(id: number, fallback: THREE.Object3D, color: string) {
+    fallback.userData.rivalUpgradePending = true;
     try {
       const formulaCar = await this.assets.createFormulaCar(color);
       this.addFormulaCarEffects(formulaCar);
@@ -1156,11 +1164,12 @@ export class ThreeRaceRenderer {
 
       if (this.rivals.get(id) !== fallback) return;
       this.scene.remove(fallback);
-      disposeObject3D(fallback);
+      disposeObject3D(fallback, false);
       this.rivals.set(id, formulaCar);
       this.scene.add(formulaCar);
     } catch {
       // Keep the procedural rival if the optional model cannot load.
+      fallback.userData.rivalUpgradePending = false;
     }
   }
 
@@ -2106,9 +2115,10 @@ export class ThreeRaceRenderer {
     }
 
     try {
-      const formulaCar = await this.assets.createFormulaCar();
+      const formulaCar = await this.assets.createFormulaCar(this.playerTeamColor);
       this.addFormulaCarEffects(formulaCar);
       this.car.add(formulaCar);
+      this.playerFormulaCar = formulaCar;
       this.fallbackCar.visible = false;
       this.formulaCarAssetReady = true;
       for (const [id, rival] of this.rivals) {
