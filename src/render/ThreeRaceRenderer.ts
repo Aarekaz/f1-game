@@ -191,7 +191,7 @@ export class ThreeRaceRenderer {
     this.renderer.domElement.dataset.cameraMode = this.cameraMode;
     this.renderer.domElement.dataset.renderPipeline = "srgb-aces-soft-shadows";
     this.renderer.domElement.dataset.renderToneMapping = "aces";
-    this.renderer.domElement.dataset.renderShadowType = "pcf-soft";
+    this.renderer.domElement.dataset.renderShadowType = "pcf";
     this.parent.appendChild(this.renderer.domElement);
     this.syncHorizonTelemetry();
 
