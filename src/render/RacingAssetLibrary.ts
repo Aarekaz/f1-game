@@ -97,11 +97,14 @@ export class RacingAssetLibrary {
     });
   }
 
-  createFormulaCar() {
+  createFormulaCar(color?: string) {
     return this.createAsset("formulaCar").then((car) => {
       car.name = "apex-open-wheel-car";
       normalizeFormulaCar(car);
       normalizeFormulaMaterials(car);
+      if (color) tintFormulaCar(car, color);
+      car.userData.assetCar = "apex-open-wheel-cc0";
+      car.userData.teamColor = color ?? null;
       return car;
     });
   }
@@ -226,5 +229,18 @@ function normalizeFormulaMaterials(root: THREE.Object3D) {
       return material;
     });
     object.material = Array.isArray(object.material) ? materials : materials[0];
+  });
+}
+
+function tintFormulaCar(root: THREE.Object3D, color: string) {
+  const teamColor = new THREE.Color(color);
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+      material.color.lerp(teamColor, 0.28);
+      material.needsUpdate = true;
+    }
   });
 }
