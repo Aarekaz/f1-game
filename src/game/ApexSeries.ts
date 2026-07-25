@@ -1,4 +1,4 @@
-import { findAssist, findTrack, findWeather, type FictionalAssistId, type FictionalTrackId, type FictionalWeatherId, type SessionConfig } from "../world/FictionalGpWorld";
+import { DEFAULT_PLAYER, findAssist, findTrack, findWeather, type FictionalAssistId, type FictionalTrackId, type FictionalWeatherId, type SessionConfig } from "../world/FictionalGpWorld";
 import type { PersonalBest, SessionResult } from "./PersonalBestStore";
 
 export type ApexSeriesTargetCriteria = {
@@ -79,7 +79,8 @@ export function sessionForSeriesEvent(event: ApexSeriesEvent): SessionConfig {
   return {
     track: findTrack(event.trackId),
     weather: findWeather(event.weatherId),
-    assist: findAssist(event.assistId)
+    assist: findAssist(event.assistId),
+    player: DEFAULT_PLAYER
   };
 }
 

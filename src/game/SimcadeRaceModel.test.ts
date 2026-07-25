@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
 import { TRACK_NAME, sampleTrack, trackCenterAt } from "./trackPath";
-import { findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
+import { DEFAULT_PLAYER, findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 
 const idle: RaceActions = {
   steer: 0,
@@ -2338,8 +2338,8 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.rivals[0].speedKph).toBeGreaterThan(0);
     expect(telemetry.rivals[0].driver.length).toBeGreaterThan(0);
     expect(telemetry.rivals[0].team.length).toBeGreaterThan(0);
-    expect(telemetry.leaderboard.some((entry) => entry.isPlayer && entry.driver === "You")).toBe(true);
-    expect(telemetry.leaderboard[0]).toMatchObject({ position: 1, driver: "Vega", team: "NOVA" });
+    expect(telemetry.leaderboard.some((entry) => entry.isPlayer && entry.driver === DEFAULT_PLAYER.name)).toBe(true);
+    expect(telemetry.leaderboard[0]).toMatchObject({ position: 1, driver: "Lio Vega", team: "NOVA" });
   });
 
   it("updates the timing tower identity when the player passes a rival", () => {
@@ -2354,7 +2354,7 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.position).toBeLessThan(8);
     expect(telemetry.overtakeStreak).toBeGreaterThan(0);
     expect(telemetry.leaderboard.some((entry) => entry.isPlayer && entry.position === telemetry.position)).toBe(true);
-    expect(telemetry.leaderboard.some((entry) => entry.driver !== "You" && entry.position > telemetry.position)).toBe(true);
+    expect(telemetry.leaderboard.some((entry) => entry.driver !== DEFAULT_PLAYER.name && entry.position > telemetry.position)).toBe(true);
   });
 
   it("keeps the leaders up the road during the opening stint", () => {
@@ -2369,7 +2369,7 @@ describe("SimcadeRaceModel", () => {
 
     expect(telemetry.position).toBeGreaterThan(3);
     expect(telemetry.overtakeStreak).toBeLessThan(5);
-    expect(telemetry.leaderboard[0]).toMatchObject({ position: 1, driver: "Vega" });
+    expect(telemetry.leaderboard[0]).toMatchObject({ position: 1, driver: "Lio Vega" });
   });
 
   it("surfaces braking-zone cues before heavy corners", () => {

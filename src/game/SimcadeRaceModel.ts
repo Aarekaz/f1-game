@@ -1,6 +1,6 @@
 import { RaceDirector } from "./RaceDirector";
 import { TRACK_LOOP_LENGTH, getTrackCheckpoints, getTrackSectorEnds, sampleTrack, setActiveTrackLayout, standingWaterAt, terrainHeightAt, trackCurveAt } from "./trackPath";
-import { DEFAULT_SESSION, type SessionConfig } from "../world/FictionalGpWorld";
+import { DEFAULT_PLAYER, DEFAULT_SESSION, FICTIONAL_DRIVERS, findTeam, type FictionalTeamId, type PlayerProfile, type SessionConfig } from "../world/FictionalGpWorld";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
 
@@ -25,6 +25,10 @@ export type RaceTelemetry = {
   targetPosition: number;
   scenarioName: string;
   trackName: string;
+  playerName: string;
+  playerTeam: string;
+  playerTeamName: string;
+  playerAccent: string;
   weatherName: string;
   surfaceGrip: number;
   surfaceName: TrackSurfaceName;
@@ -268,15 +272,10 @@ const LAP_LENGTH = TRACK_LOOP_LENGTH;
 const LAPS = 3;
 const MAX_SPEED = 310;
 const GEAR_SPEED_LIMITS = [0, 68, 112, 154, 196, 238, 278, MAX_SPEED];
-const RIVAL_GRID = [
-  { driver: "Vega", team: "NOVA", color: "#24c7ff" },
-  { driver: "Kade", team: "ORO", color: "#f4d35e" },
-  { driver: "Sato", team: "LYNX", color: "#f7f7f2" },
-  { driver: "Roux", team: "EMBER", color: "#ff7a2d" },
-  { driver: "Iven", team: "VANTA", color: "#b88cff" },
-  { driver: "Mira", team: "ATLAS", color: "#1fd17f" },
-  { driver: "Vale", team: "PULSE", color: "#ff4f83" }
-];
+const RIVAL_GRID = FICTIONAL_DRIVERS.map((driver) => ({
+  ...driver,
+  team: findTeam(driver.teamId)
+}));
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -316,18 +315,19 @@ function surfaceBankAt(lateral: number, track: ReturnType<typeof sampleTrack>) {
   return track.bank * (1 - runoffBlend * 0.5) - Math.sign(lateral) * runoffBlend * 0.035;
 }
 
-function createRivals(): RivalState[] {
-  const fieldSize = RIVAL_GRID.length;
-  return RIVAL_GRID.map((rival, index) => ({
+function createRivals(playerTeamId: FictionalTeamId): RivalState[] {
+  const rivals = RIVAL_GRID.filter((rival) => rival.teamId !== playerTeamId);
+  const fieldSize = rivals.length;
+  return rivals.map((rival, index) => ({
     id: index + 1,
-    driver: rival.driver,
-    team: rival.team,
+    driver: rival.name,
+    team: rival.team.shortName,
     position: index + 1,
     lane: ((index % 3) - 1) * 2.4,
     distance: 68 + (fieldSize - index - 1) * 54,
     speed: 154 - index * 7,
     pace: 0.96 - index * 0.035,
-    color: rival.color,
+    color: rival.team.colors[0],
     desiredLane: ((index % 3) - 1) * 2.4,
     defending: false
   }));
@@ -496,7 +496,7 @@ export class SimcadeRaceModel {
   private lastBrake = 0;
   private lastThrottle = 0;
   private latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
-  private rivals = createRivals();
+  private rivals = createRivals(DEFAULT_PLAYER.team.id);
   private director = new RaceDirector(LAPS);
 
   constructor(session: SessionConfig = DEFAULT_SESSION) {
@@ -567,6 +567,10 @@ export class SimcadeRaceModel {
       targetPosition: 3,
       scenarioName: `${this.session.track.name} Sprint`,
       trackName: this.session.track.name,
+      playerName: this.playerProfile().name,
+      playerTeam: this.playerProfile().team.shortName,
+      playerTeamName: this.playerProfile().team.name,
+      playerAccent: this.playerProfile().team.colors[0],
       weatherName: this.session.weather.name,
       surfaceGrip: this.evolvedWeatherGrip(),
       surfaceName: this.drivingSurface(track).name,
@@ -952,7 +956,7 @@ export class SimcadeRaceModel {
     this.lastBrake = 0;
     this.lastThrottle = 0;
     this.latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
-    this.rivals = createRivals();
+    this.rivals = createRivals(this.playerProfile().team.id);
     this.director.reset();
   }
 
@@ -3883,10 +3887,10 @@ export class SimcadeRaceModel {
   private leaderboard() {
     const player = {
       position: this.position,
-      driver: "You",
-      team: "APEX",
+      driver: this.playerProfile().name,
+      team: this.playerProfile().team.shortName,
       gap: null,
-      accent: "#e20e3b",
+      accent: this.playerProfile().team.colors[0],
       isPlayer: true
     };
     const rivals = this.rivals.map((rival) => ({
@@ -3906,6 +3910,10 @@ export class SimcadeRaceModel {
       ...sorted.filter((entry) => entry.position >= this.position - 1 && entry.position <= this.position + 1)
     ];
     return focused.filter((entry, index) => focused.findIndex((item) => item.position === entry.position) === index).slice(0, 6);
+  }
+
+  private playerProfile(): PlayerProfile {
+    return this.session.player ?? DEFAULT_PLAYER;
   }
 
   private airState() {
