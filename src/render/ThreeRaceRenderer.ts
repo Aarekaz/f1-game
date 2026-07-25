@@ -183,7 +183,7 @@ export class ThreeRaceRenderer {
     this.renderer.toneMappingExposure = 1.04;
     this.renderer.setClearColor("#c7d8df");
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.domElement.className = "race-canvas";
     this.car.name = "apex-formula-car";
     this.car.add(this.fallbackCar);
