@@ -13,6 +13,30 @@
           <span class="panel-kicker">Apex Formula</span>
           <strong>Fictional GP Drive</strong>
           <p>Pick an invented grand-prix venue and weather window, then chase a clean three-lap run.</p>
+          <div class="driver-identity" aria-label="Driver identity">
+            <label>
+              <span>Driver name</span>
+              <input id="player-name" type="text" value="Avery Stone" maxlength="18" autocomplete="nickname" spellcheck="false" />
+            </label>
+            <label>
+              <span>Team / livery</span>
+              <select id="team-select">
+                <option value="apex">Apex Works</option>
+                <option value="nova">Nova Dynamics</option>
+                <option value="oro">Oro Corse</option>
+                <option value="lynx">Lynx Atelier</option>
+                <option value="ember">Ember Velocity</option>
+                <option value="vanta">Vanta Blackline</option>
+                <option value="atlas">Atlas Grand Prix</option>
+                <option value="pulse">Pulse Racing Club</option>
+              </select>
+            </label>
+            <div class="team-brief" id="team-brief" aria-live="polite">
+              <strong id="team-brief-name">Apex Works</strong>
+              <span id="team-brief-philosophy">Brave on entry. Precise on exit.</span>
+              <small id="team-brief-character">The young factory team with nothing to protect.</small>
+            </div>
+          </div>
           <div class="session-selectors" aria-label="Session setup">
             <label>
               <span>Track</span>
@@ -68,6 +92,7 @@
         <section class="game-panel results-panel hidden" id="results-panel">
           <span class="panel-kicker">Race Complete</span>
           <strong id="result-title">Finished</strong>
+          <p class="result-identity" id="result-identity">Avery Stone / APEX</p>
           <dl>
             <div>
               <dt>Total</dt>
@@ -175,6 +200,7 @@
           <div class="series-target-chip" id="series-target-chip" aria-label="Series target">Free run</div>
           <div class="session-chip" aria-label="Session">
             <span id="session-track">Aurelia GP</span>
+            <small id="session-driver">Avery Stone / APEX</small>
             <strong id="session-weather">Clear Practice</strong>
           </div>
           <div class="track-readout" aria-label="Circuit section">

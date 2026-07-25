@@ -18,25 +18,55 @@ import {
   type PersonalBest
 } from "../game/PersonalBestStore";
 import { SimcadeRaceModel } from "../game/SimcadeRaceModel";
+import { normalizePlayerName, readPlayerProfile, savePlayerProfile } from "../game/PlayerProfileStore";
 import { TRACK_LOOP_LENGTH, trackWorldPointAt } from "../game/trackPath";
 import { ThreeRaceRenderer } from "../render/ThreeRaceRenderer";
 import { HudController } from "../ui/HudController";
-import { DEFAULT_SESSION, findAssist, findTrack, findWeather, type SessionConfig } from "../world/FictionalGpWorld";
+import { DEFAULT_PLAYER, DEFAULT_SESSION, findAssist, findTeam, findTrack, findWeather, type PlayerProfile, type SessionConfig } from "../world/FictionalGpWorld";
 
 type ControlName = "left" | "right" | "throttle" | "brake" | "boost" | "recover" | "camera";
 
 const MAX_DT = 1 / 20;
 const AUDIO_MUTED_KEY = "apex-formula:audio-muted";
 
-function readSessionConfig(): SessionConfig {
+function readSessionConfig(player: PlayerProfile): SessionConfig {
   const trackSelect = document.getElementById("track-select") as HTMLSelectElement | null;
   const weatherSelect = document.getElementById("weather-select") as HTMLSelectElement | null;
   const assistSelect = document.getElementById("assist-select") as HTMLSelectElement | null;
   return {
     track: findTrack(trackSelect?.value),
     weather: findWeather(weatherSelect?.value),
-    assist: findAssist(assistSelect?.value)
+    assist: findAssist(assistSelect?.value),
+    player
   };
+}
+
+function readPlayerProfileFromForm(fallback: PlayerProfile) {
+  const nameInput = document.getElementById("player-name") as HTMLInputElement | null;
+  const teamSelect = document.getElementById("team-select") as HTMLSelectElement | null;
+  return {
+    name: normalizePlayerName(nameInput?.value ?? fallback.name),
+    team: findTeam(teamSelect?.value ?? fallback.team.id)
+  } satisfies PlayerProfile;
+}
+
+function syncPlayerProfileForm(profile: PlayerProfile) {
+  const nameInput = document.getElementById("player-name") as HTMLInputElement | null;
+  const teamSelect = document.getElementById("team-select") as HTMLSelectElement | null;
+  if (nameInput) nameInput.value = profile.name;
+  if (teamSelect) teamSelect.value = profile.team.id;
+}
+
+function syncTeamBrief(config: SessionConfig) {
+  const player = config.player ?? DEFAULT_PLAYER;
+  const teamName = document.getElementById("team-brief-name");
+  const philosophy = document.getElementById("team-brief-philosophy");
+  const character = document.getElementById("team-brief-character");
+  const brief = document.getElementById("team-brief");
+  if (teamName) teamName.textContent = player.team.name;
+  if (philosophy) philosophy.textContent = player.team.philosophy;
+  if (character) character.textContent = `${player.team.character}.`;
+  brief?.style.setProperty("--team-accent", player.team.colors[0]);
 }
 
 function syncSessionBrief(config: SessionConfig) {
@@ -298,7 +328,8 @@ export function createRaceApp() {
   const audioToggleButton = document.getElementById("audio-toggle");
   let last = performance.now();
   let frame = 0;
-  let session = readSessionConfig();
+  let profile = readPlayerProfile();
+  let session = readSessionConfig(profile);
   let latestTelemetry = model.telemetry();
   let lastPhase = latestTelemetry.phase;
   let paused = false;
@@ -407,9 +438,12 @@ export function createRaceApp() {
   }
 
   const refreshSession = () => {
-    session = readSessionConfig();
+    profile = readPlayerProfileFromForm(profile);
+    savePlayerProfile(profile);
+    session = readSessionConfig(profile);
     const best = readPersonalBest(session);
     syncSessionBrief(session);
+    syncTeamBrief(session);
     syncSessionBest(best);
     syncSeriesProgress(session, selectSeriesEvent);
     syncSeriesTarget(session);
@@ -440,9 +474,12 @@ export function createRaceApp() {
   document.getElementById("track-select")?.addEventListener("change", refreshSession);
   document.getElementById("weather-select")?.addEventListener("change", refreshSession);
   document.getElementById("assist-select")?.addEventListener("change", refreshSession);
+  document.getElementById("player-name")?.addEventListener("change", refreshSession);
+  document.getElementById("team-select")?.addEventListener("change", refreshSession);
   restartSessionButton?.addEventListener("click", restartCurrentRun);
   resultNextEventButton?.addEventListener("click", selectQueuedNextSeriesEvent);
   audioToggleButton?.addEventListener("click", toggleAudioMuted);
+  syncPlayerProfileForm(profile);
   refreshSession();
   input.attach();
   audio.attach();
