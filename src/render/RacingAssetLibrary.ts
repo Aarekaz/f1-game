@@ -247,7 +247,7 @@ function tintFormulaCar(root: THREE.Object3D, color: string) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue;
       const baseColor = material.userData.baseLiveryColor;
       if (baseColor instanceof THREE.Color) material.color.copy(baseColor);
-      material.color.lerp(teamColor, 0.28);
+      material.color.lerp(teamColor, 0.58);
       material.needsUpdate = true;
     }
   });
