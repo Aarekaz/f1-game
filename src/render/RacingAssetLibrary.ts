@@ -14,6 +14,14 @@ const assetScales: Record<AssetName, number> = {
   formulaCar: 1
 };
 
+// The imported model is authored with its nose on local +Z. The renderer's
+// vehicle contract uses local -Z as forward, like the procedural fallback.
+export const FORMULA_CAR_MODEL_YAW_OFFSET = Math.PI;
+
+export function formulaCarAssetYaw(animatedYaw = 0) {
+  return FORMULA_CAR_MODEL_YAW_OFFSET + animatedYaw;
+}
+
 function cloneObjectWithMaterials(source: THREE.Object3D) {
   const clone = source.clone(true);
   clone.traverse((object) => {
@@ -216,6 +224,7 @@ function normalizeFormulaCar(root: THREE.Object3D) {
   root.position.x -= center.x;
   root.position.z -= center.z;
   root.position.y += 0.11 - bounds.min.y;
+  root.rotation.y = FORMULA_CAR_MODEL_YAW_OFFSET;
 }
 
 function normalizeFormulaMaterials(root: THREE.Object3D) {

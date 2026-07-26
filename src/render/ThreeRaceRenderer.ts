@@ -14,7 +14,7 @@ import {
 import { DEFAULT_PLAYER, type SessionConfig } from "../world/FictionalGpWorld";
 import { buildFormulaCarProxy } from "./buildFormulaCarProxy";
 import { buildGpCircuit } from "./buildGpCircuit";
-import { RacingAssetLibrary } from "./RacingAssetLibrary";
+import { formulaCarAssetYaw, RacingAssetLibrary } from "./RacingAssetLibrary";
 
 type CameraMode = "chase" | "pod";
 
@@ -465,7 +465,7 @@ export class ThreeRaceRenderer {
       telemetry.liftOffRotationLoad * 0.01 +
       telemetry.throttlePickupLoad * 0.012 +
       telemetry.powerUndersteerLoad * 0.014;
-    this.car.rotation.y = trackYaw - telemetry.car.heading - telemetry.curve * 0.5;
+    this.car.rotation.y = trackYaw - telemetry.car.heading;
     const tireLoadVisual = clamp(Math.max(telemetry.tireLoadFeedback, telemetry.combinedSlipLoad * 0.42), 0, 1);
     const visualPitch =
       telemetry.car.pitch +
@@ -1845,7 +1845,7 @@ export class ThreeRaceRenderer {
       const restingY = Number(object.userData.restingY ?? object.position.y);
       object.position.y = restingY + assetHeave;
       object.rotation.x = assetPitch;
-      object.rotation.y = assetYaw;
+      object.rotation.y = formulaCarAssetYaw(assetYaw);
       object.rotation.z = assetRoll;
     });
     if (state.instrument) {
@@ -2143,7 +2143,7 @@ export class ThreeRaceRenderer {
     for (const side of [-1, 1]) {
       const brakeLight = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.055, 0.035), brakeMaterial.clone());
       brakeLight.name = `asset-${side < 0 ? "left" : "right"}-brake-glow`;
-      brakeLight.position.set(side * 0.42, 0.47, 2.58);
+      brakeLight.position.set(side * 0.42, 0.47, -2.58);
       root.add(brakeLight);
     }
 
@@ -2156,7 +2156,7 @@ export class ThreeRaceRenderer {
     });
     const rainLight = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.05), rainLightMaterial);
     rainLight.name = "rear-rain-light";
-    rainLight.position.set(0, 0.46, 2.62);
+    rainLight.position.set(0, 0.46, -2.62);
     root.add(rainLight);
 
     const rainGlowMaterial = new THREE.MeshBasicMaterial({
@@ -2168,7 +2168,7 @@ export class ThreeRaceRenderer {
     });
     const rainGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.22), rainGlowMaterial);
     rainGlow.name = "rear-rain-light-glow";
-    rainGlow.position.set(0, 0.46, 2.65);
+    rainGlow.position.set(0, 0.46, -2.65);
     rainGlow.renderOrder = 6;
     root.add(rainGlow);
 
@@ -2181,14 +2181,14 @@ export class ThreeRaceRenderer {
     });
     const ersGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.22), ersMaterial);
     ersGlow.name = "ers-deploy-glow";
-    ersGlow.position.set(0, 0.26, 2.5);
+    ersGlow.position.set(0, 0.26, -2.5);
     ersGlow.renderOrder = 5;
     root.add(ersGlow);
 
     for (const side of [-1, 1]) {
       const flow = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.72), ersMaterial.clone());
       flow.name = `ers-flow-${side < 0 ? "left" : "right"}`;
-      flow.position.set(side * 0.78, 0.23, 1.66);
+      flow.position.set(side * 0.78, 0.23, -1.66);
       root.add(flow);
     }
   }
