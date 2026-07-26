@@ -62,6 +62,25 @@ body {
   transform: translateY(-8px);
 }
 
+.hud[data-session-mode="drive"] .start-panel .series-progress {
+  display: none;
+}
+
+.hud[data-session-mode="drive"][data-phase="racing"] .topbar,
+.hud[data-session-mode="drive"][data-phase="racing"] .timing-tower,
+.hud[data-session-mode="drive"][data-phase="racing"] .objective-chip,
+.hud[data-session-mode="drive"][data-phase="racing"] .assist-chip,
+.hud[data-session-mode="drive"][data-phase="racing"] .series-target-chip,
+.hud[data-session-mode="drive"][data-phase="racing"] .session-chip,
+.hud[data-session-mode="drive"][data-phase="racing"] .pace-readout,
+.hud[data-session-mode="drive"][data-phase="racing"] .mini-map,
+.hud[data-session-mode="drive"][data-phase="racing"] .race-strip,
+.hud[data-session-mode="drive"][data-phase="racing"] .bars,
+.hud[data-session-mode="drive"][data-phase="racing"] .streak,
+.hud[data-session-mode="drive"][data-phase="racing"] .lap-clock {
+  display: none;
+}
+
 .hud button,
 .touch-controls,
 .touch-controls * {
@@ -294,7 +313,7 @@ body {
 
 .session-selectors {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 

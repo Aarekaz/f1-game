@@ -33,11 +33,13 @@ function readSessionConfig(player: PlayerProfile): SessionConfig {
   const trackSelect = document.getElementById("track-select") as HTMLSelectElement | null;
   const weatherSelect = document.getElementById("weather-select") as HTMLSelectElement | null;
   const assistSelect = document.getElementById("assist-select") as HTMLSelectElement | null;
+  const modeSelect = document.getElementById("session-mode") as HTMLSelectElement | null;
   return {
     track: findTrack(trackSelect?.value),
     weather: findWeather(weatherSelect?.value),
     assist: findAssist(assistSelect?.value),
-    player
+    player,
+    mode: modeSelect?.value === "race" ? "race" : "drive"
   };
 }
 
@@ -72,8 +74,19 @@ function syncTeamBrief(config: SessionConfig) {
 function syncSessionBrief(config: SessionConfig) {
   const brief = document.getElementById("session-brief");
   if (brief) {
-    brief.textContent = `${config.track.region}. ${config.weather.mood}. ${config.track.character}. ${config.assist.description}.`;
+    const sessionLine = config.mode === "race" ? "Three laps, full field." : "Open laps, no clock to beat.";
+    brief.textContent = `${config.track.region}. ${config.weather.mood}. ${config.track.character}. ${sessionLine}`;
   }
+}
+
+function syncSessionMode(config: SessionConfig) {
+  const isRace = config.mode === "race";
+  const title = document.getElementById("start-title");
+  const copy = document.getElementById("start-copy");
+  const button = document.getElementById("start-race");
+  if (title) title.textContent = isRace ? "Fictional GP Race" : "Fictional GP Drive";
+  if (copy) copy.textContent = isRace ? "Pick a circuit and weather window, then run a clean three-lap GP." : "Pick a circuit and weather window, then chase the horizon.";
+  if (button) button.textContent = isRace ? "Start Race" : "Drive";
 }
 
 function formatTime(seconds: number | null) {
@@ -338,7 +351,7 @@ export function createRaceApp() {
 
   function syncPauseSummary() {
     if (pausePosition) pausePosition.textContent = `P${latestTelemetry.position}`;
-    if (pauseLap) pauseLap.textContent = `${latestTelemetry.lap}/${latestTelemetry.laps}`;
+    if (pauseLap) pauseLap.textContent = latestTelemetry.laps === null ? `L${latestTelemetry.lap}` : `${latestTelemetry.lap}/${latestTelemetry.laps}`;
     if (pauseSection) pauseSection.textContent = latestTelemetry.trackSection;
   }
 
@@ -428,6 +441,7 @@ export function createRaceApp() {
     setSelectValue("track-select", event.trackId);
     setSelectValue("weather-select", event.weatherId);
     setSelectValue("assist-select", event.assistId);
+    setSelectValue("session-mode", "race");
     refreshSession();
   }
 
@@ -443,6 +457,7 @@ export function createRaceApp() {
     session = readSessionConfig(profile);
     const best = readPersonalBest(session);
     syncSessionBrief(session);
+    syncSessionMode(session);
     syncTeamBrief(session);
     syncSessionBest(best);
     syncSeriesProgress(session, selectSeriesEvent);
@@ -474,6 +489,7 @@ export function createRaceApp() {
   document.getElementById("track-select")?.addEventListener("change", refreshSession);
   document.getElementById("weather-select")?.addEventListener("change", refreshSession);
   document.getElementById("assist-select")?.addEventListener("change", refreshSession);
+  document.getElementById("session-mode")?.addEventListener("change", refreshSession);
   document.getElementById("player-name")?.addEventListener("change", refreshSession);
   document.getElementById("team-select")?.addEventListener("change", refreshSession);
   restartSessionButton?.addEventListener("click", restartCurrentRun);
@@ -574,6 +590,7 @@ export function createRaceApp() {
       document.getElementById("track-select")?.removeEventListener("change", refreshSession);
       document.getElementById("weather-select")?.removeEventListener("change", refreshSession);
       document.getElementById("assist-select")?.removeEventListener("change", refreshSession);
+      document.getElementById("session-mode")?.removeEventListener("change", refreshSession);
       restartSessionButton?.removeEventListener("click", restartCurrentRun);
       resultNextEventButton?.removeEventListener("click", selectQueuedNextSeriesEvent);
       audioToggleButton?.removeEventListener("click", toggleAudioMuted);

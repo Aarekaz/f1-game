@@ -11,8 +11,8 @@
       <main class="hud" aria-label="Race telemetry">
         <section class="game-panel start-panel" id="start-panel">
           <span class="panel-kicker">Apex Formula</span>
-          <strong>Fictional GP Drive</strong>
-          <p>Pick an invented grand-prix venue and weather window, then chase a clean three-lap run.</p>
+          <strong id="start-title">Fictional GP Drive</strong>
+          <p id="start-copy">Pick a circuit and weather window, then chase the horizon.</p>
           <div class="driver-identity" aria-label="Driver identity">
             <label>
               <span>Driver name</span>
@@ -62,6 +62,13 @@
                 <option value="manual">Manual</option>
               </select>
             </label>
+            <label>
+              <span>Session</span>
+              <select id="session-mode">
+                <option value="drive">Free Drive</option>
+                <option value="race">Race Weekend</option>
+              </select>
+            </label>
           </div>
           <p class="session-brief" id="session-brief">Ligurian foothills. Warm track, clean visibility.</p>
           <div class="target-contract" id="target-contract" aria-label="Series contract">
@@ -85,7 +92,7 @@
             </div>
           </div>
           <p class="session-best" id="session-best">No personal best yet.</p>
-          <button id="start-race" type="button">Start Race</button>
+          <button id="start-race" type="button">Drive</button>
           <div class="series-progress" id="series-progress" aria-label="Apex Series"></div>
         </section>
 

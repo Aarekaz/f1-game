@@ -136,6 +136,7 @@ export class HudController {
   update(telemetry: RaceTelemetry) {
     if (this.hud) {
       this.hud.dataset.phase = telemetry.phase;
+      this.hud.dataset.sessionMode = telemetry.sessionMode;
     }
 
     if (this.renderedTrackName !== telemetry.trackName) {
@@ -147,7 +148,7 @@ export class HudController {
     this.resultsPanel.classList.toggle("hidden", telemetry.phase !== "finished");
 
     this.position.textContent = String(telemetry.position).padStart(2, "0");
-    this.lap.textContent = `${telemetry.lap}/${telemetry.laps}`;
+    this.lap.textContent = telemetry.laps === null ? `L${telemetry.lap}` : `${telemetry.lap}/${telemetry.laps}`;
     this.best.textContent = formatTime(telemetry.bestLap);
     this.delta.textContent = telemetry.bestLap === null ? "+0.00" : formatDelta(telemetry.delta);
     this.speed.textContent = String(telemetry.speedKph);
