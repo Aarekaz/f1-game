@@ -1,6 +1,16 @@
 import { RaceDirector } from "./RaceDirector";
 import { TRACK_LOOP_LENGTH, getTrackCheckpoints, getTrackSectorEnds, sampleTrack, setActiveTrackLayout, standingWaterAt, terrainHeightAt, trackCurveAt } from "./trackPath";
-import { DEFAULT_PLAYER, DEFAULT_SESSION, FICTIONAL_DRIVERS, findTeam, type FictionalTeamId, type PlayerProfile, type SessionConfig } from "../world/FictionalGpWorld";
+import {
+  DEFAULT_PLAYER,
+  DEFAULT_SESSION,
+  FICTIONAL_DRIVERS,
+  findTeam,
+  sessionMode,
+  type FictionalTeamId,
+  type PlayerProfile,
+  type SessionConfig,
+  type SessionMode
+} from "../world/FictionalGpWorld";
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished";
 
@@ -18,8 +28,9 @@ export type TrackSurfaceName = "Asphalt" | "Kerb" | "Runoff" | "Gravel";
 
 export type RaceTelemetry = {
   phase: RacePhase;
+  sessionMode: SessionMode;
   lap: number;
-  laps: number;
+  laps: number | null;
   countdown: number;
   position: number;
   targetPosition: number;
@@ -496,20 +507,22 @@ export class SimcadeRaceModel {
   private lastBrake = 0;
   private lastThrottle = 0;
   private latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
-  private rivals = createRivals(DEFAULT_PLAYER.team.id);
-  private director = new RaceDirector(LAPS);
+  private rivals: RivalState[] = [];
+  private director = new RaceDirector(null);
 
-  constructor(session: SessionConfig = DEFAULT_SESSION) {
+  constructor(session: SessionConfig = { ...DEFAULT_SESSION, mode: "race" }) {
     this.session = session;
+    this.position = this.isFreeDrive() ? 1 : 8;
+    this.rivals = this.rivalField();
     setActiveTrackLayout(session.track.id);
-    this.director.configure(getTrackCheckpoints(), getTrackSectorEnds(), TRACK_LOOP_LENGTH);
+    this.director.configure(getTrackCheckpoints(), getTrackSectorEnds(), TRACK_LOOP_LENGTH, this.raceLaps());
   }
 
   configure(session: SessionConfig) {
     this.session = session;
     if (this.phase === "ready") {
       setActiveTrackLayout(session.track.id);
-      this.director.configure(getTrackCheckpoints(), getTrackSectorEnds(), TRACK_LOOP_LENGTH);
+      this.director.configure(getTrackCheckpoints(), getTrackSectorEnds(), TRACK_LOOP_LENGTH, this.raceLaps());
       this.reset();
     }
   }
@@ -560,12 +573,13 @@ export class SimcadeRaceModel {
     const director = this.director.snapshot(this.z);
     return {
       phase: this.phase,
+      sessionMode: sessionMode(this.session),
       lap: director.lap,
       laps: director.laps,
       countdown: this.countdown,
       position: this.position,
-      targetPosition: 3,
-      scenarioName: `${this.session.track.name} Sprint`,
+      targetPosition: this.isFreeDrive() ? 1 : 3,
+      scenarioName: `${this.session.track.name} ${this.isFreeDrive() ? "Drive" : "Sprint"}`,
       trackName: this.session.track.name,
       playerName: this.playerProfile().name,
       playerTeam: this.playerProfile().team.shortName,
@@ -753,7 +767,7 @@ export class SimcadeRaceModel {
       lapValid: director.lapValid,
       lapProgress: director.lapProgress,
       raceProgress: director.raceProgress,
-      objective: this.position <= 3 ? "Hold podium pace" : `Catch P${Math.max(3, this.position - 1)}`,
+      objective: this.isFreeDrive() ? "Find your line" : this.position <= 3 ? "Hold podium pace" : `Catch P${Math.max(3, this.position - 1)}`,
       message: this.messageTimer > 0 ? this.message : "",
       cameraSnap: this.cameraSnapTimer > 0,
       car: {
@@ -797,7 +811,7 @@ export class SimcadeRaceModel {
     this.phase = "ready";
     this.countdown = 0;
     this.lap = 1;
-    this.position = 8;
+    this.position = this.isFreeDrive() ? 1 : 8;
     this.speed = 0;
     this.x = 0;
     this.z = 0;
@@ -956,7 +970,7 @@ export class SimcadeRaceModel {
     this.lastBrake = 0;
     this.lastThrottle = 0;
     this.latestAssist = { steer: 0, brake: 0, throttleTrim: 0 };
-    this.rivals = createRivals(this.playerProfile().team.id);
+    this.rivals = this.rivalField();
     this.director.reset();
   }
 
@@ -3916,6 +3930,18 @@ export class SimcadeRaceModel {
     return this.session.player ?? DEFAULT_PLAYER;
   }
 
+  private isFreeDrive() {
+    return sessionMode(this.session) === "drive";
+  }
+
+  private raceLaps() {
+    return this.isFreeDrive() ? null : LAPS;
+  }
+
+  private rivalField() {
+    return this.isFreeDrive() ? [] : createRivals(this.playerProfile().team.id);
+  }
+
   private airState() {
     if (this.dirtyAir > 0.16) return "Dirty air";
     if (this.draft > 0.03) return "Slipstream";
@@ -4065,18 +4091,22 @@ export class SimcadeRaceModel {
         }
 
         if (!event.valid) {
-          this.message = "Lap deleted";
+          this.message = this.isFreeDrive() ? "Lap invalid" : "Lap deleted";
           this.messageTimer = 1.2;
         }
 
-        this.lap = Math.min(event.lap + 1, LAPS);
-        if (event.lap >= LAPS) {
+        this.lap = this.isFreeDrive() ? event.lap + 1 : Math.min(event.lap + 1, LAPS);
+        if (!this.isFreeDrive() && event.lap >= LAPS) {
           this.lapTime = event.time;
         } else {
           this.lapTime = 0;
           this.cleanLap = true;
           this.offTrackTime = 0;
           this.previousSectorTime = 0;
+          if (event.valid && this.isFreeDrive()) {
+            this.message = "Lap complete";
+            this.messageTimer = 1.2;
+          }
         }
       }
 

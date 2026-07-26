@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SimcadeRaceModel, type RaceActions } from "./SimcadeRaceModel";
 import { TRACK_NAME, sampleTrack, trackCenterAt } from "./trackPath";
-import { DEFAULT_PLAYER, findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
+import { DEFAULT_PLAYER, DEFAULT_SESSION, findAssist, findTrack, findWeather } from "../world/FictionalGpWorld";
 
 const idle: RaceActions = {
   steer: 0,
@@ -82,6 +82,21 @@ describe("SimcadeRaceModel", () => {
     expect(telemetry.scenarioName).toContain(TRACK_NAME);
     expect(telemetry.trackName).toBe(TRACK_NAME);
     expect(telemetry.weatherName).toBe("Clear Practice");
+  });
+
+  it("keeps the default drive session open after multiple laps", () => {
+    const model = new SimcadeRaceModel(DEFAULT_SESSION);
+    model.update(1 / 60, { ...idle, launch: true });
+
+    const telemetry = run(model, 130, { throttle: 1, ers: true });
+
+    expect(telemetry.sessionMode).toBe("drive");
+    expect(telemetry.phase).toBe("racing");
+    expect(telemetry.laps).toBeNull();
+    expect(telemetry.lap).toBeGreaterThan(3);
+    expect(telemetry.position).toBe(1);
+    expect(telemetry.rivals).toHaveLength(0);
+    expect(telemetry.objective).toBe("Find your line");
   });
 
   it("accelerates, brakes, and spends ERS only under throttle", () => {
