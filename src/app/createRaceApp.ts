@@ -232,7 +232,7 @@ function syncSeriesTarget(activeSession: SessionConfig) {
   const contractGoal = document.getElementById("target-contract-goal");
   const contractCriteria = document.getElementById("target-contract-criteria");
 
-  const event = findApexSeriesEvent(activeSession);
+  const event = activeSession.mode === "race" ? findApexSeriesEvent(activeSession) : null;
   if (target) {
     target.textContent = event ? `${event.round} target: ${event.target}` : "Free run";
     target.dataset.mode = event ? "series" : "free";
@@ -462,7 +462,7 @@ export function createRaceApp() {
     syncSessionBest(best);
     syncSeriesProgress(session, selectSeriesEvent);
     syncSeriesTarget(session);
-    const activeSeriesEvent = findApexSeriesEvent(session);
+    const activeSeriesEvent = session.mode === "race" ? findApexSeriesEvent(session) : null;
     queuedNextSeriesEvent = null;
     syncNextSeriesEventButton(null);
     hud.setSeriesContract(

@@ -66,6 +66,10 @@ body {
   display: none;
 }
 
+.hud[data-session-mode="drive"] .start-panel .target-contract {
+  display: none;
+}
+
 .hud[data-session-mode="drive"][data-phase="racing"] .topbar,
 .hud[data-session-mode="drive"][data-phase="racing"] .timing-tower,
 .hud[data-session-mode="drive"][data-phase="racing"] .objective-chip,
