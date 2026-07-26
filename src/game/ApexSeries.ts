@@ -80,7 +80,8 @@ export function sessionForSeriesEvent(event: ApexSeriesEvent): SessionConfig {
     track: findTrack(event.trackId),
     weather: findWeather(event.weatherId),
     assist: findAssist(event.assistId),
-    player: DEFAULT_PLAYER
+    player: DEFAULT_PLAYER,
+    mode: "race"
   };
 }
 

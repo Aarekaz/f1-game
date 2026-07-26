@@ -1,6 +1,7 @@
 export type FictionalTrackId = "aurelia" | "mirage" | "northstar";
 export type FictionalWeatherId = "clear" | "overcast" | "storm" | "dusk";
 export type FictionalAssistId = "balanced" | "manual";
+export type SessionMode = "drive" | "race";
 export type FictionalTeamId = "apex" | "nova" | "oro" | "lynx" | "ember" | "vanta" | "atlas" | "pulse";
 
 export type FictionalTrack = {
@@ -62,6 +63,7 @@ export type SessionConfig = {
   weather: FictionalWeather;
   assist: FictionalAssist;
   player?: PlayerProfile;
+  mode?: SessionMode;
 };
 
 export const FICTIONAL_TEAMS: FictionalTeam[] = [
@@ -248,8 +250,13 @@ export const DEFAULT_SESSION: SessionConfig = {
   track: FICTIONAL_TRACKS[0],
   weather: FICTIONAL_WEATHERS[0],
   assist: FICTIONAL_ASSISTS[0],
-  player: DEFAULT_PLAYER
+  player: DEFAULT_PLAYER,
+  mode: "drive"
 };
+
+export function sessionMode(session: SessionConfig): SessionMode {
+  return session.mode ?? "race";
+}
 
 export function findTrack(id: string | null | undefined) {
   return FICTIONAL_TRACKS.find((track) => track.id === id) ?? DEFAULT_SESSION.track;
