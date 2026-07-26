@@ -31,8 +31,8 @@ describe("InputState", () => {
 
   it("ramps keyboard steering from a soft initial angle to full lock", () => {
     expect(shapeKeyboardSteerInput(0, 1)).toBe(0);
-    expect(shapeKeyboardSteerInput(1, 0)).toBeCloseTo(0.66);
-    expect(shapeKeyboardSteerInput(-1, 0.36)).toBeCloseTo(-0.83);
+    expect(shapeKeyboardSteerInput(1, 0)).toBeCloseTo(0.44);
+    expect(shapeKeyboardSteerInput(-1, 0.36)).toBeCloseTo(-0.72);
     expect(shapeKeyboardSteerInput(1, 0.72)).toBe(1);
     expect(shapeKeyboardSteerInput(1, 2)).toBe(1);
   });

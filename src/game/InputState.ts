@@ -46,7 +46,7 @@ export function shapeKeyboardSteerInput(direction: number, heldForSeconds: numbe
   if (clamped === 0) return 0;
 
   const holdBuild = clamp01(heldForSeconds / 0.72);
-  return Math.sign(clamped) * (0.66 + holdBuild * 0.34);
+  return Math.sign(clamped) * (0.44 + holdBuild * 0.56);
 }
 
 export class InputState {
