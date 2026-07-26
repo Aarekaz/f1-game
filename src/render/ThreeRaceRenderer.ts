@@ -850,8 +850,8 @@ export class ThreeRaceRenderer {
     const rejoinCameraLag = rejoinCameraLift * (1.8 + speedRatio * 0.8);
     const cameraLag = podMode
       ? 1.18 + speedRatio * 0.52 - telemetry.car.braking * 0.16 + powertrainLurch * 0.1
-      : 8.4 +
-        speedRatio * 2.9 +
+      : 11.6 +
+        speedRatio * 4.1 +
         telemetry.car.throttle * 0.25 -
         telemetry.car.braking * 0.95 +
         powertrainLurch * 0.7 +
