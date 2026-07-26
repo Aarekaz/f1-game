@@ -15,7 +15,7 @@ export type RaceDirectorEvent =
 
 export type RaceDirectorSnapshot = {
   lap: number;
-  laps: number;
+  laps: number | null;
   nextCheckpoint: Checkpoint;
   checkpointIndex: number;
   checkpointCount: number;
@@ -51,16 +51,22 @@ export class RaceDirector {
   private finished = false;
 
   constructor(
-    private readonly laps: number,
+    private laps: number | null,
     private checkpoints: readonly Checkpoint[] = getTrackCheckpoints(),
     private sectorEnds: readonly [number, number, number] = getTrackSectorEnds(),
     private loopLength = TRACK_LOOP_LENGTH
   ) {}
 
-  configure(checkpoints = getTrackCheckpoints(), sectorEnds = getTrackSectorEnds(), loopLength = TRACK_LOOP_LENGTH) {
+  configure(
+    checkpoints = getTrackCheckpoints(),
+    sectorEnds = getTrackSectorEnds(),
+    loopLength = TRACK_LOOP_LENGTH,
+    laps = this.laps
+  ) {
     this.checkpoints = checkpoints;
     this.sectorEnds = sectorEnds;
     this.loopLength = loopLength;
+    this.laps = laps;
     this.reset();
   }
 
@@ -107,7 +113,7 @@ export class RaceDirector {
       const time = totalTime - this.currentLapStartTime;
       const valid = this.validLap && this.nextCheckpointIndex >= this.checkpoints.length;
       events.push({ type: "lap", lap: this.lap, time, valid });
-      if (this.lap >= this.laps) {
+      if (this.laps !== null && this.lap >= this.laps) {
         this.finished = true;
         this.lap += 1;
         events.push({ type: "finish", time: totalTime + this.penaltySeconds });
@@ -129,7 +135,7 @@ export class RaceDirector {
   snapshot(distance: number): RaceDirectorSnapshot {
     const lapDistance = this.finished ? this.loopLength : distance % this.loopLength;
     return {
-      lap: Math.min(this.lap, this.laps),
+      lap: this.laps === null ? this.lap : Math.min(this.lap, this.laps),
       laps: this.laps,
       nextCheckpoint: this.checkpoints[this.nextCheckpointIndex] ?? this.checkpoints[0],
       checkpointIndex: this.nextCheckpointIndex,
@@ -137,7 +143,12 @@ export class RaceDirector {
       sectorSplits: [...this.sectorSplits],
       lapValid: this.validLap,
       penaltySeconds: this.penaltySeconds,
-      raceProgress: this.finished ? 1 : Math.min(1, (this.lap - 1 + lapDistance / this.loopLength) / this.laps),
+      raceProgress:
+        this.finished || this.laps === null
+          ? this.finished
+            ? 1
+            : Math.min(1, lapDistance / this.loopLength)
+          : Math.min(1, (this.lap - 1 + lapDistance / this.loopLength) / this.laps),
       lapProgress: Math.min(1, lapDistance / this.loopLength),
       finished: this.finished
     };

@@ -55,4 +55,22 @@ describe("RaceDirector", () => {
     expect(snapshot.finished).toBe(true);
     expect(snapshot.sectorSplits.every((split) => split !== null && split > 0)).toBe(true);
   });
+
+  it("keeps running after each lap in free drive", () => {
+    const director = new RaceDirector(null);
+    const firstLap = director.update(TRACK_LOOP_LENGTH + 1, 20);
+
+    expect(firstLap.some((event) => event.type === "lap")).toBe(true);
+    expect(firstLap.some((event) => event.type === "finish")).toBe(false);
+    expect(director.snapshot(TRACK_LOOP_LENGTH + 1)).toMatchObject({
+      lap: 2,
+      laps: null,
+      finished: false
+    });
+
+    director.update(TRACK_LOOP_LENGTH * 2 + 1, 40);
+    const snapshot = director.snapshot(TRACK_LOOP_LENGTH * 2 + 1);
+    expect(snapshot.lap).toBe(3);
+    expect(snapshot.raceProgress).toBeCloseTo(1 / TRACK_LOOP_LENGTH);
+  });
 });
